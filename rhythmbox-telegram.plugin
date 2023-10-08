@@ -1,0 +1,10 @@
+[Plugin]
+Loader=python3
+Module=rhythmbox-telegram
+IAge=2
+Depends=rb
+Name=Telegram
+Description=Playing and downloading music from the Telegram
+Authors=Andrey Izman
+Copyright=Copyright © 2023 Andrey Izman
+Website=https://github.com/mervick/rhythmbox-telegram
