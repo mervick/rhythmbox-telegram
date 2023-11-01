@@ -32,6 +32,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
+from telegram_fn import MessageType, message_type_set, message_set, audio_content_set, photo_content_set, mime_types, \
+    API_ERRORS, get_content_type, is_msg_valid, get_audio_type, get_chat_info, timestamp, empty_cb, cb
+from TelegramStorage import TelegramStorage
 
 # import gettext
 # gettext.install('rhythmbox', RB.locale_dir())
@@ -45,141 +48,17 @@ logger = logging.getLogger(__name__)
 
 CHAT_ID = -1001361643016
 
-class MessageType(enum.Enum):
-    NONE = None
-    PHOTO = 'messagePhoto'
-    DOCUMENT = 'messageDocument'
-    AUDIO = 'messageAudio'
-
-    @staticmethod
-    def has(value):
-        return value in message_type_set
-
-
-message_type_set = set(item.value for item in MessageType)
-message_set = {'id', 'chat_id', 'date', 'content'}
-audio_content_set = {'mime_type', 'file_name', 'performer', 'title', 'duration', 'audio'}
-photo_content_set = {'sizes'}
-
-mime_types = {
-    'audio/aac': 'aac',
-    'audio/x-aac': 'aac',
-    'audio/aacp': 'aac',
-    'application/x-cdf': 'cda',
-    'audio/midi': 'midi',
-    'audio/x-midi': 'midi',
-    'audio/mid': 'midi',
-    'audio/mpeg': 'mp3',
-    'audio/mpga': 'mpga',
-    'audio/mp4': 'mp4',
-    'audio/ogg': 'ogg',
-    'audio/vorbis': 'ogg',
-    'audio/opus': 'opus',
-    'audio/wav': 'wav',
-    'audio/vnd.wav': 'wav',
-    'audio/3gpp': '3gp',
-    'audio/3gpp2': '3g2',
-    'audio/aiff': 'aiff',
-    'audio/x-aiff': 'aiff',
-    'audio/basic': 'au',
-    'audio/l24': 'pcm',
-    'audio/mp4a-latm': 'm4a',
-    'audio/mpeg4-generic': 'm4a',
-    'audio/x-m4a': 'm4a',
-    'audio/x-m4p': 'm4a',
-    'audio/x-m4b': 'm4a',
-    'audio/mp4a': 'm4a'
-}
-
-API_ERRORS = {
-    'FIRSTNAME_INVALID': _('The first name is invalid'),
-    'LASTNAME_INVALID': _('The last name is invalid'),
-    'PHONE_NUMBER_INVALID': _('The phone number is invalid'),
-    'PHONE_CODE_HASH_EMPTY': _('phone_code_hash is missing'),
-    'PHONE_CODE_EMPTY': _('phone_code is missing'),
-    'PHONE_CODE_EXPIRED': _('The confirmation code has expired'),
-    'API_ID_INVALID': _('The api_id/api_hash combination is invalid'),
-    'PHONE_NUMBER_OCCUPIED': _('The phone number is already in use'),
-    'PHONE_NUMBER_UNOCCUPIED': _('The phone number is not yet being used'),
-    'USERS_TOO_FEW': _('Not enough users (to create a chat)'),
-    'USERS_TOO_MUCH': _('The maximum number of users has been exceeded (to create a chat)'),
-    'TYPE_CONSTRUCTOR_INVALID': _('The type constructor is invalid'),
-    'FILE_PART_INVALID': _('The file part number is invalid'),
-    'FILE_PARTS_INVALID': _('The number of file parts is invalid'),
-    'MD5_CHECKSUM_INVALID': _('The MD5 checksums do not match'),
-    'PHOTO_INVALID_DIMENSIONS': _('The photo dimensions are invalid'),
-    'FIELD_NAME_INVALID': _('The field with the name FIELD_NAME is invalid'),
-    'FIELD_NAME_EMPTY': _('The field with the name FIELD_NAME is missing'),
-    'MSG_WAIT_FAILED': _('A request that must be completed before processing the current request returned an error'),
-    'MSG_WAIT_TIMEOUT': _("A request that must be completed before processing the current request didn't finish processing yet"),
-    'AUTH_KEY_UNREGISTERED': _('The key is not registered in the system'),
-    'AUTH_KEY_INVALID': _('The key is invalid'),
-    'USER_DEACTIVATED': _('The user has been deleted/deactivated'),
-    'SESSION_REVOKED': _('The authorization has been invalidated, because of the user terminating all sessions'),
-    'SESSION_EXPIRED': _('The authorization has expired'),
-    'AUTH_KEY_PERM_EMPTY': _('The method is unavailable for temporary authorization key, not bound to permanent'),
-}
-
-
-def get_content_type(data):
-    if '@type' in data['content'] and MessageType.has(data['content']['@type']):
-        return MessageType(data['content']['@type'])
-    return MessageType.NONE
-
-def is_msg_valid(data):
-    return message_set <= set(data)
-
-def parse_title(content):
-    title = [None, content]
-    r = re.search("^\s*([^\n]+?)\s\-\s([^\n]+)\n?", content)
-    if not r:
-        r = re.search("^\s*([^\n]+?)\-([^\n]+)\n?", content)
-    if r:
-        groups = r.groups()
-        title = [groups[0].strip(), groups[1].strip()]
-    return title
-
-def parse_info(content):
-    info = {"content": content}
-    title = parse_title(content)
-    info["artist"] = title[0]
-    info["title"] = title[1]
-    r = re.search("genre:\s*([^\n]*)\n", content, re.IGNORECASE)
-    if r:
-        info["genre"] = r.group()[0].strip()
-    r = re.search("country:\s*([^\n]*)\n", content, re.IGNORECASE)
-    if r:
-        info["country"] = r.group()[0].strip()
-    return info
-
-def get_audio_type(mime_type):
-    if mime_type in mime_types.keys():
-        return mime_types[mime_type]
-    mime = mime_type.split('/', 2)
-    return mime[1] if len(mime) > 1 else mime_type
-
-def get_chat_info(chat):
-    # photo = chat['photo'] if 'photo' in chat else {"minithumbnail": None}
-    # last_message = chat['last_message'] if 'last_message' in chat else {"content": None}
-
-    return {
-        'id': chat['id'],
-        'title': chat['title'],
-        # 'photo': photo['minithumbnail'],
-        # 'photo': None,
-        # 'content': last_message['content'],
-        # 'content': None,
-    }
-
-def timestamp():
-    return datetime.timestamp(datetime.now())
+def inst_key(api_hash, phone):
+    return '|'.join([phone.strip('+'), api_hash])
 
 
 class TelegramAuthError(Exception):
     pass
 
+
 class TelegramAuthStateError(Exception):
     pass
+
 
 class TelegramClient(Telegram):
     error = None
@@ -208,9 +87,6 @@ class TelegramClient(Telegram):
         return AuthorizationState(authorization_state)
 
 
-def inst_key(api_hash, phone):
-    return '|'.join([phone.strip('+'), api_hash])
-
 class SyncResult:
     def __init__(self, result):
         self._r = result
@@ -228,15 +104,10 @@ class SyncResult:
             self.update = self._r.update
         return ready
 
-def empty_cb(*args, **kwargs):
-    pass
-
-def cb(fn):
-    return fn if fn else empty_cb
 
 class AsyncCb:
-    def __init__(self, result_id=None):
-        self.id = result_id if result_id else uuid.uuid4().hex
+    def __init__(self):
+        self.id = uuid.uuid4().hex
         self.update = None
         self._ready = threading.Event()
 
@@ -244,92 +115,19 @@ class AsyncCb:
         return f'AsyncCall <{self.id}>'
 
     def wait(self, timeout=None):
+        print('cb.wait')
         result = self._ready.wait(timeout=timeout)
         if result is False:
             raise TimeoutError()
 
-    def set(self, update):
+    def release(self, update):
         print('cb.set')
         self.update = update
         self._ready.set()
 
-class TgAudio:
-    def __init__(self, api, data):
-        self._api = api
-        self._data = data
-        self.update(data)
 
-    def update(self, data):
-        if type(data) == tuple:
-            id_, chat_id, message_id, audio_id, mime_type, title, artist, file_name, date, size, duration, \
-                is_downloaded, is_moved, is_hidden, local_path, document_id, info_id = data
-            self.id = id_
-            self.chat_id = chat_id
-            self.message_id = message_id
-            self.audio_id = audio_id
-            self.mime_type = mime_type
-            self.title = title
-            self.artist = artist
-            self.file_name = file_name
-            self.date = date
-            self.size = size
-            self.duration = duration
-            self.is_downloaded = is_downloaded
-            self.is_moved = is_moved
-            self.is_hidden = is_hidden
-            self.local_path = local_path
-            self.document_id = document_id
-            self.info_id = info_id
-        else:
-            self.id = data['id']
-            self.chat_id = data['chat_id']
-            self.message_id = data['message_id']
-            self.audio_id = data['audio_id'] if data['audio_id'] else None
-            self.mime_type = data['mime_type']
-            self.title = data['title']
-            self.artist = data['artist']
-            self.file_name = data['file_name']
-            self.date = data['date']
-            self.size = data['size']
-            self.duration = data['duration']
-            self.is_downloaded = data.get('is_downloaded', False)
-            self.is_moved = data.get('is_moved', False)
-            self.is_hidden = data.get('is_hidden', False)
-            self.local_path = data.get('local_path')
-            self.document_id = data.get('local_path')
-            self.info_id = data.get('info_id')
-
-    def get_path(self, priority=1, wait=True, done=empty_cb):
-        print('get_path')
-        if not self.is_downloaded:
-            print('not is_downloaded')
-            if wait:
-                call = AsyncCb(f'tg_audio_{self.id}')
-                print('create AsyncCb')
-                TelegramApi.loaded().download_audio_idle(self.chat_id, self.message_id, priority=priority, done=call.set)
-                print('start download_audio_idle')
-                call.wait()
-                print('call wait')
-                self.update(call.update)
-                print('call update')
-            else:
-                def on_done(data):
-                    print('=========done========')
-                    print(data)
-                    # update = TelegramApi.loaded().add_audio(data, convert=False)
-                    self.update(data)
-                    done(self)
-
-                TelegramApi.loaded().download_audio_idle(self.chat_id, self.message_id, priority=priority, done=on_done)
-                return None
-
-        return self.local_path
-
-    def __str__(self) -> str:
-        return f'TgAudio <{self._data}>'
-
-
-class TelegramApi:
+class TelegramApi(GObject.Object):
+    object = GObject.property(type=GObject.Object)
     total_count = 0
     chats = []
     chats_info = {}
@@ -346,6 +144,7 @@ class TelegramApi:
     __instance = None
 
     me = None
+    storage = None
 
     # _updater = None
     # _update = False
@@ -425,104 +224,8 @@ class TelegramApi:
         if self.state != self.tg.authorization_state.READY:
             raise TelegramAuthStateError(self.state)
 
-        self.db_file = os.path.join(self.files_dir, 'data.sqlite')
-        create_db = not os.path.exists(self.db_file)
-        self.db = sqlite3.connect(self.db_file)
-        self.db_cur = self.db.cursor()
-
-        if create_db:
-            try:
-                self.db.execute(SQL.TABLE_PARAMS)
-                self.db.execute(SQL.TABLE_PLAYLIST)
-                self.db.execute(SQL.TABLE_AUDIO)
-                self.db.execute(SQL.TABLE_DOCUMENT)
-                self.db.execute(SQL.TABLE_INFO)
-            except Exception as e:
-                os.remove(self.db_file)
-                raise Exception(e)
-
+        self.storage = TelegramStorage(self, self.files_dir)
         return self.state
-
-    def add_audio(self, data, convert=True, commit=True):
-        print('============add_audio===========')
-        print(data)
-        if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
-            logger.warning('Audio message has no required keys, skipping...')
-            print(data['content'])
-            return
-
-        d = {}
-        content = data['content']
-        audio = content['audio']
-        completed = audio['audio']['remote']['is_uploading_completed']
-        local = audio['audio']['local']
-        d['audio_id'] = audio_id = audio['audio']['id']
-
-        if not completed:
-            logger.warning('Audio message: %d not uploaded, skipping...', audio_id)
-            return
-
-        d['chat_id'] = data['chat_id']
-        d['message_id'] = data['id']
-        d['date'] = data['date']
-        d['mime_type'] = audio['mime_type']
-        d['file_name'] = audio['file_name']
-        d['artist'] = audio['performer']
-        d['title'] = audio['title']
-        d['duration'] = audio['duration']
-        d['size'] = audio['audio']['size']
-        d['local_path'] = local['path']
-        d['is_downloaded'] = 1 if local['is_downloading_completed'] else 0
-
-        print('=========EXECUTE INSERT AUDIO========')
-        self.db_cur.execute("""
-            INSERT INTO `audio` (
-                chat_id, message_id, audio_id, mime_type, title, artist, file_name, date, size, duration, 
-                local_path, is_downloaded) 
-            VALUES (
-                :chat_id, :message_id, :audio_id, :mime_type, :title, :artist, :file_name, :date, :size, :duration, 
-                :local_path, :is_downloaded)
-        """, d)
-
-        # logger.info('Audio added %d', self.db_cur.lastrowid)
-        print('Audio added %d', self.db_cur.lastrowid)
-        d['id'] = self.db_cur.lastrowid
-        print(d)
-        result = d if not convert else TgAudio(self, d)
-        if commit:
-            self.db.commit()
-        return result
-
-    def add_photo(self, data):
-        if not ('photo' in data['content'] and 'sizes' in data['content']['photo']):
-            logger.warning('Photo message content has no required keys, skipping...')
-            print(data['content'])
-            return
-
-        d = {}
-        content = data['content']
-        photo = content['photo']['sizes'][0]
-
-        d['info'] = ''
-        d['caption'] = ''
-        d['chat_id'] = data['chat_id']
-        d['message_id'] = data['id']
-        d['date'] = data['date']
-
-        if 'caption' in content and 'text' in content['caption']:
-            caption = content['caption']['text']
-            info = parse_info(caption)
-            d['info'] = json.dumps(info)
-
-        d['photo_id'] = photo['photo']['id']
-
-        self.db_cur.execute("""
-            INSERT INTO `audio` (chat_id, message_id, audio_id, mime_type, title, artist, file_name, date, size, duration) 
-            VALUES (:chat_id, :message_id, :audio_id, :mime_type, :title, :artist, :file_name, :date, :size, :duration)
-        """, d)
-
-        logger.info('Audio added %d', self.db_cur.lastrowid)
-        return self.db_cur.lastrowid
 
     def _updateNewChat(self, update):
         if 'chat' in update and 'id' in update['chat']:
@@ -851,31 +554,7 @@ class TelegramApi:
 
         # print(msg_id)
 
-    def get_chat_audio(self, chat_id, limit=None, convert=True):
-        audio = self.db.execute(
-            'SELECT * FROM `audio` WHERE chat_id = %s %s' % (chat_id, ("LIMIT %i" % limit) if limit else ''))
-        result = audio.fetchall()
-        if result and convert:
-            items = []
-            for item in result:
-                items.append(TgAudio(self, item))
-            return items
-        return result
-
-    def get_audio(self, chat_id, message_id, convert=True):
-        audio = self.db.execute(
-            "SELECT * FROM `audio` WHERE chat_id = '%s' and message_id = '%s' LIMIT 1" % (chat_id, message_id))
-        result = audio.fetchone()
-        if result and convert:
-            return TgAudio(self, result)
-        return result
-
-    def get_any_audio(self):
-        audio = self.db.execute('SELECT * FROM `audio` WHERE 1=1')
-        return audio.fetchall()
-        # return audio
-
-    # @TODO
+    # @TODO update
     def load_messages(self):
         exit_loop = False
         offset_msg_id = 0
@@ -902,9 +581,9 @@ class TelegramApi:
                             exit_loop = True
                             break
                         logger.debug('Detect audio file')
-                        self.add_audio(data, commit=False)
+                        self.storage.add_audio(data, commit=False)
                         # self.last_message_id = current_msg_id
-            self.db.commit()
+            self.storage.commit()
             if exit_loop:
                 self.first_message_id = first_message_id
                 break
@@ -920,8 +599,9 @@ class TelegramApi:
         }
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, glob)
 
-    def load_messages_idle(self, chat_id, update=None, done=None):
+    def load_messages_idle(self, chat_id, update=None, done=None, glob=None):
         glob = {
+            **(glob if glob else {}),
             "chat_id": chat_id,
             "update": update if done else empty_cb,
             "done": done if done else empty_cb
@@ -958,16 +638,16 @@ class TelegramApi:
                 msg_type = get_content_type(data)
                 current_msg_id = data['id']
                 if first_message_id == current_msg_id:
-                    self.db.commit()
+                    self.storage.commit()
                     glob['done']()
                     return False
 
                 if msg_type == MessageType.AUDIO:
                     logger.debug('Detect audio file')
-                    d = self.add_audio(data, commit=False)
+                    d = self.storage.add_audio(data, commit=False)
                     glob['update'](d) if d else None
 
-        self.db.commit()
+        self.storage.commit()
 
         i = glob.get('iter', 0)
         i = i + 1
@@ -977,9 +657,59 @@ class TelegramApi:
             glob['iter'] = i
             return True
 
-        glob['done']()
+        glob['done'](glob)
         print('================= load_messages DONE ===============')
         return False
+
+    def load_message_async(self, chat_id, message_id):
+        print('load_message_async')
+        r = self.tg.get_message(chat_id, message_id)
+        r.wait()
+        return r.update
+
+    def _download_audio_async(self, data, priority=1):
+        print('_download_audio_async')
+        if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
+            logger.warning('Audio message has no required keys, skipping...')
+            print(data['content'])
+            return None
+
+        content = data['content']
+        audio = content['audio']
+        completed = audio['audio']['remote']['is_uploading_completed']
+        audio_id = audio['audio']['id']
+
+        if not completed:
+            logger.warning('Audio message: %d not uploaded, skipping...', audio_id)
+            return None
+
+        return self.download_file_async(audio_id, priority=priority)
+
+    def download_file_async(self, file_id, priority=1):
+        print('download_file_async')
+        r = self.tg.call_method('downloadFile', {
+            'file_id': file_id,
+            'priority': priority,
+            # 'synchronous': False
+            'synchronous': True
+        })
+        r.wait()
+        return r.update
+
+    def download_audio_async(self, chat_id, message_id, priority=1):
+        print('download_audio_async')
+        # msg = self.load_message_async(chat_id, message_id)
+        r = self.tg.get_message(chat_id, message_id)
+        r.wait()
+        msg = r.update
+        print('== msg: %s' % msg)
+        if msg:
+            file = self._download_audio_async(msg, priority=priority)
+            print('== file: %s' % file)
+            if file:
+                msg['content']['audio']['audio'] = file
+                return self.storage.add_audio(msg, convert=False, commit=True)
+        return None
 
     def download_audio_idle(self, chat_id, message_id, priority=1, done=empty_cb, cancel=empty_cb):
         print('download_audio_idle')
@@ -990,7 +720,7 @@ class TelegramApi:
             print(file)
 
             update['data']['content']['audio']['audio'] = file
-            done(self.add_audio(update['data'], convert=False, commit=True))
+            done(self.storage.add_audio(update['data'], convert=False, commit=True))
 
         def download(data):
             print('---------DOWNLOAD_AUDIO--------------')

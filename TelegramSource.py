@@ -33,6 +33,7 @@ class TelegramSource(RB.BrowserSource):
         self.player = None
         self.entry_type = None
         self.api = None
+        self.storage = None
         self.chat_id = None
         self.last_track = None
         self._is_downloading = 0
@@ -45,6 +46,7 @@ class TelegramSource(RB.BrowserSource):
         self.player = shell.props.shell_player
         self.entry_type = self.props.entry_type
         self.api = api
+        self.storage = api.storage
         self.chat_id = chat_id
         self.last_track = None
 
@@ -56,13 +58,15 @@ class TelegramSource(RB.BrowserSource):
             self.add_entries()
 
     def add_entries(self):
-        all_audio = self.api.get_chat_audio(self.chat_id)
+        all_audio = self.storage.get_chat_audio(self.chat_id)
         print('================all_audio=====================')
-        print(all_audio)
-        print('================all_audio=====================')
+        print(len(all_audio))
+        # print('================all_audio=====================')
+        i = 0
+        # for i in range(0, 550):
         for audio in all_audio:
-            self.add_entry(audio)
-            print('======= add_entry %s' % audio.audio_id)
+            self.add_entry(audio, pref='' if i == 0 else '/%s' % i)
+            # print('======= add_entry %s' % audio.audio_id)
             # if self._is_downloading < 3:
             #     self._is_downloading = self._is_downloading + 1
             #     # self.api.download_file(audio.audio_id)
@@ -72,17 +76,37 @@ class TelegramSource(RB.BrowserSource):
             #     print('================ get_message %s====================' % audio.message_id)
             #     print(r.update)
             #     # @TODO need to update audio.id and download audio by new ID
-        # self.api.load_messages_idle(self.chat_id, self.add_entry)
 
-    def add_entry(self, track):
-        location = to_location(self.api.phone, self.chat_id, track.message_id)
-        print('location %s' % location)
+        class Ptr:
+            value = 0
+
+            def inc(self):
+                self.value += 1
+
+        idx = Ptr()
+
+        def _load(glob={}):
+            idx.inc()
+            if idx.value > 10:
+                return
+
+            print('===============================================')
+            print(f'LOADING MESSAGES  ${idx.value}')
+            print(glob)
+            self.api.load_messages_idle(self.chat_id, self.add_entry, done=_load, glob={"offset_msg_id": glob.get("offset_msg_id")})
+
+        # _load()
+
+    def add_entry(self, track, pref=''):
+        location = '%s%s' % (to_location(self.api.phone, self.chat_id, track.message_id), pref)
+        # print('location %s' % location)
         entry = self.db.entry_lookup_by_location(location)
 
         if not entry:
             entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
             self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
             self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artist)
+            self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.artist)
             self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration)
             self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(track.date))
             dt = GLib.DateTime.new_from_unix_local(int(track.date))

@@ -1,0 +1,11 @@
+* fix hang (sometimes) on play next song (when current song ends) if it not loaded yet next song
+* load messages on start
+* save first and last ID in playlist table
+* remove audio (hide)
+* download files to library
+* open message in telegram desktop
+* parse info from photo
+* update album, year, genre
+* show additional fields: album, genre, ratings, number
+* sort by time added in chat (by number?)
+

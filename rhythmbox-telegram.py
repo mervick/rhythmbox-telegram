@@ -49,7 +49,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.settings = None
         self.account = None
         self.connected = False
+        self.is_downloading = False
         self.api = None
+        self.storage = None
         self.sources = []
 
     def do_activate(self):
@@ -90,6 +92,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
         if self.connected:
             self.api = TelegramApi.api(api_id, api_hash, phone_number)
             self.api.login()
+            self.storage = self.api.storage
+            # if self.api.is_ready():
+
             print(self.api.is_ready())
 
             # # if self.api.is_ready():
