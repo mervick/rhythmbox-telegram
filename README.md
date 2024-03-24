@@ -50,11 +50,11 @@ In order to obtain an API id you need to do the following:
 
 More detailed instructions can be found in the [Telegram documentation](https://core.telegram.org/api/obtaining_api_id)
 
-### Authenticate the Telegram user
+### Authenticate
 
 After obtaining the API ID, in the plugin settings, input the received API ID and API key, along with your Telegram user's phone number. Then, press the 'Connect' button. Telegram will send you a code for authorization to any connected Telegram app.
 
-### Adding your channels and chats to Rhythmbox
+### Adding your music to Rhythmbox
 
 After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels and chats to listen to your favorite music.
 
