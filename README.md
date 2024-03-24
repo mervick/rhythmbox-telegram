@@ -50,7 +50,7 @@ In order to obtain an API id you need to do the following:
 
 More detailed instructions can be found in the [Telegram documentation](https://core.telegram.org/api/obtaining_api_id)
 
-### Authenticate
+### Authorization
 
 After obtaining the API ID, in the plugin settings, input the received `api_id` and `api_hash`, along with your Telegram user's phone number. Then, press the 'Connect' button. Telegram will send you a code for authorization to any connected Telegram app.
 
