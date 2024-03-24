@@ -52,7 +52,7 @@ More detailed instructions can be found in the [Telegram documentation](https://
 
 ### Authenticate
 
-After obtaining the API ID, in the plugin settings, input the received API ID and API key, along with your Telegram user's phone number. Then, press the 'Connect' button. Telegram will send you a code for authorization to any connected Telegram app.
+After obtaining the API ID, in the plugin settings, input the received `api_id` and `api_hash`, along with your Telegram user's phone number. Then, press the 'Connect' button. Telegram will send you a code for authorization to any connected Telegram app.
 
 ### Adding your music to Rhythmbox
 
