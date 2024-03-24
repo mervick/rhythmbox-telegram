@@ -1,5 +1,7 @@
 # Rhythmbox-Telegram
 
+## !!! Beta version, work in progress !!!
+
 Rhythmbox-Telegram is a versatile plugin designed to seamlessly integrate Telegram into the Rhythmbox music player, enhancing your music listening experience. This innovative plugin empowers users to transform their favorite Telegram channels and chats into dynamic playlists within Rhythmbox, offering a unified platform for both communication and music enjoyment.
 
 ## Key Features:
