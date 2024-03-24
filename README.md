@@ -70,7 +70,7 @@ We strive to protect your data by implementing various security measures.
 
 ## License
 
-Rhythmbox-Telegram is an open-source plugin distributed under the GPL-3 license, ensuring that it remains freely accessible to all users and encouraging community collaboration and contribution.
+[Rhythmbox-Telegram](https://github.com/mervick/rhythmbox-telegram) is an open-source plugin distributed under the [GPL-3 license](https://github.com/mervick/rhythmbox-telegram/blob/master/LICENCE), ensuring that it remains freely accessible to all users and encouraging community collaboration and contribution.
 
 
 ## Contribute
