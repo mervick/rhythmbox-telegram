@@ -19,7 +19,8 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegr
 
 
 ## Installation
-For the plugin to work you need to install `python-telegram`
+
+To enable plugin you first need to install `python-telegram` - unofficial API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
 
 ```sh
 pip install python-telegram==0.18.0
@@ -31,8 +32,8 @@ Next, if Rhythmbox player is open, please close it, then proceed to download the
 git clone https://github.com/mervick/rhythmbox-telegram ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
 ```
 
-## Activation
 
+## Activation
 
 After installing the plugin, you need to:
 - Activate it in the Rhythmbox settings
@@ -57,17 +58,22 @@ After obtaining the API ID, in the plugin settings, input the received API ID an
 
 After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels and chats to listen to your favorite music.
 
+
 ## Secure
+
 We strive to protect your data by implementing various security measures.
 
 - All your authorization data is **encrypted** and stored in the Gnome [GSettings](https://wiki.gnome.org/HowDoI/GSettings) storage.  
 - All your data obtained from Telegram is **encrypted** using a user-provided encryption key and managed by the official Telegram client - [TDLib](https://core.telegram.org/tdlib).  
 - All received audio files and their metadata are stored in `~/.local/share/rhythmbox/telegram` in an **UNENCRYPTED** format, you can clean it whenever you want.
 
+
 ## License
+
 Rhythmbox-Telegram is an open-source plugin distributed under the GPL-3 license, ensuring that it remains freely accessible to all users and encouraging community collaboration and contribution.
 
 
 ## Contribute
+
 If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community. Your donations play a crucial role in supporting the development efforts, enabling the implementation of new features, bug fixes, and overall enhancements to ensure a seamless and enjoyable user experience for all. Every donation, no matter the amount, is deeply appreciated and directly contributes to the sustainability of the project. Click here to make a donation and show your support.
 
