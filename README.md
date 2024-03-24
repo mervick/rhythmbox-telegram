@@ -2,10 +2,10 @@
 
 ## !!! Beta version, work in progress !!!
 
-Rhythmbox-Telegram is a versatile plugin designed to seamlessly integrate Telegram into the Rhythmbox music player, enhancing your music listening experience. This innovative plugin empowers users to transform their favorite Telegram channels and chats into dynamic playlists within Rhythmbox, offering a unified platform for both communication and music enjoyment.
+Rhythmbox-Telegram is a versatile plugin designed to seamlessly integrate Telegram into the Rhythmbox music player, enhancing your music listening experience. This innovative plugin empowers users to transform their favorite Telegram channels and chats into dynamic playlists within Rhythmbox, offering a platform for music enjoyment.
 
 
-## Key Features:
+## Key Features
 
 - **Telegram Integration**: Easily add Telegram channels and chats to Rhythmbox as playlists, consolidating your digital communication and music browsing in one convenient interface.
 
@@ -20,7 +20,7 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegr
 
 ## Installation
 
-To enable plugin you first need to install `python-telegram` - unofficial API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
+To enable plugin you first need to install `python-telegram` - unofficial Telegram API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
 
 ```sh
 pip install python-telegram==0.18.0
@@ -75,5 +75,8 @@ We strive to protect your data by implementing various security measures.
 
 ## Contribute
 
-If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community. Your donations play a crucial role in supporting the development efforts, enabling the implementation of new features, bug fixes, and overall enhancements to ensure a seamless and enjoyable user experience for all. Every donation, no matter the amount, is deeply appreciated and directly contributes to the sustainability of the project. Click here to make a donation and show your support.
+If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community.  
+Your donations play a crucial role in supporting the development efforts, enabling the implementation of new features, bug fixes, and overall enhancements to ensure a seamless and enjoyable user experience for all. Every donation, no matter the amount, is deeply appreciated and directly contributes to the sustainability of the project.  
+
+Click here to make a donation and show your support.
 
