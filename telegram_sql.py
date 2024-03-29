@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2024 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,7 @@ CREATE TABLE playlist (
    `chat_id` INTEGER NOT NULL,
    `title` TEXT NOT NULL,
    `original_title` TEXT NOT NULL,
-   `first_message_id` INTEGER NOT NULL DEFAULT '0', -- 0: not set
-   `last_message_id`  INTEGER NOT NULL DEFAULT '0', -- 0: not set, -1: end reached
+   `segments` TEXT NOT NULL DEFAULT '[]',
     UNIQUE (`chat_id`) ON CONFLICT REPLACE
 );
 '''
