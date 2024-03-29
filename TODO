@@ -1,11 +1,13 @@
+* parse info from photo
 * fix hang (sometimes) on play next song (when current song ends) if it not loaded yet next song
-* load messages on start
-* save first and last ID in playlist table
 * remove audio (hide)
 * download files to library
 * open message in telegram desktop
-* parse info from photo
 * update album, year, genre
 * show additional fields: album, genre, ratings, number
-* sort by time added in chat (by number?)
-
+* [BUG] not playing some audio files
+* remove audio db? put all data to the playlist?
+* custom view page group: Telegram, Library, ...
+* fix playing count
+* option to set default sort order (asc|desc)
+* auto update playlist each 5 minutes after full loading
