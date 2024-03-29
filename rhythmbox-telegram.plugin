@@ -6,5 +6,5 @@ Depends=rb
 Name=Telegram
 Description=Playing and downloading music from the Telegram
 Authors=Andrey Izman
-Copyright=Copyright © 2023 Andrey Izman
+Copyright=Copyright © 2023-2024 Andrey Izman
 Website=https://github.com/mervick/rhythmbox-telegram

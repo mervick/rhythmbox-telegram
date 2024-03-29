@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2024 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.is_downloading = False
         self.api = None
         self.storage = None
+        self.page_group = None
         self.sources = []
 
     def do_activate(self):
@@ -88,6 +89,8 @@ class Telegram(GObject.GObject, Peas.Activatable):
         # action.connect('activate', self.load_sources)
         # app.add_action(action)
         # app.connect("tg_reload_sources", self.load_sources)
+#         self.page_group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
+#         self.shell.append_display_page(self.page_group, None)
 
         if self.connected:
             self.api = TelegramApi.api(api_id, api_hash, phone_number)
@@ -115,14 +118,16 @@ class Telegram(GObject.GObject, Peas.Activatable):
         selected = json.loads(self.settings['channels']) if self.connected else []
 
         if self.connected and selected:
-            group = RB.DisplayPageGroup.get_by_id("stores")
             # self.group = group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
             # self.shell.append_display_page(self.group, None)
             # group = RB.DisplayPageGroup.get_by_id("stores")
-            # group = RB.DisplayPageGroup.get_by_id("stores")
-            # group = RB.DisplayPageGroup.get_by_id("telegram")
             # group = RB.DisplayPageGroup.get_by_id("shared")
-            # group = RB.DisplayPageGroup.get_by_id("library")
+            group = RB.DisplayPageGroup.get_by_id("library")
+#             group = RB.DisplayPageGroup.get_by_id("telegram")
+
+            if group is None:
+              group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
+              self.shell.append_display_page(group, None)
 
             icon = Gio.ThemedIcon.new("telegram-symbolic")
 
