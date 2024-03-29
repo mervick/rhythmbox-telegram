@@ -155,6 +155,8 @@ class TgLoader:
             offset_msg_id = self.segment[1]
             del self.playlist.segments[1]
 
+        self.token = None
+
         if cmd == 'DONE' or offset_msg_id == -1:
             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
             self.playlist.save()
@@ -270,7 +272,7 @@ class TgPlaylist:
         return TgPlaylist(data)
 
     def reload(self):
-        self._data = TgPlaylist.get(self.chat_id)._data
+        self._data = TgPlaylist.read(self.chat_id)._data
 
     def save(self):
         print('===============================================')
@@ -310,7 +312,7 @@ class TgPlaylist:
 #             "segments": json.dumps(segments)
         }
         if self.id != 0:
-            return TelegramStorage.loaded().update('playlist', playlist, {"chat_id": chat_id}, 1)
+            return TelegramStorage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
         return TelegramStorage.loaded().insert('playlist', playlist)
 
     def __str__(self) -> str:
@@ -472,7 +474,7 @@ class TelegramStorage:
         for k in where.keys():
             set_where.append(f'{k} = ?')
             set_values.append(where[k])
-        set_keys = ', '.join(set_keys)
+#         set_keys = ', '.join(set_keys)
         set_where = ' AND '.join(set_where)
         sql = f"UPDATE `{table}` SET {set_keys} WHERE {set_where}"
         if limit and limit > 0:

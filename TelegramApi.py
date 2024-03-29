@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2024 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import logging
 import enum
 import re
 import json
-import telegram_sql as SQL
+# import telegram_sql as SQL
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
@@ -45,8 +45,6 @@ logger = logging.getLogger(__name__)
 # logging.config.fileConfig('/path/to/logging.conf')
 # logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-CHAT_ID = -1001361643016
 
 def inst_key(api_hash, phone):
     return '|'.join([phone.strip('+'), api_hash])
@@ -112,7 +110,7 @@ class AsyncCb:
         self._ready = threading.Event()
 
     def __str__(self) -> str:
-        return f'AsyncCall <{self.id}>'
+        return f'AsyncCb <{self.id}>'
 
     def wait(self, timeout=None):
         print('cb.wait')
@@ -195,6 +193,7 @@ class TelegramApi(GObject.Object):
 
         hasher = hashlib.md5()
         hasher.update((inst_key(api_hash, phone)).encode('utf-8'))
+        self.hash = hasher.hexdigest()
         self.files_dir = os.path.join(files_dir, hasher.hexdigest())
 
         print('================FILES_DIR================')
@@ -227,7 +226,7 @@ class TelegramApi(GObject.Object):
         self.storage = TelegramStorage(self, self.files_dir)
         return self.state
 
-    def _updateNewChat(self, update):
+    def _update_new_chat(self, update):
         if 'chat' in update and 'id' in update['chat']:
             chat_id = update['chat']['id']
             self.chats.append(chat_id)
@@ -242,7 +241,7 @@ class TelegramApi(GObject.Object):
         r.wait()
 
     def _load_chats(self):
-        # self.tg.add_update_handler('updateNewChat', self._updateNewChat)
+        # self.tg.add_update_handler('updateNewChat', self._update_new_chat)
         extra = 2
         while True:
             total_count = len(self.chats)
@@ -251,13 +250,13 @@ class TelegramApi(GObject.Object):
                 if extra == 0:
                     break
                 extra -= 1
-        # self.tg.remove_update_handler('updateNewChat', self._updateNewChat)
+        # self.tg.remove_update_handler('updateNewChat', self._update_new_chat)
 
     def _listen_chats(self):
-        self.tg.add_update_handler('updateNewChat', self._updateNewChat)
+        self.tg.add_update_handler('updateNewChat', self._update_new_chat)
 
     def _stop_chats(self):
-        self.tg.remove_update_handler('updateNewChat', self._updateNewChat)
+        self.tg.remove_update_handler('updateNewChat', self._update_new_chat)
 
     def _get_chats_async(self):
         r = self.tg.get_chats(
@@ -356,184 +355,6 @@ class TelegramApi(GObject.Object):
             return
         update(self._get_joined_chats())
 
-    # def get_chats(self, on_update, refresh=False):
-    #     if not self.chats or refresh:
-    #         self.chats = []
-    #         self.total_count = 0
-    #         self._parsed_count = 0
-    #         page = 1
-    #         limit = 100
-    #         self._last_cnt = 0
-    #         self._ts1 = 0
-    #
-    #         # def _timer():
-    #         #     print('@@@@@@@@@@@@@@@_timer')
-    #         #     cnt = self._parsed_count
-    #         #     ts2 = timestamp()
-    #         #
-    #         #     if ts2 - self._ts1 < 0.5:
-    #         #         return
-    #         #     self._ts1 = ts2
-    #         #
-    #         #     def fn():
-    #         #         print('@@@@@@@@@@@@@@@fn')
-    #         #         if cnt == self._parsed_count and self._parsed_count < self.total_count and self._last_cnt != cnt:
-    #         #             self._last_cnt = cnt
-    #         #             _load_chats()
-    #         #         else:
-    #         #             _done()
-    #         #
-    #         #     GLib.timeout_add(200, fn)
-    #
-    #         def _handle_count(update):
-    #             print('@@@@@@@@@@@@@@@_handle_count')
-    #             if 'total_count' in update and 'chat_list' in update and update['chat_list']['@type'] == 'chatListMain':
-    #                 self.total_count = update['total_count']
-    #                 on_update(self.chats_info, self.total_count)
-    #
-    #         def _handle_chat(update):
-    #             print('@@@@@@@@@@@@@@@_handle_chat')
-    #             chat = get_chat_info(update['chat'])
-    #             self.chats_info[chat['id']] = chat
-    #             self._parsed_count += 1
-    #             if len(self.chats_info.keys()) % limit - 1 == 0:
-    #                 _load_chats()
-    #             # _timer()
-    #             on_update(self.chats_info, self.total_count)
-    #
-    #         def _handle_main(update):
-    #             print('@@@@@@@@@@@@@@@_handle_main')
-    #             if update and update['total_count']:
-    #                 self.chats = update['chat_ids']
-    #                 print('[[[[_handle_main]]]]')
-    #                 self.total_count = update['total_count']
-    #                 # self.tg.remove_update_handler('getChats', _handle_main)
-    #                 # self.tg.remove_update_handler('chats', _handle_main)
-    #                 on_update(self.chats_info, self.total_count)
-    #                 _load_chats()
-    #                 _load_info()
-    #
-    #         def _next_chat():
-    #             print('@@@@@@@@@@@@@@@_next_chat')
-    #             ids = list(set(self.chats) - set(self.chats_info.keys()))
-    #             print('_______________IDS__ %s' % ids)
-    #             if ids:
-    #                 return ids[0]
-    #             return None
-    #
-    #         def _load_info():
-    #             print('@@@@@@@@@@@@@@@_load_info %d %d %d' % (list(set(self.chats), self._parsed_count, self.total_count)))
-    #             if self._parsed_count < self.total_count:
-    #                 chat_id = _next_chat()
-    #                 if id:
-    #                     self.tg.get_chat(chat_id)
-    #                 GLib.timeout_add(100, _load_info)
-    #
-    #         def _load_chats():
-    #             print('@@@@@@@@@@@@@@@_load_chats')
-    #             self.tg.call_method('loadChats', {
-    #                 'limit': limit,
-    #             })
-    #
-    #         def _done():
-    #             print('@@@@@@@@@@@@@@@_done')
-    #             self.tg.remove_update_handler('updateUnreadChatCount', _handle_count)
-    #             self.tg.remove_update_handler('updateNewChat', _handle_chat)
-    #             self.tg.remove_update_handler('getChat', _handle_chat)
-    #             self.tg.remove_update_handler('chat', _handle_chat)
-    #             self.tg.remove_update_handler('getChats', _handle_main)
-    #             self.tg.remove_update_handler('chats', _handle_main)
-    #             on_update(self.chats_info, self.total_count, True)
-    #
-    #         self.tg.add_update_handler('updateUnreadChatCount', _handle_count)
-    #         self.tg.add_update_handler('updateNewChat', _handle_chat)
-    #         self.tg.add_update_handler('getChat', _handle_chat)
-    #         self.tg.add_update_handler('chat', _handle_chat)
-    #         self.tg.add_update_handler('getChats', _handle_main)
-    #         self.tg.add_update_handler('chats', _handle_main)
-    #
-    #         print('@@@@@@@@@@@@@@@_start')
-    #         self.tg.get_chats(
-    #             limit=limit
-    #         )
-    #         return _done
-    #
-    # def get_chats1(self, on_update, on_done, refresh=False):
-    #     if not self.chats or refresh:
-    #         self.total_count = 0
-    #         page = 1
-    #         limit = 100
-    #
-    #         def _remove_handlers():
-    #             self.tg.remove_update_handler('updateUnreadChatCount', _set_total_count)
-    #             self.tg.remove_update_handler('updateNewChat', _set_chat)
-    #             self.tg.remove_update_handler('getChat', _set_chat)
-    #             on_done()
-    #
-    #         def _load_chats_info():
-    #             sz = page * limit
-    #             rsz = len(self.chats_info.keys())
-    #             if self.total_count > sz and rsz >= sz:
-    #                 r = self.tg.call_method('loadChats', {
-    #                     'limit': limit,
-    #                 })
-    #                 page += 1
-    #             elif rsz >= sz:
-    #                 _remove_handlers()
-    #
-    #         def _set_chat(update):
-    #             print('=============_set_chat================')
-    #             if not update or not update['@type']:
-    #                 return
-    #             print('=============UPDATE.%s================' % update['@type'])
-    #             print(update)
-    #             chat = get_chat_info(update['chat'])
-    #             self.chats_info[chat['id']] = chat
-    #             on_update(self.chats_info, self.total_count)
-    #             _load_next()
-    #             _load_chats_info()
-    #
-    #         def _load_chat_info(chat_id):
-    #             self.tg.get_chat(chat_id)
-    #
-    #         def _load_next():
-    #             if load_info:
-    #                 ids = list(set(self.chats) - set(self.chats_info.keys()))
-    #                 if ids:
-    #                     _load_chat_info(ids[0])
-    #
-    #         def _set_chats(update):
-    #             if not update or not update['@type']:
-    #                 return
-    #             print('=============UPDATE.%s================' % update['@type'])
-    #             if update and update['total_count']:
-    #                 self.chats = update['chat_ids']
-    #                 print('=============_set_chats %d================' % len(self.chats))
-    #                 self.total_count = update['total_count']
-    #                 self.tg.remove_update_handler('getChats', _set_chats)
-    #                 self.tg.remove_update_handler('chats', _set_chats)
-    #                 on_update(self.chats_info, self.total_count)
-    #                 load_info = True
-    #                 _load_next()
-    #                 # _load_chats_info()
-    #             else:  # @TODO ?
-    #                 pass
-    #
-    #         def _set_total_count(update):
-    #             if 'total_count' in update and 'chat_list' in update and update['chat_list']['@type'] == 'chatListMain':
-    #                 self.total_count = update['total_count']
-    #                 on_update(self.chats_info, self.total_count)
-    #
-    #         self.tg.add_update_handler('updateUnreadChatCount', _set_total_count)
-    #         self.tg.add_update_handler('updateNewChat', _set_chat)
-    #         self.tg.add_update_handler('getChat', _set_chat)
-    #         self.tg.add_update_handler('getChats', _set_chats)
-    #         self.tg.add_update_handler('chats', _set_chats)
-    #
-    #         self.tg.get_chats(
-    #             limit=limit
-    #         )
-
     def get_messages(self, chat_id):
         msg_id = 0
         last_timestamp = 0
@@ -554,110 +375,132 @@ class TelegramApi(GObject.Object):
 
         # print(msg_id)
 
-    # @TODO update
-    def load_messages(self):
-        exit_loop = False
-        offset_msg_id = 0
-        first_message_id = 0
-
-        # while True:
-        for i in range(0, 5):
-            r = self.tg.get_chat_history(CHAT_ID, 50, offset_msg_id)
-            r.wait()
-            if not r.update or not r.update['total_count']:
-                logger.info('No messages found, exit loop')
-                break
-            msgs = r.update['messages']
-            if offset_msg_id == 0:
-                first_message_id = msgs[0]['id']
-            offset_msg_id = msgs[-1]['id']
-
-            for data in msgs:
-                if is_msg_valid(data):
-                    msg_type = get_content_type(data)
-                    if msg_type == MessageType.AUDIO:
-                        current_msg_id = data['id']
-                        if self.first_message_id == current_msg_id:
-                            exit_loop = True
-                            break
-                        logger.debug('Detect audio file')
-                        self.storage.add_audio(data, commit=False)
-                        # self.last_message_id = current_msg_id
-            self.storage.commit()
-            if exit_loop:
-                self.first_message_id = first_message_id
-                break
+#     # @TODO update
+#     def load_messages(self):
+#         exit_loop = False
+#         offset_msg_id = 0
+#         first_message_id = 0
+#
+#         # while True:
+#         for i in range(0, 5):
+#             r = self.tg.get_chat_history(CHAT_ID, 50, offset_msg_id)
+#             r.wait()
+#             if not r.update or not r.update['total_count']:
+#                 logger.info('No messages found, exit loop')
+#                 break
+#             msgs = r.update['messages']
+#             if offset_msg_id == 0:
+#                 first_message_id = msgs[0]['id']
+#             offset_msg_id = msgs[-1]['id']
+#
+#             for data in msgs:
+#                 if is_msg_valid(data):
+#                     msg_type = get_content_type(data)
+#                     if msg_type == MessageType.AUDIO:
+#                         current_msg_id = data['id']
+#                         if self.first_message_id == current_msg_id:
+#                             exit_loop = True
+#                             break
+#                         logger.debug('Detect audio file')
+#                         self.storage.add_audio(data, commit=False)
+#                         # self.last_message_id = current_msg_id
+#             self.storage.commit()
+#             if exit_loop:
+#                 self.first_message_id = first_message_id
+#                 break
 
     def load_message_idle(self, chat_id, message_id, done=empty_cb, cancel=empty_cb):
         print('load_message_idle')
-        glob = {
+        blob = {
             "chat_id": chat_id,
             "message_id": message_id,
             "done": done,
             "cancel": cancel,
             "result": self.tg.get_message(chat_id, message_id)
         }
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, glob)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, blob)
 
-    def load_messages_idle(self, chat_id, update=None, done=None, glob=None):
-        glob = {
-            **(glob if glob else {}),
+    def load_messages_idle(self, chat_id, update=None, done=None, blob=None, limit=100, offset=0):
+        print('load_messages_idle')
+        blob = {
+            **(blob if blob else {}),
+            "limit": limit,
+            "offset": offset,
             "chat_id": chat_id,
-            "update": update if done else empty_cb,
+            "update": update if update else empty_cb,
             "done": done if done else empty_cb
         }
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_messages_idle_cb, glob)
+        print(blob)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_messages_idle_cb, blob)
 
-    def _load_messages_idle_cb(self, glob):
-        offset_msg_id = glob.get('offset_msg_id', 0)
-        r = glob.get('result', None)
+    def _load_messages_idle_cb(self, blob):
+        offset_msg_id = blob.get('offset_msg_id', 0)
+        last_msg_id = blob.get('last_msg_id', 0)
+        limit = blob.get('limit', 100)
+        offset = blob.get('offset', 0)
+#         last_msg_id = 0
+
+        r = blob.get('result', None)
 
         if not r:
-            r = self.tg.get_chat_history(glob.get('chat_id'), 100, offset_msg_id)
-            glob['result'] = r
+            r = self.tg.get_chat_history(chat_id=blob.get('chat_id'), limit=limit,
+                                         from_message_id=offset_msg_id, offset=offset)
+#             r = self.tg.get_chat_history(blob.get('chat_id'), limit, offset_msg_id, offset)
+            blob['result'] = r
             return True
 
         if not r._ready.is_set():
             return True
 
-        if not r.update or not r.update['total_count']:
+        if not r.update or not r.update['total_count'] or not r.update['messages']:
             logger.info('tg, load messages: No messages found, exit loop')
-            glob['done']()
+            blob['done'](blob, 'DONE')
             return False
 
-        first_message_id = glob.get('first_message_id', 0)
+#         first_message_id = blob.get('first_message_id', 0)
         msgs = r.update['messages']
+
+        print('LEN %s' % len(msgs))
 
         if len(msgs):
             if offset_msg_id == 0:
-                glob['first_message_id'] = msgs[0]['id']
-            glob['offset_msg_id'] = msgs[-1]['id']
+                blob['first_message_id'] = msgs[0]['id']
+#             blob['offset_msg_id'] = msgs[-1]['id']
+            blob['last_msg_id'] = msgs[-1]['id']
+#         else:
+#           # no messages ?
+#           self.storage.commit()
+#           blob['done']()
 
         for data in msgs:
             if is_msg_valid(data):
                 msg_type = get_content_type(data)
                 current_msg_id = data['id']
-                if first_message_id == current_msg_id:
+#                 last_msg_id = data['id']
+#                 blob["last_msg_id"] = last_msg_id
+#                 if first_message_id == current_msg_id:
+                if last_msg_id == current_msg_id:
                     self.storage.commit()
-                    glob['done']()
+                    print('last_msg_id == current_msg_id')
+                    blob['done'](blob, 'END_OF_SEGMENT')
                     return False
 
                 if msg_type == MessageType.AUDIO:
                     logger.debug('Detect audio file')
                     d = self.storage.add_audio(data, commit=False)
-                    glob['update'](d) if d else None
+                    blob['update'](d) if d else None
 
         self.storage.commit()
 
-        i = glob.get('iter', 0)
-        i = i + 1
+#         i = blob.get('iter', 0)
+#         i = i + 1
+#
+#         if i < 5:
+#             blob['result'] = None
+#             blob['iter'] = i
+#             return True
 
-        if i < 5:
-            glob['result'] = None
-            glob['iter'] = i
-            return True
-
-        glob['done'](glob)
+        blob['done'](blob, 'NEXT')
         print('================= load_messages DONE ===============')
         return False
 
@@ -753,7 +596,7 @@ class TelegramApi(GObject.Object):
 
     def download_file_idle(self, file_id, priority=1, done=None):
         print('download_file_idle')
-        glob = {
+        blob = {
             "result": self.tg.call_method('downloadFile', {
                 'file_id': file_id,
                 'priority': priority,
@@ -762,15 +605,15 @@ class TelegramApi(GObject.Object):
             }),
             "done": cb(done),
         }
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, glob)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, blob)
 
-    def _wait_cb(self, glob):
-        r = glob.get('result', None)
+    def _wait_cb(self, blob):
+        r = blob.get('result', None)
 
         if not r._ready.is_set():
             return True
 
-        glob.get('done')(r.update)
+        blob.get('done')(r.update)
         return False
 
     def _updateMe(self, update):

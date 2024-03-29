@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2024 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@ from gi.repository import RB
 from TelegramApi import AsyncCb
 
 
-def to_location(phone, chat_id, audio_id):
-    return 'tg://%s/%s/%s' % (phone, chat_id, audio_id)
+def to_location(hash, date, chat_id, audio_id):
+    return 'tg://%s/%s/%s/%s' % (hash, date, chat_id, audio_id)
 
 def get_location_audio_id(location):
     return location.split('/')[-1]
@@ -98,13 +98,14 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     #     return
 
     def do_can_sync_metadata(self, entry):
+#         return False
         return True
 
-    def can_sync_metadata(self, entry):
-        return True
+#     def can_sync_metadata(self, entry):
+#         return True
 
-    def sync_metadata(self, entry, changes):
-        print('================sync_metadata==================')
-        print(entry)
-        print(changes)
-        return
+#     def do_sync_metadata(self, entry, changes):
+#         print('================sync_metadata==================')
+#         print(entry)
+#         print(changes)
+#         return
