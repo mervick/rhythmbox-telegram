@@ -20,7 +20,7 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegr
 
 ## Installation
 
-To enable plugin you first need to install `python-telegram` - unofficial Telegram API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
+To enable plugin, you need first install  `python-telegram` - unofficial Telegram API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
 
 ```sh
 pip3 install python-telegram==0.18.0
