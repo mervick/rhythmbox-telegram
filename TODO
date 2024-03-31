@@ -10,4 +10,5 @@
 * fix playing count
 * option to set default sort order (asc|desc)
 * auto update playlist each 5 minutes after full loading
-* remove deleted from chat audio, mark as invalid
+* remove deleted from chat audio, mark as invalid, add is_invalid
+* fix update audio files, save is_downloaded, is_moved, is_hidden flags
