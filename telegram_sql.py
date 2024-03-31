@@ -46,7 +46,7 @@ CREATE TABLE audio (
    `is_hidden` INT(1) DEFAULT '0',
    `local_path` TEXT DEFAULT NULL,
    `info_id` INTEGER DEFAULT NULL,
-    UNIQUE (`message_id`) ON CONFLICT REPLACE
+    UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
 );
 '''
 

@@ -211,7 +211,7 @@ class TgPlaylist:
 
 class TgAudio:
     def __str__(self) -> str:
-        return f'TgAudio <{self.message_id}>'
+        return f'TgAudio <{self.chat_id},{self.message_id}>'
 
     def __init__(self, data):
         self._data = data

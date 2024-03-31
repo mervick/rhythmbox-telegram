@@ -5,10 +5,8 @@
 * open message in telegram desktop
 * update album, year, genre
 * show additional fields: album, genre, ratings, number
-* [BUG] not playing some audio files
 * remove audio db? put all data to the playlist?
 * custom view page group: Telegram, Library, ...
 * fix playing count
 * option to set default sort order (asc|desc)
 * auto update playlist each 5 minutes after full loading
-* fix addressing the concurrency of the same audio files across different chats
