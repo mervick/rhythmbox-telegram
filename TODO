@@ -11,3 +11,4 @@
 * fix playing count
 * option to set default sort order (asc|desc)
 * auto update playlist each 5 minutes after full loading
+* fix addressing the concurrency of the same audio files across different chats
