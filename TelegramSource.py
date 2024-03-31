@@ -52,141 +52,31 @@ class TelegramSource(RB.BrowserSource):
         self.last_track = None
         self.loader = None
 
-#         self.songs = RB.EntryView(db=shell.props.db,
-#                 shell_player=shell.props.shell_player,
-#                 is_drag_source=False,
-#                 is_drag_dest=False)
-#         self.songs.append_column(RB.EntryViewColumn.TITLE, True)
-#         self.songs.append_column(RB.EntryViewColumn.ARTIST, True)
-#         self.songs.append_column(RB.EntryViewColumn.DURATION, True)
-#         self.songs.append_column(RB.EntryViewColumn.YEAR, True)
-#         self.songs.append_column(RB.EntryViewColumn.GENRE, False)
-#         self.songs.append_column(RB.EntryViewColumn.BPM, False)
-#         self.songs.append_column(RB.EntryViewColumn.FIRST_SEEN, True)
-#         self.songs.append_column(RB.EntryViewColumn.RATING, True)
-#         self.songs.set_model(self.props.query_model)
-
-#         self.songs.connect("notify::sort-order", self.sort_order_changed_cb)
-#         self.songs.connect("selection-changed", self.songs_selection_changed_cb)
-#         paned = builder.get_object("paned")
-#         paned.pack2(self.songs)
-
-#         print('================get_sorting_order=====================')
-#         print(self.songs.get_sorting_order())
-
-#     def do_get_entry_view(self):
-#       return self.songs
-
     def do_deselected(self):
         print('do_deselected %s' % self.chat_id)
         if self.loader is not None:
             self.loader.stop()
 
     def do_selected(self):
-        #TypeError: RB.RhythmDBQueryModel.set_sort_order() takes exactly 4 arguments (3 given)
-        # ascending
-#         rb_entry_view_set_sorting_order (source->priv->entry_view, "Track", GTK_SORT_ASCENDING);
-
         # GTK_SORT_ASCENDING = 0, GTK_SORT_DESCENDING = 1
         self.get_entry_view().set_sorting_order("Location", 1)
-#         self.get_entry_view().set_sorting_order("Date Added", 1)
-#         self.get_entry_view().set_sorting_order(RB.RhythmDBPropType.FIRST_SEEN, 1)
-#         self.get_entry_view().set_sorting_order('FIRST SEEN', 1)
-#         self.get_entry_view().set_sorting_order("Location", 0)
-
-#         self.props.query_model.set_sort_order('location', 'descending')
-#         print('================do_selected=====================')
         print('do_selected %s' % self.chat_id)
+
         if not self.initialised:
             self.initialised = True
             self.add_entries()
-#             self.shell
-#             rb_entry_view_set_sorting_type ()
 
         self.loader = TgLoader(self.chat_id, self.add_entry)
         self.loader.start()
 
-#         def _update(d):
-# #             print('update')
-# #             print(d)
-#             pass
-#
-#         def _next2(d, cmd):
-#             print('NEXT2')
-# #             print(d)
-#             print(d['result'].update['total_count'])
-#             print(d['result'].update)
-#             print(d.get('last_msg_id'))
-#             print(cmd)
-#
-#         def _next(d, cmd):
-#             print('NEXT')
-# #             print(d)
-#             print(d['result'].update['total_count'])
-#             print(d['result'].update)
-#             print(d.get('last_msg_id'))
-#             print(cmd)
-#             self.api.load_messages_idle(self.chat_id, update=_update, done=_next2,
-#                 blob={"offset_msg_id": d.get('last_msg_id')}, limit=50, offset=0)
-#
-#         self.api.load_messages_idle(self.chat_id, update=_update, done=_next,
-#             blob={"offset_msg_id": 0}, limit=1, offset=0)
-
-
     def add_entries(self):
-        print('================add_entries=====================')
         all_audio = self.storage.get_chat_audio(self.chat_id)
-        print('================all_audio=====================')
-        print(len(all_audio))
-        # print('================all_audio=====================')
-        i = 0
-        # for i in range(0, 550):
         for audio in all_audio:
-            self.add_entry(audio, pref='' if i == 0 else '/%s' % i)
-            # print('======= add_entry %s' % audio.audio_id)
-            # if self._is_downloading < 3:
-            #     self._is_downloading = self._is_downloading + 1
-            #     # self.api.download_file(audio.audio_id)
-            #
-            #     r = self.api.tg.get_message(audio.chat_id, audio.message_id)
-            #     r.wait()
-            #     print('================ get_message %s====================' % audio.message_id)
-            #     print(r.update)
-            #     # @TODO need to update audio.id and download audio by new ID
-
-#         class Ptr:
-#             value = 0
-#
-#             def inc(self):
-#                 self.value += 1
-#
-#         idx = Ptr()
-#
-#         def _load(blob={}):
-#             idx.inc()
-#             if idx.value > 10:
-#                 return
-#
-#             print('===============================================')
-#             print(f'LOADING MESSAGES  ${idx.value}')
-#             print(blob)
-#             self.api.load_messages_idle(self.chat_id, self.add_entry, done=_load, blob={"offset_msg_id": blob.get("offset_msg_id")})
-
-        # _load()
-
-#     def _load_audio(self):
-#         pass
+            self.add_entry(audio)
 
     def add_entry(self, track, pref=''):
         location = '%s%s' % (to_location(self.api.hash, track.date, self.chat_id, track.message_id), pref)
-        # print('location %s' % location)
         entry = self.db.entry_lookup_by_location(location)
-#         print('DATE')
-#         print('%s' % track.date)
-
-#         if entry:
-#           self.db.entry_delete(entry)
-#           entry = None
 
         #  * RBEntryViewColumn:
         #  * @RB_ENTRY_VIEW_COL_TRACK_NUMBER: the track number column
@@ -218,8 +108,6 @@ class TelegramSource(RB.BrowserSource):
 #             if item['artwork_url'] is not None:
 #               db.entry_set(entry, RB.RhythmDBPropType.MB_ALBUMID, item['artwork_url'])
 
-#             print('DATE')
-#             print('%s' % track.date)
 #             dt = datetime.strptime(item['created_at'], '%Y/%m/%d %H:%M:%S %z')
 #             db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(dt.timestamp()))
 
@@ -227,7 +115,6 @@ class TelegramSource(RB.BrowserSource):
             dt = GLib.DateTime.new_from_unix_local(int(track.date))
             date = GLib.Date.new_dmy(dt.get_day_of_month(), GLib.DateMonth(dt.get_month()), dt.get_year())
 
-#             print("%s:%s:%s)
             self.db.entry_set(entry, RB.RhythmDBPropType.DATE, date.get_julian())
             self.db.commit()
 
