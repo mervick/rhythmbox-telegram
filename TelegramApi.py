@@ -27,7 +27,6 @@ import logging
 import enum
 import re
 import json
-# import telegram_sql as SQL
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
@@ -60,16 +59,12 @@ class TelegramAuthStateError(Exception):
 
 class TelegramClient(Telegram):
     error = None
-    # def __init__(self, *args, **kwargs):
-    #     super(Telegram, self).__init__(*args, **kwargs)
-    #     self.error = None
 
     def _wait_authorization_result(self, result: AsyncResult) -> AuthorizationState:
         authorization_state = None
 
         if result:
             result.wait(raise_exc=False)
-
             if result.error:
                 self.error = result.error_info
                 raise TelegramAuthError(f'Telegram error: {result.error_info}')
@@ -113,13 +108,11 @@ class AsyncCb:
         return f'AsyncCb <{self.id}>'
 
     def wait(self, timeout=None):
-        print('cb.wait')
         result = self._ready.wait(timeout=timeout)
         if result is False:
             raise TimeoutError()
 
     def release(self, update):
-        print('cb.set')
         self.update = update
         self._ready.set()
 
@@ -135,36 +128,17 @@ class TelegramApi(GObject.Object):
     artist_document = 0
 
     last_message_id = 0
-    first_message_id = 0
     state = None
-
-    __instances = {}
-    __instance = None
 
     me = None
     storage = None
 
-    # _updater = None
-    # _update = False
-
-    # @staticmethod
-    # def get_instance():
-    #     return get_instance()
-    #
-    # @staticmethod
-    # def api(api_id, api_hash, phone):
-    #     __instance = None
-    #     api_id = int(api_id)
-    #     if not __instance:
-    #         __instance = TelegramApi(api_id, api_hash, phone)
-    #     elif __instance.api_id != api_id or __instance.api_hash != api_hash or __instance.phone != phone:
-    #         __instance.stop()
-    #         __instance = TelegramApi(api_id, api_hash, phone)
-    #     return __instance
+    __instances = {}
+    __current = None
 
     @staticmethod
     def loaded():
-        return TelegramApi.__instance
+        return TelegramApi.__current
 
     @staticmethod
     def api(api_id, api_hash, phone):
@@ -172,32 +146,18 @@ class TelegramApi(GObject.Object):
         key = inst_key(api_hash, phone)
         if key not in TelegramApi.__instances or not TelegramApi.__instances[key]:
             TelegramApi.__instances[key] = TelegramApi(int(api_id), api_hash, phone)
-        # elif __instance.api_id != api_id or __instance.api_hash != api_hash or __instance.phone != phone:
-        #     __instance.stop()
-        # __instance = TelegramApi(api_id, api_hash, phone)
-        TelegramApi.__instance = TelegramApi.__instances[key]
+        TelegramApi.__current = TelegramApi.__instances[key]
         return TelegramApi.__instances[key]
 
     def __init__(self, api_id, api_hash, phone):
-        # print('==========================================================================================')
-        # print('INIT TG %s, %s, %s' % (api_id, api_hash, phone))
-        # print('==========================================================================================')
         self.api_id = api_id
         self.api_hash = api_hash
         self.phone = phone.strip('+')
-
-        # plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram')
-        files_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
-        # files_dir = os.path.join(plugin_dir, 'tdlib_files')
-        # files_dir = '/home/izman/.tdlib_files/'
-
         hasher = hashlib.md5()
         hasher.update((inst_key(api_hash, phone)).encode('utf-8'))
         self.hash = hasher.hexdigest()
-        self.files_dir = os.path.join(files_dir, hasher.hexdigest())
-
-        print('================FILES_DIR================')
-        print(self.files_dir)
+        plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
+        self.files_dir = os.path.join(plugin_dir, hasher.hexdigest())
 
         self.tg = TelegramClient(
             api_id=self.api_id,
@@ -300,7 +260,6 @@ class TelegramApi(GObject.Object):
 
     def _chats_idle_cb(self, data):
         step = data.get("step", 0)
-        # print('== STEP %d' % step)
 
         # start, reset chats, listen, get chats
         if step == 0:
@@ -355,62 +314,7 @@ class TelegramApi(GObject.Object):
             return
         update(self._get_joined_chats())
 
-    def get_messages(self, chat_id):
-        msg_id = 0
-        last_timestamp = 0
-
-        # while True:
-        for i in range(0, 5):
-            # last_date = '' if last_timestamp == 0 else str(datetime.fromtimestamp(last_timestamp))
-            r = self.tg.get_chat_history(chat_id, 50, msg_id)
-            r.wait()
-            # print(r.update)
-            if not r.update or not r.update['total_count']:
-                print('not messages')
-                break
-            msgs = r.update['messages']
-            msg_id = msgs[-1]['id']
-            # last_timestamp = msgs[-1]['date']
-            print(msgs)
-
-        # print(msg_id)
-
-#     # @TODO update
-#     def load_messages(self):
-#         exit_loop = False
-#         offset_msg_id = 0
-#         first_message_id = 0
-#
-#         # while True:
-#         for i in range(0, 5):
-#             r = self.tg.get_chat_history(CHAT_ID, 50, offset_msg_id)
-#             r.wait()
-#             if not r.update or not r.update['total_count']:
-#                 logger.info('No messages found, exit loop')
-#                 break
-#             msgs = r.update['messages']
-#             if offset_msg_id == 0:
-#                 first_message_id = msgs[0]['id']
-#             offset_msg_id = msgs[-1]['id']
-#
-#             for data in msgs:
-#                 if is_msg_valid(data):
-#                     msg_type = get_content_type(data)
-#                     if msg_type == MessageType.AUDIO:
-#                         current_msg_id = data['id']
-#                         if self.first_message_id == current_msg_id:
-#                             exit_loop = True
-#                             break
-#                         logger.debug('Detect audio file')
-#                         self.storage.add_audio(data, commit=False)
-#                         # self.last_message_id = current_msg_id
-#             self.storage.commit()
-#             if exit_loop:
-#                 self.first_message_id = first_message_id
-#                 break
-
     def load_message_idle(self, chat_id, message_id, done=empty_cb, cancel=empty_cb):
-        print('load_message_idle')
         blob = {
             "chat_id": chat_id,
             "message_id": message_id,
@@ -421,7 +325,6 @@ class TelegramApi(GObject.Object):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, blob)
 
     def load_messages_idle(self, chat_id, update=None, done=None, blob=None, limit=100, offset=0):
-        print('load_messages_idle')
         blob = {
             **(blob if blob else {}),
             "limit": limit,
@@ -430,7 +333,6 @@ class TelegramApi(GObject.Object):
             "update": update if update else empty_cb,
             "done": done if done else empty_cb
         }
-        print(blob)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_messages_idle_cb, blob)
 
     def _load_messages_idle_cb(self, blob):
@@ -438,14 +340,11 @@ class TelegramApi(GObject.Object):
         last_msg_id = blob.get('last_msg_id', 0)
         limit = blob.get('limit', 100)
         offset = blob.get('offset', 0)
-#         last_msg_id = 0
-
         r = blob.get('result', None)
 
         if not r:
             r = self.tg.get_chat_history(chat_id=blob.get('chat_id'), limit=limit,
-                                         from_message_id=offset_msg_id, offset=offset)
-#             r = self.tg.get_chat_history(blob.get('chat_id'), limit, offset_msg_id, offset)
+                from_message_id=offset_msg_id, offset=offset)
             blob['result'] = r
             return True
 
@@ -457,61 +356,33 @@ class TelegramApi(GObject.Object):
             blob['done'](blob, 'DONE')
             return False
 
-#         first_message_id = blob.get('first_message_id', 0)
-        msgs = r.update['messages']
-
-        print('LEN %s' % len(msgs))
+        msgs = r.update.get('messages', [])
 
         if len(msgs):
-            if offset_msg_id == 0:
-                blob['first_message_id'] = msgs[0]['id']
-#             blob['offset_msg_id'] = msgs[-1]['id']
             blob['last_msg_id'] = msgs[-1]['id']
-#         else:
-#           # no messages ?
-#           self.storage.commit()
-#           blob['done']()
 
         for data in msgs:
             if is_msg_valid(data):
                 msg_type = get_content_type(data)
                 current_msg_id = data['id']
-#                 last_msg_id = data['id']
-#                 blob["last_msg_id"] = last_msg_id
-#                 if first_message_id == current_msg_id:
                 if last_msg_id == current_msg_id:
-                    self.storage.commit()
-                    print('last_msg_id == current_msg_id')
                     blob['done'](blob, 'END_OF_SEGMENT')
                     return False
 
                 if msg_type == MessageType.AUDIO:
                     logger.debug('Detect audio file')
-                    d = self.storage.add_audio(data, commit=False)
+                    d = self.storage.add_audio(data, commit=True)
                     blob['update'](d) if d else None
 
-        self.storage.commit()
-
-#         i = blob.get('iter', 0)
-#         i = i + 1
-#
-#         if i < 5:
-#             blob['result'] = None
-#             blob['iter'] = i
-#             return True
-
         blob['done'](blob, 'NEXT')
-        print('================= load_messages DONE ===============')
         return False
 
     def load_message_async(self, chat_id, message_id):
-        print('load_message_async')
         r = self.tg.get_message(chat_id, message_id)
         r.wait()
         return r.update
 
     def _download_audio_async(self, data, priority=1):
-        print('_download_audio_async')
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
             print(data['content'])
@@ -529,7 +400,6 @@ class TelegramApi(GObject.Object):
         return self.download_file_async(audio_id, priority=priority)
 
     def download_file_async(self, file_id, priority=1):
-        print('download_file_async')
         r = self.tg.call_method('downloadFile', {
             'file_id': file_id,
             'priority': priority,
@@ -540,7 +410,6 @@ class TelegramApi(GObject.Object):
         return r.update
 
     def download_audio_async(self, chat_id, message_id, priority=1):
-        print('download_audio_async')
         # msg = self.load_message_async(chat_id, message_id)
         r = self.tg.get_message(chat_id, message_id)
         r.wait()
@@ -555,27 +424,19 @@ class TelegramApi(GObject.Object):
         return None
 
     def download_audio_idle(self, chat_id, message_id, priority=1, done=empty_cb, cancel=empty_cb):
-        print('download_audio_idle')
         update = {}
 
         def set_file(file):
-            print('---------SET_FILE--------------')
-            print(file)
-
             update['data']['content']['audio']['audio'] = file
             done(self.storage.add_audio(update['data'], convert=False, commit=True))
 
         def download(data):
-            print('---------DOWNLOAD_AUDIO--------------')
-            print(data)
-
             update['data'] = data
             self._download_audio_idle(data, priority=priority, done=set_file, cancel=cancel)
 
         self.load_message_idle(chat_id, message_id, done=download, cancel=cancel)
 
     def _download_audio_idle(self, data, priority=1, done=empty_cb, cancel=empty_cb):
-        print('_download_audio_idle')
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
             print(data['content'])
@@ -609,10 +470,8 @@ class TelegramApi(GObject.Object):
 
     def _wait_cb(self, blob):
         r = blob.get('result', None)
-
         if not r._ready.is_set():
             return True
-
         blob.get('done')(r.update)
         return False
 
@@ -620,8 +479,6 @@ class TelegramApi(GObject.Object):
         pass
 
     def get_logged(self):
-        # self.tg.add_update_handler('updateUser', self._updateMe)
-        # self.tg.add_update_handler('user', self._updateMe)
         r = self.tg.get_me()
         r.wait()
 
@@ -635,7 +492,6 @@ class TelegramApi(GObject.Object):
                 'username': user.get('usernames', {}).get('editable_username'),
                 'phone_number': user.get('phone_number'),
                 'profile_photo': user.get('profile_photo', {}),
-                # 'id': user.get('id'),
             }
 
             path = photo_big.get('local', {}).get('path')
@@ -648,12 +504,3 @@ class TelegramApi(GObject.Object):
 
             print(path)
         return self.me
-
-    # def stop(self):
-    #     global __instance
-    #     __instance = None
-    #     self.tg.stop()
-
-
-# TelegramApi.api = get_api
-
