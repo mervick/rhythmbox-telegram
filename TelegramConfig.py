@@ -19,7 +19,7 @@ import json
 import re
 import rb
 from gi.repository import RB
-from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk
+from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk, GLib, Gdk
 from telegram.client import AuthorizationState
 from DialogCode import DialogCode
 from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
@@ -53,11 +53,11 @@ def safe_cast(val, to_type, default=None):
 
 
 class SearchListBox:
-    def __init__(self, entry, list_box, flow_box, flex_wrap_box, list_frame, empty_label):
+    def __init__(self, entry, list_box, flow_box, channels_list_box, list_frame, empty_label):
         self.entry = entry
         self.list_box = list_box
         self.flow_box = flow_box
-        self.flex_wrap_box = flex_wrap_box
+        self.channels_list_box = channels_list_box
         self.list_frame = list_frame
         self.empty_label = empty_label
         self.items = []
@@ -89,7 +89,7 @@ class SearchListBox:
         self.selected = []
         for widget in self.flow_box.get_children():
             self.flow_box.remove(widget)
-        self.list_frame.remove(self.flex_wrap_box)
+        self.list_frame.remove(self.channels_list_box)
         self.list_frame.add(self.empty_label)
 
     def remove_selected(self, widget, selected):
@@ -115,7 +115,7 @@ class SearchListBox:
         self.selected.append(_selected)
         if len(self.selected) == 1:
             self.list_frame.remove(self.empty_label)
-            self.list_frame.add(self.flex_wrap_box)
+            self.list_frame.add(self.channels_list_box)
             self.flow_box.set_property('homogeneous', False)
             self.flow_box.set_property('hexpand', True)
         btn = Gtk.ModelButton(label=_selected['title'], visible=True)
@@ -193,6 +193,389 @@ class SearchListBox:
         self.entry.set_text('')
         self.search(force=True)
 
+# class Prefs(GObject.GObject):
+#     def __init__(self, configurable):
+#         GObject.GObject.__init__(self)
+#         self.config = configurable
+
+class PrefsDialog(Gtk.Dialog):
+    def __init__(self, parent):
+        self.config = parent
+        Gio.Application.get_default()
+#         super().__init__(title="My Dialog", transient_for=parent, flags=0)
+        super().__init__(title="My Dialog", flags=0)
+        self.init_dialog()
+
+    def init_dialog(self):
+        self.add_button("_Close", Gtk.ResponseType.CLOSE)
+        donate_btn = self.add_button("Donate", Gtk.ResponseType.HELP)
+        style_context = donate_btn.get_style_context()
+        style_context.add_class('suggested-action')
+
+#         self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+#                          Gtk.STOCK_OK, Gtk.ResponseType.OK)
+
+#         self.set_title("Telegram Preferences")
+#         self.set_resizable(False)
+        self.set_default_size(500, 800)
+
+        label = Gtk.Label(label="This is a dialog to display additional information")
+
+        box = self.get_content_area()
+        box.add(label)
+
+        # Create Notebook
+        self.notebook = Gtk.Notebook(vexpand=True)
+        box.add(self.notebook)
+
+        # Create Boxes
+        self.page1 = Gtk.Box()
+        self.page1.set_border_width(50)
+        self.page1.add(Gtk.Label("Welcome to Geeks for Geeks"))
+        self.notebook.append_page(self.page1, Gtk.Label("Click Here 1"))
+
+        self.page2 = Gtk.Box()
+        self.page2.set_border_width(50)
+        self.page2.add(Gtk.Label("A computer science portal for geeks"))
+        self.notebook.append_page(self.page2, Gtk.Label("Click Here 2"))
+
+        self.show_all()
+
+    def init_dialog1(self):
+#         btns_ui = Gtk.Builder()
+#         btns_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/btns.ui"))
+
+#         box = Gtk.Box()
+#         button1 = Gtk.Button(label="Close")
+#         button2 = Gtk.Button(label="Donate")
+#
+#         button1_style_context = button1.get_style_context()
+#         button1_style_context.add_class('suggested-action')
+
+#         self.add(box)
+        self.set_default_size(500, 800)
+
+        label = Gtk.Label(label="This is a dialog to display additional information")
+
+        box = self.get_content_area()
+        box.add(label)
+#         box.pack_end(button1, True, False, 0)
+#         box.pack_end(button2, True, False, 0)
+        self.show_all()
+
+
+class PrefsPage(GObject.GObject):
+    def __init__(self, prefs, name=None, ui_file=None, main_box=None):
+        self.box = Gtk.Box(hexpand=True)
+        # init vars
+        self._changes = {}
+        self.has_errors = []
+        # set custom values
+        self.prefs = prefs
+        if name is not None:
+            self.name = name
+        if ui_file is not None:
+            self.ui_file = ui_file
+        if main_box is not None:
+            self.main_box = main_box
+        # init UI
+        self.box.set_border_width(5)
+        self.ui = Gtk.Builder()
+        self.ui.add_from_file(prefs.find_plugin_file(self.ui_file))
+        self.init_page()
+        self.box.add(self.get_main_object())
+
+    def set_error(self, widget, is_error=True):
+        if is_error:
+            self.has_errors.append(widget)
+            widget.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, 'error')
+        else:
+            widget.set_icon_from_stock(Gtk.EntryIconPosition.SECONDARY, None)
+
+    def clear_errors(self):
+        if self.has_errors:
+            for widget in self.has_errors:
+                self.set_error(widget, False)
+            self.has_errors.clear()
+
+    def show_error(self, title, description=None):
+        err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title)
+        if description is not None:
+            err_dialog.format_secondary_text(str(description))
+        err_dialog.set_application(Gio.Application.get_default())
+        err_dialog.run()
+        err_dialog.destroy()
+
+    def on_change(self, name, value):
+        txt = json.dumps(value)
+        if name not in self._changes or self._changes[name] != txt:
+            self._changes[name] = txt
+            config().emit('reload_sources')
+
+    def get_center(self):
+        self.parent = self.get_main_object().get_toplevel().get_property('window')
+        position = self.parent.get_position()
+        geometry = self.parent.get_geometry()
+        left_center = round(position.x + (geometry.width - geometry.x) / 2)
+        top_center = round(position.y + (geometry.height - geometry.y) / 2)
+        return {"x": left_center, "y": top_center}
+
+    def get_main_object(self):
+        return self.ui.get_object(self.main_box)
+
+    def init_page(self):
+        pass
+
+
+class ChannelsPrefsPage(PrefsPage):
+    name = _('Music Channels')
+    main_box = 'channels_vbox'
+    ui_file = 'ui/prefs/channels.ui'
+
+    def on_list_box_change(self, v):
+        self.prefs.settings.set_string('channels', json.dumps(v))
+        self.on_change("channels", [channel["id"] for channel in v])
+
+    def on_channels_clear(self):
+        self.search_list_box.reset()
+        self.prefs.account.settings.set_string('channels', '[]')
+
+    def on_channels_reload(self):
+        selected = json.loads(self.prefs.account.settings['channels'])
+        self.search_list_box.set_selected(selected)
+
+    def on_channels_fetch(self):
+        def _set_chats(chats):
+            self.search_list_box.clear_list()
+            self.search_list_box.set_items(list(chats.values()))
+            # @TODO add spinner?
+#             self.loading = False
+#             upd_spinner()
+        self.prefs.api.get_chats_idle(_set_chats)
+
+    def init_page(self):
+        self.prefs.connect('channels-clear', self.on_channels_clear)
+        self.prefs.connect('channels-reload', self.on_channels_reload)
+        self.prefs.connect('channels-fetch', self.on_channels_fetch)
+
+        popover = self.ui.get_object("channels_popover")
+        placeholder = self.ui.get_object("list_box_placeholder")
+        search_entry = self.ui.get_object("search_entry")
+
+        list_frame = self.ui.get_object("list_frame")
+        empty_label = self.ui.get_object("empty_label")
+        channels_list_box = self.ui.get_object("channels_list_box")
+        channels_flow_box = self.ui.get_object("channels_flow_box")
+
+#         channel_box = self.ui.get_object("channel_box")
+#         channel_wrap = self.ui.get_object('channel_wrap_box')
+
+        search_list_box = SearchListBox(search_entry, placeholder, channels_flow_box, channels_list_box, list_frame, empty_label)
+        search_list_box.connect_on_change(self.on_list_box_change)
+        self.search_list_box = search_list_box
+
+        add_chat_btn = self.ui.get_object("add_chat_btn")
+        add_chat_btn.set_popover(popover)
+
+
+class ConnectPrefsPage(PrefsPage):
+    name = _('Connect')
+    main_box = 'connect_vbox'
+    ui_file = 'ui/prefs/connect.ui'
+
+    loading = None
+    spinner = None
+    api = None
+
+    def init_page(self):
+        settings_box = self.ui.get_object('connect_vbox')
+        logo = self.ui.get_object("logo")
+        api_id_entry = self.ui.get_object("api_id_entry")
+        api_hash_entry = self.ui.get_object("api_hash_entry")
+        phone_entry = self.ui.get_object("phone_number_entry")
+        connect_btn = self.ui.get_object("connect_btn")
+        details_box = self.ui.get_object('details_box')
+        helpbox_wrap = self.ui.get_object('helpbox_wrap')
+        helpbox = self.ui.get_object('helpbox')
+
+        def update_connect(connected=None):
+            self.on_change("connected", connected)
+            if connected is not None:
+                self.connected = connected
+            else:
+                connected = self.connected
+            enabled = not self.loading and not connected
+            upd_spinner()
+            details_box.set_sensitive(enabled)
+            helpbox.set_sensitive(enabled)
+            connect_btn.set_sensitive(not self.loading)
+            btn_label = _('Connect') if not connected else _('Disconnect')
+
+            if self.loading:
+                btn_label = _('Disconnecting...') if not connected else _('Connecting...')
+            connect_btn.set_label(btn_label)
+            # @TODO enable/disable prefs pages
+#             channel_box.set_sensitive(not self.loading and not enabled)
+
+#             if enabled and not self.loading:
+#                 if self.removed_help:
+#                     self.removed_help = False
+#                     settings_box.pack_start(helpbox, True, True, 0)
+#             elif not self.removed_help:
+#                 self.removed_help = True
+#                 settings_box.remove(helpbox)
+
+            return connected
+
+        def fill_account_details():
+            # helpbox.set_size_request(450, -1)
+            logo.set_size_request(500, -1)
+            (api_id, api_hash, phone_number, connected) = self.prefs.account.get_secure()
+
+            if connected:
+                self.prefs.emit('channels-reload')
+#                 selected = json.loads(account().settings['channels'])
+#                 search_list_box.set_selected(selected)
+
+            api_id_entry.set_text(api_id or "")
+            api_hash_entry.set_text(api_hash or "")
+            phone_entry.set_text(phone_number or "")
+
+            update_connect(connected)
+
+            if connected:
+                self.loading = True
+                connect_api()
+
+        def account_details_changed(entry, event):
+            api_id = re.sub("\D", "", api_id_entry.get_text())
+            api_hash = api_hash_entry.get_text().strip()
+            phone_number = re.sub("(?!(^\+)|\d).", "", phone_entry.get_text())
+            api_id_entry.set_text(api_id)
+            api_hash_entry.set_text(api_hash)
+            phone_entry.set_text(phone_number)
+            self.prefs.account.update(api_id, api_hash, phone_number)
+            self.clear_errors()
+
+        def upd_spinner():
+            if self.loading:
+                if self.spinner is None:
+                    helpbox_wrap.set_property('height_request', 80)
+                    self.spinner = Gtk.Spinner()
+                    helpbox_wrap.pack_start(self.spinner, True, True, 0)
+                    helpbox_wrap.remove(helpbox)
+                self.spinner.show()
+                self.spinner.start()
+            elif self.loading is not None:
+                helpbox_wrap.set_property('height_request', -1)
+                if self.spinner:
+                    self.spinner.stop()
+                    helpbox_wrap.remove(self.spinner)
+                self.spinner = None
+                if self.connected:
+                    helpbox_wrap.pack_start(helpbox, True, True, 0)
+            elif not self.connected:
+                self.loading = False
+                helpbox_wrap.set_property('height_request', 40)
+                self.spinner = Gtk.Spinner()
+                helpbox_wrap.pack_start(self.spinner, True, True, 0)
+                helpbox_wrap.remove(helpbox)
+                self.spinner.show()
+
+        def connect_btn_clicked(event):
+            self.loading = True
+            if update_connect(not self.connected):
+                connect_api()
+            else:
+                disconnect_api()
+
+        def set_state(state):
+            self.loading = False
+            update_connect(state)
+            self.prefs.account.set_connected(state)
+
+            if state:
+                self.prefs.emit('channels-fetch')
+#                 self.loading = True
+#                 upd_spinner()
+#
+#                 def _set_chats(chats):
+#                     search_list_box.clear_list()
+#                     search_list_box.set_items(list(chats.values()))
+#                     self.loading = False
+#                     upd_spinner()
+#
+#                 self.api.get_chats_idle(_set_chats)
+
+            return state
+
+        def validate(api_id, api_hash, phone_number):
+            errors = []
+            if not api_id:
+                self.set_error(api_id_entry)
+                errors.append(_('API Id is required'))
+            if not api_hash:
+                self.set_error(api_hash_entry)
+                errors.append(_('API Hash is required'))
+            if safe_cast(api_id, int) is None:
+                self.set_error(api_id_entry)
+                errors.append(_('API Id must be integer'))
+            if not phone_number:
+                self.set_error(phone_entry)
+                errors.append(_('The phone number is required'))
+            if not re.search('^\+?\d{10,14}$', phone_number):
+                self.set_error(phone_entry)
+                errors.append(_('The phone number is invalid'))
+            if errors:
+                self.show_error(_('Validation error'), errors[0])
+                return False
+
+            return True
+
+        def connect_api(code=None):
+            (api_id, api_hash, phone_number, connected) = self.prefs.account.get_secure()
+
+            if validate(api_id, api_hash, phone_number):
+                self.api = TelegramApi.api(api_id, api_hash, phone_number)
+                self.prefs.api = self.api
+
+                try:
+                    self.api.login(code)
+                except TelegramAuthStateError as e:
+                    if self.api.state == AuthorizationState.WAIT_CODE:
+                        def unable_to_login():
+                            self.show_error(_("Unable to login Telegram"), _('Login code is required'))
+                            set_state(False)
+
+                        DialogCode(self, connect_api, unable_to_login)
+                        return
+                    else:
+                        self.show_error(_("Unable to login Telegram"), e)
+                except TelegramAuthError as e:
+                    err = self.api.get_error()
+                    self.show_error(_("Unable to login Telegram"), err if err else e)
+                except RuntimeError as e:
+                    self.show_error(_("Unable to login Telegram"), e)
+
+                set_state(self.api.state == AuthorizationState.READY)
+            else:
+                set_state(False)
+
+        def disconnect_api():
+            self.prefs.emit('channels-clear')
+#             search_list_box.reset()
+            self.api.reset_chats()
+#             account().settings.set_string('channels', '[]')
+            set_state(False)
+
+        self.ui.connect_signals({"connect_btn_clicked_cb": connect_btn_clicked})
+        api_id_entry.connect("focus-out-event", account_details_changed)
+        api_hash_entry.connect("focus-out-event", account_details_changed)
+        phone_entry.connect("focus-out-event", account_details_changed)
+
+        fill_account_details()
+        upd_spinner()
+
 
 class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
     __gtype_name__ = 'TelegramConfig'
@@ -204,15 +587,78 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
     removed_help = False
     _changes = {}
 
+    __gsignals__ = {
+        'channels-clear' : (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+#         'channels-set' : (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (GObject.TYPE_PYOBJECT,)),
+        'channels-reload' : (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+        'channels-fetch' : (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+    }
+
     def __init__(self):
         GObject.GObject.__init__(self)
         self.shell = self.object
+        self.account = account()
+        self.settings = self.account.settings
+
+    def find_plugin_file(self, file):
+        return rb.find_plugin_file(self, file)
 
     def do_create_configure_widget(self):
+#         PrefsDialog(self)
+#         Gdk.threads_add_timeout(GLib.PRIORITY_DEFAULT_IDLE, 5000, add_btn, None)
+
+        # Create Notebook
+        main_box = Gtk.Box()
+        main_box.set_border_width(5)
+        notebook = Gtk.Notebook(vexpand=True, hexpand=True)
+        main_box.add(notebook)
+#         self.add(self.notebook)
+
+        page = ConnectPrefsPage(prefs=self)
+        notebook.append_page(page.box, Gtk.Label(page.name))
+
+        # Create Boxes
+        depr_cnnct_page = Gtk.Box(hexpand=True)
+        depr_cnnct_page.set_border_width(5)
+        notebook.append_page(depr_cnnct_page, Gtk.Label("Connect"))
+
+        connect_page = Gtk.Box(hexpand=True)
+        connect_page.set_border_width(5)
+        notebook.append_page(connect_page, Gtk.Label("Connect"))
+
+        channels_page = Gtk.Box(hexpand=True)
+        channels_page.set_border_width(5)
+        notebook.append_page(channels_page, Gtk.Label("Music channels"))
+
+        settings_page = Gtk.Box(hexpand=True)
+        settings_page.set_border_width(5)
+        notebook.append_page(settings_page, Gtk.Label("Settings"))
+
+        temp_page = Gtk.Box(hexpand=True)
+        temp_page.set_border_width(5)
+        notebook.append_page(temp_page, Gtk.Label("Temp files"))
+
+        depr_cnnct_page_ui = Gtk.Builder()
+        settings_page_ui = Gtk.Builder()
+        channels_page_ui = Gtk.Builder()
+        temp_page_ui = Gtk.Builder()
+
+        depr_cnnct_page_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/connect.ui"))
+        settings_page_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/settings.ui"))
+        channels_page_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/channels.ui"))
+#         channels_page_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/chn.ui"))
+        temp_page_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs/temp.ui"))
+
+        connect_page.add(depr_cnnct_page_ui.get_object('connect_vbox'))
+        settings_page.add(settings_page_ui.get_object('settings_vbox'))
+        channels_page.add(channels_page_ui.get_object('channels_vbox'))
+        temp_page.add(temp_page_ui.get_object('temp_vbox'))
+
         prefs_ui = Gtk.Builder()
         popup_ui = Gtk.Builder()
-        # prefs_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs4.ui"))
         prefs_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs5.ui"))
+#         prefs_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs5.ui"))
+#         prefs_ui.add_from_file(rb.find_plugin_file(self, "ui/prefs6.ui"))
         popup_ui.add_from_file(rb.find_plugin_file(self, "ui/popup.ui"))
 
         popover = popup_ui.get_object("main_menu_popover")
@@ -221,8 +667,8 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
         list_frame = prefs_ui.get_object("list_frame")
         empty_label = prefs_ui.get_object("empty_label")
-        flex_wrap_box = prefs_ui.get_object("flex_wrap_box")
-        flow_box = prefs_ui.get_object("flow_box")
+        channels_list_box = prefs_ui.get_object("channels_list_box")
+        channels_flow_box = prefs_ui.get_object("channels_flow_box")
 
         settings_box = prefs_ui.get_object('telegram_vbox')
         logo = prefs_ui.get_object("logo")
@@ -239,29 +685,13 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
             account().settings.set_string('channels', json.dumps(v))
             on_change("channels", [channel["id"] for channel in v])
 
-        search_list_box = SearchListBox(search_entry, list_box, flow_box, flex_wrap_box, list_frame, empty_label)
+        search_list_box = SearchListBox(search_entry, list_box, channels_flow_box, channels_list_box, list_frame, empty_label)
         search_list_box.connect_on_change(listbox_change)
 
         add_chat_btn = prefs_ui.get_object("add_chat_btn")
         add_chat_btn.set_popover(popover)
 
         has_errors = []
-
-        # def menu_clicked(event):
-        #     print('menu_entry_clicked_cb')
-        #     print(event)
-        #
-        # button = Gtk.ModelButton(label="Click Me  dfg dfgfd gdfgdf gdgdf gdfg dfgdfg dfgdfgdfgdggdgdf gd gdf gdgdgf ", visible=True)
-        # button.connect("clicked", menu_clicked)
-        # button.set_alignment(0, 0.5)
-        # list_box.pack_start(button, False, False, 0)
-        #
-        #
-        # for i in range(0, 100):
-        #     button = Gtk.ModelButton(label="Click Me", visible=True)
-        #     button.connect("clicked", menu_clicked)
-        #     button.set_alignment(0, 0.5)
-        #     list_box.pack_start(button, False, False, 0)
 
         def on_change(name, value):
             txt = json.dumps(value)
@@ -284,7 +714,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
         def update_connect(connected=None):
             on_change("connected", connected)
-            print('update_connect %s' % str(connected))
             if connected is not None:
                 self.connected = connected
             else:
@@ -302,7 +731,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
             channel_box.set_sensitive(not self.loading and not enabled)
 
-            # if not self.loading:
             if enabled and not self.loading:
                 if self.removed_help:
                     self.removed_help = False
@@ -312,61 +740,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
                 settings_box.remove(helpbox)
 
             return connected
-
-        # def open_dialog(event):
-        #     self.menu.popup(event)
-        #     return
-        #     print('add_btn_clicked_cb')
-        #     d_builder = Gtk.Builder()
-        #     d_builder.add_from_file(rb.find_plugin_file(self, "telegram-channels.2.ui"))
-        #
-        #     listbox = d_builder.get_object('listbox')
-        #     listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        #     self.listbox = listbox
-        #
-        #     # for i in range(0, 100):
-        #     #     add_item(None)
-        #     #     # listbox.insert('label')
-        #
-        #     self.menu = d_builder.get_object("app-menu")
-        #
-        #     # row = Gtk.ListBoxRow()
-        #     # hbox = Gtk.Box()
-        #     # row.add(hbox)
-        #     # # hbox.pack_start(Gtk.Label("Here is an Item"), True, True, 0)
-        #     # self.listbox.add(row)
-        #     #
-        #     # hbox = Gtk.Box()
-        #     #
-        #     # button_add_item = Gtk.Button(label = "Add Item", valign = Gtk.Align.CENTER)
-        #     # button_add_item.connect("clicked", add_item)
-        #     # hbox.pack_start(button_add_item, True, True, 0)
-        #     #
-        #     # button_remove_item = Gtk.Button(label = "Remove Item", valign = Gtk.Align.CENTER)
-        #     # button_remove_item.connect("clicked", remove_item)
-        #     # hbox.pack_start(button_remove_item, True, True, 0)
-        #
-        #     # box.pack_start(hbox, False, True, 0)
-        #
-        #     window1 = d_builder.get_object("window")
-        #     window1.show_all()
-        #
-        #     # /* Construct a GtkBuilder instance and load our UI description */
-        #     # GtkBuilder *prefs_ui = gtk_builder_new ();
-        #     # gtk_builder_add_from_file (prefs_ui, "prefs_ui.ui", NULL);
-        #     #
-        #     # // connect signal handlers to the constructed widgets
-        #     # GObject * window = gtk_builder_get_object(prefs_ui,"MainWindow");
-        #     # gtk_window_set_application(GTK_WINDOW(window), app);
-        #     #
-        #     #
-        #     # gtk_widget_show(GTK_WIDGET(window));
-        #     #
-        #     # // unload the prefs_ui (destroy)
-        #     # g_object_unref(prefs_ui);
-        #
-        #     # prefs_ui = Gtk.Builder()
-        #     # prefs_ui.add_from_file("example.glade")
 
         def fill_account_details():
             # helpbox.set_size_request(450, -1)
@@ -387,12 +760,9 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
                 self.loading = True
                 connect_api()
 
-            # GLib.timeout_add(100, update_connect)
-
         def account_details_changed(entry, event):
             api_id = re.sub("\D", "", api_id_entry.get_text())
             api_hash = api_hash_entry.get_text().strip()
-            # phone_number = re.sub("[^\+\d]", "", phone_entry.get_text())
             phone_number = re.sub("(?!(^\+)|\d).", "", phone_entry.get_text())
             api_id_entry.set_text(api_id)
             api_hash_entry.set_text(api_hash)
@@ -429,28 +799,10 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
             print('connect_btn_clicked')
             self.loading = True
             if update_connect(not self.connected):
-                # connect_api(connect_state)
                 connect_api()
             else:
                 disconnect_api()
-                # self.loading = False
-                # update_connect(False)
-                # account().set_connected(self.connected)
-                # @TODO add disconnect
-                # GLib.timeout_add(1000, done)
 
-        # def on_update(chats, count, is_done=False):
-        #     search_list_box.set_items(list(chats.values()))
-        #     # print('TOTAL_COUNT %d of %d' % (len(chats.keys()), count))
-        #
-        # def _update_chats(chats):
-        #     search_list_box.set_items(list(chats.values()))
-        #     pass
-
-        # def on_done_list(chats):
-        #     print('+++++++++++++++++DONE+++++++++ %d' % len(chats.keys()))
-
-        # def connect_state(state):
         def set_state(state):
             self.loading = False
             update_connect(state)
@@ -462,39 +814,20 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
                 upd_spinner()
 
                 def _set_chats(chats):
-                    # print('_set_chats')
-                    # print(chats)
                     search_list_box.clear_list()
                     search_list_box.set_items(list(chats.values()))
                     self.loading = False
                     upd_spinner()
 
-                # me = self.api.get_logged()
-                # print('========ME===========')
-                # print(me)
                 self.api.get_chats_idle(_set_chats)
 
-                # self.api.get_chats_idle(lambda chats: search_list_box.set_items(list(chats.values())))
-
-                # chats = self.api.get_chats_async()
-                # search_list_box.set_items(list(chats.values()))
             return state
 
         def show_error(title, description=None):
-            # RB.error_dialog(title=title,
-            #     message=str(description) if description else '')
-
-            # win = self.shell.get_property('window')
-            # win = RB.Shell.get_property('window')
-
             err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title)
-            # err_dialog = Gtk.MessageDialog(self.parent, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title)
             if description is not None:
                 err_dialog.format_secondary_text(str(description))
             err_dialog.set_application(Gio.Application.get_default())
-            # center = self.get_center()
-            # err_dialog.get_toplevel().move(center["x"]+200, center["y"]+300)
-            # err_dialog.move(center["x"] - 150, center["y"] - 120)
             err_dialog.run()
             err_dialog.destroy()
 
@@ -521,39 +854,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
             return True
 
-        # def get_code():
-        #     d_window = Gtk.MessageDialog(window,
-        #         Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-        #         Gtk.MessageType.QUESTION,
-        #         Gtk.ButtonsType.OK_CANCEL,
-        #         _('Enter your login code from your device'))
-        #     d_window.set_title(_('Telegram Authorization'))
-        #
-        #     d_box = d_window.get_content_area()
-        #     d_entry = Gtk.Entry()
-        #     # d_entry.set_visibility(False)
-        #     # d_entry.set_invisible_char("*")
-        #     d_entry.set_size_request(120,0)
-        #     d_box.pack_end(d_entry, False, False, 0)
-        #
-        #     d_window.show_all()
-        #     response = d_window.run()
-        #     text = d_entry.get_text()
-        #     d_window.destroy()
-        #     if (response == Gtk.ResponseType.OK) and text:
-        #         return text
-        #     else:
-        #         return None
-
-        # def on_code_ok(code):
-        #     raise Exception('code %s' % code)
-        #     pass
-        #
-        # def on_code_cancel():
-        #     raise Exception('code_cancel')
-        #     pass
-
-        # def connect_api(set_state, code=None):
         def connect_api(code=None):
             (api_id, api_hash, phone_number, connected) = account().get_secure()
 
@@ -570,12 +870,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
                         DialogCode(self, connect_api, unable_to_login)
                         return
-                        # code = get_code()
-                        # if not code:
-                        #     show_error(_("Unable to login Telegram"), _('Login code is required'))
-                        #     return False
-                        # else:
-                        #     return connect_api(code)
                     else:
                         show_error(_("Unable to login Telegram"), e)
                 except TelegramAuthError as e:
@@ -595,9 +889,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
             set_state(False)
 
         def get_center():
-            # self.parent = RB.Shell
-            # self.parent = settings_box.get_toplevel().get_parent_window()
-            # self.parent = settings_box.get_toplevel()
             self.parent = settings_box.get_toplevel().get_property('window')
 
             position = self.parent.get_position()
@@ -605,20 +896,17 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
             left_center = round(position.x + (geometry.width - geometry.x) / 2)
             top_center = round(position.y + (geometry.height - geometry.y) / 2)
-            print('WIN.position %s' % str(position))
-            print('WIN.geometry %s' % str(geometry))
-            print('WIN.left_center %s' % str(left_center))
-            print('WIN.top_center %s' % str(top_center))
+#             print('WIN.position %s' % str(position))
+#             print('WIN.geometry %s' % str(geometry))
+#             print('WIN.left_center %s' % str(left_center))
+#             print('WIN.top_center %s' % str(top_center))
 
             return {"x": left_center, "y": top_center}
 
         self.get_center = get_center
 
-        # self.parent = settings_box.get_toplevel()
-
         configure_callback_dic = {
             "connect_btn_clicked_cb" : connect_btn_clicked,
-            # "add_btn_clicked_cb" : open_dialog,
         }
         prefs_ui.connect_signals(configure_callback_dic)
 
@@ -629,4 +917,20 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         fill_account_details()
         upd_spinner()
 
-        return settings_box
+        def update_window():
+            gtk_win = settings_box.get_toplevel()
+            gtk_win.set_default_size(500, 800)
+            gtk_win.set_resizable(False)
+            donate_btn = gtk_win.add_button("Donate", Gtk.ResponseType.HELP)
+            style_context = donate_btn.get_style_context()
+            style_context.add_class('suggested-action')
+            gtk_win.set_border_width(5)
+            box = gtk_win.get_content_area()
+            box.set_spacing(2)
+
+        GLib.timeout_add(1000, update_window)
+
+#         return settings_box
+        depr_cnnct_page.add(settings_box)
+#         return notebook
+        return main_box
