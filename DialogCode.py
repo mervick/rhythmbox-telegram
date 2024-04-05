@@ -26,8 +26,6 @@ class DialogCode:
         self._on_ok = on_ok
         self._on_cancel = on_cancel
 
-        # print('__INIT__ %s' % config.parent)
-
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(config, "ui/dialog-code.ui"))
 
@@ -43,34 +41,26 @@ class DialogCode:
             "delete-event": self._cancel_clicked
         }
         builder.connect_signals(cb)
-        # if config.parent:
-        # self.window.set_parent_window(config.parent)
-        # self.window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         self.window.set_title(_('Telegram Authorization'))
         self.window.show_all()
         center = config.get_center()
         self.window.move(center["x"] - 180, center["y"] - 130)
-        # self.window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         self.window.present()
 
     def _entry_changed(self, entry, event):
-        # print('==========_entry_changed============')
         self.code = self.code_entry.get_text().strip()
         print(self.code)
 
     def _done(self):
-        # print('+++++++++++++++++++++DONE+++++++++++++++++++++')
         print(self.code)
         self._on_ok(self.code)
 
     def _ok_clicked(self, event):
-        # print('==========_ok_clicked============')
         self.ok_received = True
         self.window.close()
         GLib.timeout_add(100, self._done)
 
     def _cancel_clicked(self, event):
-        # print('==========_cancel_clicked============')
         self.window.close()
         if not self.ok_received and not self.is_done:
             self.code = None
