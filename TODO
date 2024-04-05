@@ -18,3 +18,5 @@
 * add download directory option
 * ability to set custom names for channels
 * ability to clear temp files
+* fix reloading sources on page group on channels list box changes
+* reloading page group after change group in settings
