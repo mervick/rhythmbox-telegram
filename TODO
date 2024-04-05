@@ -14,6 +14,7 @@
 * fix update audio files, save is_downloaded, is_moved, is_hidden flags
 * add no uploaded audio to db, but skip downloading, update is_uploading state, add is_uploading flag?
 * add option for color-scheme
+* auto detect color-scheme
 * add download directory option
 * ability to set custom names for channels
 * ability to clear temp files
