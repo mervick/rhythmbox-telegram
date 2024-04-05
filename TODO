@@ -20,3 +20,4 @@
 * ability to clear temp files
 * fix reloading sources on page group on channels list box changes
 * reloading page group after change group in settings
+* fix connect spinner in settings page
