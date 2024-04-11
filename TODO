@@ -21,3 +21,5 @@
 * fix reloading sources on page group on channels list box changes
 * reloading page group after change group in settings
 * fix connect spinner in settings page
+* detect audio quality - if it possible
+* add audio type / quality (flac)
