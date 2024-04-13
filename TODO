@@ -23,3 +23,4 @@
 * fix connect spinner in settings page
 * detect audio quality - if it possible
 * add audio type / quality (flac)
+* do something with account() and config() in TelegramConfig.py
