@@ -105,7 +105,7 @@ class PrefsPage(GObject.GObject):
         txt = json.dumps(value)
         if name not in self._changes or self._changes[name] != txt:
             self._changes[name] = txt
-#             config().emit('reload_sources')
+            config().emit('reload_sources')
 
     def get_main_object(self):
         return self.ui.get_object(self.main_box)
