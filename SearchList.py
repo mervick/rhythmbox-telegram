@@ -119,7 +119,6 @@ class SearchListBox:
         self.search(force=True)
 
     def _sort(self):
-        # self.items = sorted(self.items, key=functools.cmp_to_key(lambda a, b: 1 if a["casefold"] > b["casefold"] else -1))
         self.items.sort(key=functools.cmp_to_key(lambda a, b: 1 if a["casefold"] > b["casefold"] else -1))
 
     def add(self, item, update=True):
@@ -139,13 +138,10 @@ class SearchListBox:
             self.search()
 
     def select_clicked_cb(self, event, item_id):
-        # print('clicked_cb %s ', item_id)
         selected = filter(lambda i: i["id"] == item_id, self.items)
-        # print(selected)
         self.add_selected(list(selected)[0])
 
     def _add_item(self, item):
-#         print('add_item')
         btn = Gtk.ModelButton(label=item['title'], visible=True)
         btn.connect("clicked", lambda e: self.select_clicked_cb(e, item['id']))
         btn.set_alignment(0, 0.5)
