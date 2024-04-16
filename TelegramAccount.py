@@ -31,16 +31,17 @@ if Secret is None:
 __instance = None
 
 
-def instance(settings):
+def instance(plugin):
     global __instance
     if __instance is None:
-        __instance = TelegramAccount(settings)
+        __instance = TelegramAccount(plugin)
     return __instance
 
 
 class TelegramAccount(object):
-    def __init__(self, settings):
-        self.settings = settings  # Gio.Settings.new(TELEGRAM_SCHEMA)
+    def __init__(self, plugin):
+        self.settings = plugin.settings  # Gio.Settings.new(TELEGRAM_SCHEMA)
+        self.plugin = plugin
         self.secret = None
 
         if Secret is not None:

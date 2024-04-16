@@ -22,7 +22,7 @@ from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
 # from TelegramConfig import TelegramConfig
-from TelegramConfig import account
+from TelegramConfig import account, TelegramConfig
 from TelegramEntry import TelegramEntryType
 
 # from gi.repository.Gdk import Color
@@ -30,7 +30,7 @@ from TelegramEntry import TelegramEntryType
 # gettext.install('rhythmbox', RB.locale_dir())
 
 # REQUIRED for show config page
-from TelegramConfig import TelegramConfig
+# from TelegramConfig import TelegramConfig
 
 
 class Telegram(GObject.GObject, Peas.Activatable):
@@ -64,6 +64,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
             self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
+        print('==========ACTIVATE============')
         self.account = account(self)
         self.sources = []
 
@@ -111,6 +112,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
             self.do_reload_sources()
 
     def do_reload_sources(self):
+        print('======RUN do_reload_sources()')
         for source in self.sources:
             source.delete_thyself()
             self.sources = []
@@ -122,7 +124,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
             # self.shell.append_display_page(self.group, None)
             # group = RB.DisplayPageGroup.get_by_id("stores")
             # group = RB.DisplayPageGroup.get_by_id("shared")
-            group = RB.DisplayPageGroup.get_by_id("library")
+#             group = RB.DisplayPageGroup.get_by_id("library")
+#             group = RB.DisplayPageGroup.get_by_id("playlists")
+            group = RB.DisplayPageGroup.get_by_id("devices")
 #             group = RB.DisplayPageGroup.get_by_id("telegram")
 
             if group is None:
