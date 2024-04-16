@@ -27,3 +27,4 @@
 * fix reloading group pages on config page init
 * fix reloading group pages on change any values, reload it only on change connect and channels
 * fix reloading group pages on init channels value in config
+* improve reloading group pages process, dont reload already loaded pages
