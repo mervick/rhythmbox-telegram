@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.38.2
+
+Copyright (C) 2023-2024 Andrey Izman <izmanw@gmail.com>
+This file is part of rhythmbox-telegram
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ -->
 <interface>
-  <requires lib="gtk+" version="3.6"/>
+  <requires lib="gtk+" version="3.22"/>
   <object class="GtkBox" id="settings_vbox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -10,13 +28,13 @@
     <property name="orientation">vertical</property>
     <property name="spacing">18</property>
     <child>
-      <object class="GtkBox" id="vbox11">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child>
-          <object class="GtkLabel" id="library_location_label">
+          <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Download Location</property>
@@ -29,12 +47,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="hbox14">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">6</property>
             <child>
-              <object class="GtkLabel" id="label20">
+              <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label">    </property>
@@ -46,30 +64,33 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="vbox12">
+              <!-- n-columns=2 n-rows=2 -->
+              <object class="GtkGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
-                <property name="spacing">3</property>
+                <property name="row_spacing">6</property>
+                <property name="column_spacing">6</property>
                 <child>
-                  <object class="GtkBox" id="hbox15">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">6</property>
-                    <child>
-                      <object class="GtkLabel" id="label25">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Music files will be stored in:</property>
-                        <property name="use_underline">True</property>
-                        <property name="mnemonic_widget">library_location_entry</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
+                    <property name="hexpand">True</property>
+                    <property name="label" translatable="yes">Music base directory:</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="width-request">160</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="spacing">3</property>
+                    <property name="width-request">300</property>
                     <child>
                       <object class="GtkEntry" id="library_location_entry">
                         <property name="visible">True</property>
@@ -79,7 +100,7 @@
                       <packing>
                         <property name="expand">True</property>
                         <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
@@ -88,43 +109,37 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
+                        <property name="halign">True</property>
+                        <property name="valign">True</property>
                         <child>
-                          <object class="GtkAlignment" id="alignment3">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="xscale">0</property>
-                            <property name="yscale">0</property>
+                            <property name="spacing">2</property>
                             <child>
-                              <object class="GtkBox" id="hbox16">
+                              <object class="GtkImage">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="spacing">2</property>
-                                <child>
-                                  <object class="GtkImage" id="image1">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="icon_name">folder</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkLabel" id="label21">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Browse...</property>
-                                    <property name="use_underline">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
+                                <property name="icon_name">folder</property>
                               </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Browse...</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                                <property name="position">1</property>
+                              </packing>
                             </child>
                           </object>
                         </child>
@@ -132,14 +147,71 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">False</property>
-                        <property name="position">2</property>
+                        <property name="position">1</property>
                       </packing>
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="label" translatable="yes">File conflict resolution:</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="width-request">160</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="width-request">300</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="width-request">160</property>
+                    <property name="height-request">1</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="label" translatable="no">  </property>
+                    <property name="use-underline">True</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="width-request">300</property>
+                    <property name="height-request">1</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="label" translatable="no">  </property>
+                    <property name="use-underline">True</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">2</property>
                   </packing>
                 </child>
               </object>
@@ -164,13 +236,13 @@
       </packing>
     </child>
     <child>
-      <object class="GtkBox" id="library_structure_vbox">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child>
-          <object class="GtkLabel" id="library_structure_label">
+          <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Download Structure</property>
@@ -184,12 +256,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="hbox17">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">6</property>
             <child>
-              <object class="GtkLabel" id="label23">
+              <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label">    </property>
@@ -202,21 +274,21 @@
             </child>
             <child>
               <!-- n-columns=2 n-rows=3 -->
-              <object class="GtkGrid" id="grid1">
+              <object class="GtkGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
                 <property name="row_spacing">6</property>
                 <property name="column_spacing">6</property>
                 <child>
-                  <object class="GtkLabel" id="layout_path_menu_label">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="label" translatable="yes">Folder hierarchy:</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">0</property>
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -237,14 +309,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="layout_filename_menu_label">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="label" translatable="yes">File name:</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">0</property>
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -269,10 +341,10 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
-                    <property name="label" translatable="yes">  </property>
+                    <property name="label">  </property>
                     <property name="use_underline">True</property>
                     <property name="xalign">0</property>
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -284,8 +356,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
-<!--                    <property name="label" translatable="yes">Artist/Artist - Album/Artist (Album) - 01 - Title.mp3</property>-->
-                    <property name="label" translatable="yes">Artist/Artist - Album/3</property>
+                    <property name="label" translatable="no">Artist/Artist - Album/Title</property>
                     <property name="xalign">0</property>
 <!--                    <property name="width-request">300</property>-->
                   </object>
@@ -316,16 +387,14 @@
         <property name="position">1</property>
       </packing>
     </child>
-
     <child>
-      <object class="GtkBox" id="view_vbox">
+      <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
-
         <child>
-          <object class="GtkLabel" id="view_label">
+          <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">View</property>
@@ -338,7 +407,6 @@
             <property name="position">0</property>
           </packing>
         </child>
-
         <child>
           <object class="GtkBox">
             <property name="visible">True</property>
@@ -357,7 +425,6 @@
               </packing>
             </child>
             <child>
-
               <!-- n-columns=2 n-rows=3 -->
               <object class="GtkGrid">
                 <property name="visible">True</property>
@@ -366,14 +433,14 @@
                 <property name="row_spacing">6</property>
                 <property name="column_spacing">6</property>
                 <child>
-                  <object class="GtkLabel" id="page_group_label">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="label" translatable="yes">Page group:</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">0</property>
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -394,14 +461,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="color_scheme_label">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="label" translatable="yes">Color scheme:</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">0</property>
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -423,7 +490,7 @@
                 </child>
                 <child>
                   <object class="GtkLabel">
-                    <property name="width-request">120</property>
+                    <property name="width-request">160</property>
                     <property name="height-request">1</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
@@ -467,7 +534,6 @@
             <property name="position">1</property>
           </packing>
         </child>
-
       </object>
       <packing>
         <property name="expand">True</property>
@@ -475,7 +541,5 @@
         <property name="position">2</property>
       </packing>
     </child>
-
   </object>
-
 </interface>
