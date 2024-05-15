@@ -42,16 +42,17 @@ class SearchListBox:
             self.on_change(self.selected)
 
     def set_selected(self, selected):
-        self.clear_selected()
+        self.clear_selected(raise_on_change=False)
         if selected:
             for item in selected:
-                self.add_selected(item)
+                self.add_selected(item, raise_on_change=False)
 
-    def clear_selected(self):
+    def clear_selected(self, raise_on_change=True):
         if len(self.selected):
             self.selected = []
             self._remove_all_selected()
-        self._on_change()
+        if raise_on_change:
+            self._on_change()
 
     def _remove_all_selected(self):
         self.selected = []
@@ -75,7 +76,7 @@ class SearchListBox:
             self._remove_all_selected()
         self._on_change()
 
-    def add_selected(self, selected):
+    def add_selected(self, selected, raise_on_change=True):
         for item in self.selected:
             if item["id"] == selected["id"]:
                 return
@@ -90,7 +91,8 @@ class SearchListBox:
         btn.set_alignment(0, 0.5)
         btn.connect("clicked", lambda e: self.remove_selected(btn, _selected))
         self.flow_box.add(btn)
-        self._on_change()
+        if raise_on_change:
+            self._on_change()
 
     def search(self, event=None, force=False):
         query = self.entry.get_text().strip()
