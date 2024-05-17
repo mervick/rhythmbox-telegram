@@ -20,6 +20,15 @@ import json
 from gi.repository import GObject, Gtk, Gio
 
 
+def set_combo_text_column(combo, col):
+    if combo.get_has_entry():
+        combo.set_entry_text_column(col)
+    else:
+        text = Gtk.CellRendererText()
+        combo.pack_start(text, True)
+        combo.add_attribute(text, 'text', col)
+
+
 class PrefsPage(GObject.GObject):
     def __init__(self, prefs, name=None, ui_file=None, main_box=None):
         self.box = Gtk.Box(hexpand=True)
@@ -28,6 +37,9 @@ class PrefsPage(GObject.GObject):
         self.has_errors = []
         # set custom values
         self.prefs = prefs
+        self.plugin = prefs.plugin
+        self.account = prefs.account
+        self.settings = prefs.account.settings
         if name is not None:
             self.name = name
         if ui_file is not None:
@@ -76,10 +88,14 @@ class PrefsPage(GObject.GObject):
         reload = False
         if name not in self._changes or self._changes[name] != txt:
             self._changes[name] = txt
-            reload = True
+            if name in ['connected', 'channels', 'page-group']:
+                reload = True
         if reload:
             print('===EMIT1.reload_sources')
             self.prefs.plugin.emit('reload_sources')
+
+    def get_window(self):
+        return self.ui.get_object('window')
 
     def get_main_object(self):
         return self.ui.get_object(self.main_box)
