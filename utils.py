@@ -15,10 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
-import logging
 import enum
+import rb
+from gi.repository import RB
+from gi.repository import GLib
+from gi.repository import GObject
+from TelegramApi import AsyncCb
 
-logger = logging.getLogger(__name__)
+import gettext
+gettext.install('rhythmbox', RB.locale_dir())
 
 class MessageType(enum.Enum):
     NONE = None
@@ -135,3 +140,93 @@ def empty_cb(*args, **kwargs):
 
 def cb(fn):
     return fn if fn else empty_cb
+
+library_layout_paths = [
+    [_('Artist/Album'), '%aa/%at'],
+    [_('Artist/Album (year)'), '%aa/%at (%ay)'],
+    [_('Artist/Artist - Album'), '%aa/%aa - %at'],
+    [_('Artist/Artist - Album (year)'), '%aa/%aa - %at (%ay)'],
+    [_('Artist - Album'), '%aa - %at'],
+    [_('Artist - Album (year)'), '%aa - %at (%ay)'],
+    [_('Artist'), '%aa'],
+    [_('Album'), '%at'],
+    [_('Album (year)'), '%at (%ay)'],
+]
+
+library_layout_filenames = [
+    [_('Number - Title'), '%tN - %tt'],
+    [_('Artist - Title'), '%ta - %tt'],
+    [_('Artist - Number - Title'), '%ta - %tN - %tt'],
+    [_('Artist (Album) - Number - Title'), '%ta (%at) - %tN - %tt'],
+    [_('Title'), '%tt'],
+    [_('Number. Artist - Title'), '%tN. %ta - %tt'],
+    [_('Number. Title'), '%tN. %tt'],
+]
+
+page_groups = [
+    [_('Telegram'), 'telegram'],
+    [_('Library'), 'library'],
+    [_('Shared'), 'shared'],
+    [_('Stores'), 'stores'],
+    [_('Devices'), 'devices'],
+    [_('Playlists'), 'playlists'],
+]
+
+color_schemas = [
+    [_('Auto'), 'auto'],
+    [_('Dark'), 'dark'],
+    [_('Light'), 'light'],
+]
+
+conflict_resolve_variants = [
+    [_('Rename'), 'rename'],
+    [_('Overwrite'), 'overwrite'],
+    [_('Skip'), 'skip'],
+]
+
+def get_audio_tags(file_path):
+    tags = {}
+    metadata = RB.MetaData()
+    uri = GLib.filename_to_uri(file_path, None)
+    metadata.load(uri)
+
+    title = metadata.get(RB.MetaDataField.TITLE)
+    tags['title'] = title[1] if title[0] else None
+    artist = metadata.get(RB.MetaDataField.ARTIST)
+    tags['artist'] = artist[1] if artist[0] else None
+    album = metadata.get(RB.MetaDataField.ALBUM)
+    tags['album'] = album[1] if album[0] else None
+    track_number = metadata.get(RB.MetaDataField.TRACK_NUMBER)
+    tags['track_number'] = track_number[1] if track_number[0] else None
+    date = metadata.get(RB.MetaDataField.DATE)
+    tags['date'] = date[1] if date[0] else None
+    tags['year'] = GLib.Date.new_julian(date[1]).get_year() if date[0] else None
+    duration = metadata.get(RB.MetaDataField.DURATION)
+    tags['duration'] = duration[1] if duration[0] else None
+    genre = metadata.get(RB.MetaDataField.GENRE)
+    tags['genre'] = genre[1] if genre[0] else None
+
+    return tags
+
+# Parse a filename pattern and replace markers with values from the tags
+#
+# Valid markers so far are:
+# %at -- album title
+# %aa -- album artist
+# %aA -- album artist (lowercase)
+# %as -- album artist sortname
+# %aS -- album artist sortname (lowercase)
+# %ay -- album release year
+# %an -- album disc number
+# %aN -- album disc number, zero padded
+# %ag -- album genre
+# %aG -- album genre (lowercase)
+# %tn -- track number (i.e 8)
+# %tN -- track number, zero padded (i.e 08)
+# %tt -- track title
+# %ta -- track artist
+# %tA -- track artist (lowercase)
+# %ts -- track artist sortname
+# %tS -- track artist sortname (lowercase)
+def filepath_parse_pattern(pattern, filename):
+    pass
