@@ -16,7 +16,8 @@
 
 import rb
 from gi.repository import RB
-from TelegramApi import AsyncCb
+from gi.repository import GLib
+from utils import get_audio_tags
 
 
 def to_location(hash, date, chat_id, audio_id):
@@ -30,7 +31,9 @@ def get_location_data(location):
     return [d[-2], d[-1]]
 
 def file_uri(uri):
-    return 'file://%s' % uri
+    return GLib.filename_to_uri(uri, None)
+#     return 'file://%s' % uri
+
 
 class TelegramEntryType(RB.RhythmDBEntryType):
     def __init__(self, plugin):
@@ -67,45 +70,31 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 print('== is_downloading, return None')
                 return None
 
-            # def done(update):
-            #     print('=========DONE========')
-            #     _uri = file_uri(update.local_path)
-            #     self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, _uri)
-            #     self.db.entry_set(entry, RB.RhythmDBPropType.LAST_SEEN, 1)
-            # uri = audio.get_path(wait=False, done=done)
-
             self.plugin.is_downloading = True
-            print('== start Event')
-            uri = audio.get_path(wait=True)
-            # uri = audio.get_path(wait=False, done=done)
-            # entry.set_string(RB.RhythmDBPropType.MOUNTPOINT, uri)
-            # if not uri:
-            #     self.shell.props.shell_player.pause()
-
+            print('== start downloading')
+            file_path = audio.get_path(wait=True)
             self.plugin.is_downloading = False
-            print('== get uri %s' % uri)
+            print('== get file_path %s' % file_path)
 
-            if uri:
-                return file_uri(uri)
+            if file_path:
+                tags = get_audio_tags(file_path)
+
+                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, tags['track_number'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, tags['title'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, tags['artist'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, tags['album'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, tags['duration'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['date'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, tags['genre'])
+                self.db.commit()
+
+                # print(tags)
+                return file_uri(file_path)
             else:
                 return None
 
         return uri
 
-    # def update_availability(self, *args, **kwargs):
-    #     print('================update_availability==================')
-    #     print(args)
-    #     return
-
     def do_can_sync_metadata(self, entry):
 #         return False
         return True
-
-#     def can_sync_metadata(self, entry):
-#         return True
-
-#     def do_sync_metadata(self, entry, changes):
-#         print('================sync_metadata==================')
-#         print(entry)
-#         print(changes)
-#         return
