@@ -17,7 +17,7 @@
 import rb
 from gi.repository import RB
 from gi.repository import GLib
-from utils import get_audio_tags
+from common import get_audio_tags, file_uri
 
 
 def to_location(hash, date, chat_id, audio_id):
@@ -29,10 +29,6 @@ def get_location_audio_id(location):
 def get_location_data(location):
     d = location.split('/')
     return [d[-2], d[-1]]
-
-def file_uri(uri):
-    return GLib.filename_to_uri(uri, None)
-#     return 'file://%s' % uri
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):

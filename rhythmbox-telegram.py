@@ -41,6 +41,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         'reload_sources': (GObject.SIGNAL_RUN_FIRST, None, ())
     }
 
+
     def __init__(self):
         super(Telegram, self).__init__()
         self.shell = None
@@ -54,6 +55,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.storage = None
         self.page_group = None
         self.sources = []
+        self._created_group = False
 
     def do_activate(self):
         print('Telegram plugin activating')
@@ -64,6 +66,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
             self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
+        self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
         print('==========ACTIVATE============')
         self.account = account(self)
         self.sources = []
@@ -119,19 +122,25 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
         selected = json.loads(self.settings['channels']) if self.connected else []
 
-        if self.connected and selected:
-            # self.group = group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
-            # self.shell.append_display_page(self.group, None)
-            # group = RB.DisplayPageGroup.get_by_id("stores")
-            # group = RB.DisplayPageGroup.get_by_id("shared")
-#             group = RB.DisplayPageGroup.get_by_id("library")
-#             group = RB.DisplayPageGroup.get_by_id("playlists")
-            group = RB.DisplayPageGroup.get_by_id("devices")
-#             group = RB.DisplayPageGroup.get_by_id("telegram")
+        print('== RELOAD.selected %s' % selected)
 
-            if group is None:
-              group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
-              self.shell.append_display_page(group, None)
+        if self.connected and selected:
+            group_id = self.settings['page-group']
+            print('group_id %s' % group_id)
+            if group_id == 'telegram':
+                if not self._created_group:
+                    group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'),
+                                                category=RB.DisplayPageGroupType.TRANSIENT)
+                    self.shell.append_display_page(group, None)
+                    self._created_group = True
+                else:
+                    group = RB.DisplayPageGroup.get_by_id(group_id)
+            else:
+                group = RB.DisplayPageGroup.get_by_id(group_id)
+
+            # if group is None:
+            #   group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
+            #   self.shell.append_display_page(group, None)
 
             icon = Gio.ThemedIcon.new("telegram-symbolic")
 

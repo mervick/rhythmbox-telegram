@@ -47,7 +47,7 @@ class PrefsPage(GObject.GObject):
         if main_box is not None:
             self.main_box = main_box
         # init UI
-        self.box.set_border_width(5)
+        self.box.set_border_width(5) # noqa
         self.ui = Gtk.Builder()
         self.ui.add_from_file(prefs.find_plugin_file(self.ui_file))
         self._init_widget()
@@ -58,7 +58,7 @@ class PrefsPage(GObject.GObject):
 
     def create_widget(self):
         self._create_widget()
-        self.box.add(self.get_main_object())
+        self.box.add(self.get_main_object()) # noqa
         return self
 
     def set_error(self, widget, is_error=True):
@@ -74,12 +74,12 @@ class PrefsPage(GObject.GObject):
                 self.set_error(widget, False)
             self.has_errors.clear()
 
-    def show_error(self, title, description=None):
-        err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title)
+    def show_error(self, title, description=None): # noqa
+        err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
         if description is not None:
-            err_dialog.format_secondary_text(str(description))
+            err_dialog.format_secondary_text(str(description)) # noqa
         err_dialog.set_application(Gio.Application.get_default())
-        err_dialog.run()
+        err_dialog.run() # noqa
         err_dialog.destroy()
 
     def on_change(self, name, value):
