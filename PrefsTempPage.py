@@ -16,10 +16,31 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 from PrefsPage import PrefsPage
+
 
 class PrefsTempPage(PrefsPage):
     name = _('Temporary Files')
     main_box = 'temp_vbox'
     ui_file = 'ui/prefs/temp.ui'
+
+    def _create_widget(self):
+        self.temp_usage_label = self.ui.get_object('temp_usage_label')
+        self.temp_path_entry = self.ui.get_object('temp_path_entry')
+        self.usage_refresh_btn = self.ui.get_object('usage_refresh_btn')
+        self.clear_tmp_btn = self.ui.get_object('clear_tmp_btn')
+        self.view_dir_btn = self.ui.get_object('view_dir_btn')
+
+        self.usage_refresh_btn.connect('clicked', self._refresh_btn_clicked)
+        self.clear_tmp_btn.connect('clicked', self._clear_tmp_btn_clicked)
+        self.view_dir_btn.connect('clicked', self._view_dir_btn_clicked)
+
+    def _refresh_btn_clicked(self, widget, data):
+        pass
+
+    def _clear_tmp_btn_clicked(self, widget, data):
+        pass
+
+    def _view_dir_btn_clicked(self, widget, data):
+        pass
