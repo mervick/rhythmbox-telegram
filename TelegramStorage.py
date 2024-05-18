@@ -14,35 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import uuid
-import threading
 import sqlite3
 import json
-import rb
-from gi.repository import RB
-from gi.repository import GObject, Gtk, Gdk, Gio, GLib
 import os
-import hashlib
-from datetime import datetime
 import logging
-import enum
 import re
-import json
-import telegram_sql as SQL
-from telegram_fn import MessageType, message_type_set, message_set, audio_content_set, photo_content_set, mime_types, \
-    API_ERRORS, get_content_type, is_msg_valid, get_audio_type, get_chat_info, timestamp, empty_cb, cb
+import schema as SQL
+from common import audio_content_set, empty_cb
 
 
 logger = logging.getLogger(__name__)
 
 
-
 def parse_title(content):
     title = [None, content]
     s = content.strip()
-    r = re.search("^\s*([^\n]+?)\s\-\s([^\n]+)\n?", s)
+    r = re.search("^\s*([^\n]+?)\s-\s([^\n]+)\n?", s)
     if not r:
-        r = re.search("^\s*([^\n]+?)\-([^\n]+)\n?", s)
+        r = re.search("^\s*([^\n]+?)-([^\n]+)\n?", s)
     if r:
         groups = r.groups()
         title = [groups[0].strip(), groups[1].strip()]
@@ -82,101 +71,6 @@ def parse_album_info(content):
     if genres:
         genre = ' / '.join(genres)
     return artist, title, year, genre, genres
-
-
-class TgLoader:
-    def __str__(self) -> str:
-        return f'TgLoader <{self.chat_id}>'
-
-    def __init__(self, chat_id, add_entry):
-        self.api = TelegramStorage.loaded().api
-        self.playlist = TgPlaylist.read(chat_id)
-        self.chat_id = chat_id
-        self.add_entry = add_entry
-        self.segment = [0,0]
-        self.offset_msg_id = 0
-        self.page = 0
-        self._end_of_page = False
-        self._terminated = False
-        self._loaded = False
-
-    def start(self):
-        print(f'TgLoader.start')
-        self.playlist = TgPlaylist.read(self.chat_id )
-        print(self.playlist.segments)
-        self.playlist.segments.insert(0, [0,0])
-        self.segment = self.playlist.segment(1)
-        blob = {}
-        self.load(blob, limit=1)
-        return self
-
-    def add_audio(self, audio):
-        # update audio, add entries to playlist
-        if audio.message_id == self.segment[0]:
-            print('end of page')
-            self._end_of_page = True
-        if audio.message_id == self.segment[1]:
-            print('end of page')
-            self._end_of_page = True
-        if not self._end_of_page:
-            self.add_entry(audio)
-
-    def next(self, blob, cmd):
-        self.page = self.page + 1
-        print('TgLoader.next %s' % cmd)
-        last_msg_id = blob.get('last_msg_id', 0)
-
-        if last_msg_id == 0:
-            print('tg.loader.BREAK')
-            GLib.timeout_add(60 * 5000, self.start)
-            return
-
-        print("blob %s" % blob)
-
-        if self.playlist.segments[0][0] == 0:
-            self.playlist.segments[0][0] = last_msg_id
-        self.playlist.segments[0][1] = last_msg_id
-        offset_msg_id = last_msg_id
-
-        if self._end_of_page:
-            self.playlist.segments[0][1] = self.segment[1]
-            offset_msg_id = self.segment[1]
-            del self.playlist.segments[1]
-            self.segment = self.playlist.segment(1)
-
-        self._end_of_page = False
-
-        if last_msg_id == self.offset_msg_id:
-            print('BREAK INFINITY LOOP')
-#             return
-
-#         if cmd == 'DONE' or offset_msg_id == -1 or (last_msg_id == self.offset_msg_id and self._loaded):
-        if cmd == 'DONE' or offset_msg_id == -1 or last_msg_id == self.offset_msg_id:
-#             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
-            self.playlist.segments = [[ self.playlist.segments[0][0], offset_msg_id]]
-            self.playlist.save()
-            self._loaded = True
-            print('tg.loader.DONE')
-            GLib.timeout_add(60 * 5000, self.start)
-            return
-
-        self.playlist.save()
-        self.playlist.reload()
-        self.segment = self.playlist.segment(1)
-
-        self.offset_msg_id = offset_msg_id
-        print('timeout_add')
-        GLib.timeout_add(5000 if self.page > 10 else 1000, self.load, {"offset_msg_id": offset_msg_id})
-
-    def stop(self):
-        print(f'TgLoader.stop')
-        self._terminated = True
-
-    def load(self, blob={}, limit=50):
-        if not self._terminated:
-            print(f'TgLoader.load  {self.chat_id}')
-            print(blob)
-            self.api.load_messages_idle( self.chat_id, update=self.add_audio, done=self.next, blob={**blob}, limit=limit)
 
 
 class TgPlaylist:
@@ -274,9 +168,14 @@ class TgAudio:
             self.local_path = data.get('local_path')
             self.info_id = data.get('info_id')
 
+    def _is_file_exists(self):
+        isfile = self.is_downloaded and os.path.isfile(self.local_path)
+        if not isfile:
+            self.is_downloaded = False
+
     def get_path(self, priority=1, wait=False, done=empty_cb):
         print('get_path')
-        if not self.is_downloaded:
+        if not self._is_file_exists():
             print('not_downloaded')
             api = TelegramStorage.loaded().api
             if wait:
@@ -297,6 +196,13 @@ class TgAudio:
                 return None
 
         return self.local_path
+
+    def save(self, data):
+        res = TelegramStorage.loaded().update('audio', data, {"id": self.id}, limit=1)
+        if res:
+            for k in data.keys():
+                setattr(self, k, data[k])
+        return res
 
 
 class TelegramStorage:
@@ -384,7 +290,7 @@ class TelegramStorage:
         self.db.commit()
         return result
 
-    def _prepare(self, data):
+    def _prepare(self, data): # noqa
         if not data:
             return None
         set_keys = []
@@ -470,7 +376,7 @@ class TelegramStorage:
             VALUES (
                 :chat_id, :message_id, :mime_type, :title, :artist, :file_name, :date, :size, :duration,
                 :local_path, :is_downloaded)
-        """, d)
+        """ , d)
 
         d['id'] = self.db_cur.lastrowid
         result = d if not convert else TgAudio(d)
