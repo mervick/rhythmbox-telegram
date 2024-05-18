@@ -30,3 +30,5 @@
 * fix playlist becomes empty after reloading
 * update audio tags after downloading/while playing
 * reloading only changed group pages
+* avoid download already downloaded audio files
+* save tags to db
