@@ -20,10 +20,53 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk
 from PrefsPage import PrefsPage, set_combo_text_column
-from utils import library_layout_paths, library_layout_filenames, page_groups, color_schemas, conflict_resolve_variants
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
+
+
+library_layout_paths = [
+    [_('Artist/Album'), '%aa/%at'],
+    [_('Artist/Album (year)'), '%aa/%at (%ay)'],
+    [_('Artist/Artist - Album'), '%aa/%aa - %at'],
+    [_('Artist/Artist - Album (year)'), '%aa/%aa - %at (%ay)'],
+    [_('Artist - Album'), '%aa - %at'],
+    [_('Artist - Album (year)'), '%aa - %at (%ay)'],
+    [_('Artist'), '%aa'],
+    [_('Album'), '%at'],
+    [_('Album (year)'), '%at (%ay)'],
+]
+
+library_layout_filenames = [
+    [_('Number - Title'), '%tN - %tt'],
+    [_('Artist - Title'), '%ta - %tt'],
+    [_('Artist - Number - Title'), '%ta - %tN - %tt'],
+    [_('Artist (Album) - Number - Title'), '%ta (%at) - %tN - %tt'],
+    [_('Title'), '%tt'],
+    [_('Number. Artist - Title'), '%tN. %ta - %tt'],
+    [_('Number. Title'), '%tN. %tt'],
+]
+
+page_groups = [
+    [_('Telegram'), 'telegram'],
+    [_('Library'), 'library'],
+    [_('Shared'), 'shared'],
+    [_('Stores'), 'stores'],
+    [_('Devices'), 'devices'],
+    [_('Playlists'), 'playlists'],
+]
+
+color_schemas = [
+    [_('Auto'), 'auto'],
+    [_('Dark'), 'dark'],
+    [_('Light'), 'light'],
+]
+
+conflict_resolve_variants = [
+    [_('Rename'), 'rename'],
+    [_('Overwrite'), 'overwrite'],
+    [_('Skip'), 'skip'],
+]
 
 
 class PrefsSettingsPage(PrefsPage):

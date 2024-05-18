@@ -146,49 +146,6 @@ def empty_cb(*args, **kwargs):
 def cb(fn):
     return fn if fn else empty_cb
 
-library_layout_paths = [
-    [_('Artist/Album'), '%aa/%at'],
-    [_('Artist/Album (year)'), '%aa/%at (%ay)'],
-    [_('Artist/Artist - Album'), '%aa/%aa - %at'],
-    [_('Artist/Artist - Album (year)'), '%aa/%aa - %at (%ay)'],
-    [_('Artist - Album'), '%aa - %at'],
-    [_('Artist - Album (year)'), '%aa - %at (%ay)'],
-    [_('Artist'), '%aa'],
-    [_('Album'), '%at'],
-    [_('Album (year)'), '%at (%ay)'],
-]
-
-library_layout_filenames = [
-    [_('Number - Title'), '%tN - %tt'],
-    [_('Artist - Title'), '%ta - %tt'],
-    [_('Artist - Number - Title'), '%ta - %tN - %tt'],
-    [_('Artist (Album) - Number - Title'), '%ta (%at) - %tN - %tt'],
-    [_('Title'), '%tt'],
-    [_('Number. Artist - Title'), '%tN. %ta - %tt'],
-    [_('Number. Title'), '%tN. %tt'],
-]
-
-page_groups = [
-    [_('Telegram'), 'telegram'],
-    [_('Library'), 'library'],
-    [_('Shared'), 'shared'],
-    [_('Stores'), 'stores'],
-    [_('Devices'), 'devices'],
-    [_('Playlists'), 'playlists'],
-]
-
-color_schemas = [
-    [_('Auto'), 'auto'],
-    [_('Dark'), 'dark'],
-    [_('Light'), 'light'],
-]
-
-conflict_resolve_variants = [
-    [_('Rename'), 'rename'],
-    [_('Overwrite'), 'overwrite'],
-    [_('Skip'), 'skip'],
-]
-
 
 def get_option_title(options, value):
     for option in options:
@@ -239,5 +196,20 @@ def get_audio_tags(file_path):
 # %tA -- track artist (lowercase)
 # %ts -- track artist sortname
 # %tS -- track artist sortname (lowercase)
+
+filepath_pattern_markers = {
+    "%at": "title",
+    "%aa": "artist",
+    "%aA": "artist_lower",
+    "%ay": "year",
+    "%ag": "genre",
+    "%aG": "genre_lower",
+    "%tn": "track_number",
+    "%tN": "track_number_padded",
+    "%tt": "title",
+    "%ta": "artist",
+    "%tA": "artist_lower",
+}
+
 def filepath_parse_pattern(pattern, filename):
     pass
