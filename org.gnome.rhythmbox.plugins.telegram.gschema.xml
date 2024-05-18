@@ -54,7 +54,7 @@
       <description>The music from these channels will be shown and played in the music player</description>
     </key>
 
-    <key name="library-path" type="ms">
+    <key name="library-path" type="s">
       <default>''</default>
       <summary>Music library location</summary>
       <description>The directory where the base library of downloaded files will be stored</description>
