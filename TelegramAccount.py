@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from rb import rbconfig
+import os
+import re
+from rb import rbconfig # noqa
 
 Secret = None
 if rbconfig.libsecret_enabled:
@@ -83,6 +85,19 @@ class TelegramAccount(object):
                 return props[keys[key]]
         return props
 
+    def get_library_path(self):
+        # from settings
+        if 'library-path' in self.settings and self.settings['library-path']:
+            return self.settings['library-path']
+        # from rhythmbox global settings
+        locations = self.plugin.rhythmdb_settings.get_strv('locations')
+        if locations and len(locations):
+            path = locations[0]
+        # get default music path
+        else:
+            path = os.path.expanduser('~/Music')
+        return re.sub(r'^file://', '', path)
+
     def update(self, api_id, api_hash, phone, connected=False):
         if not api_id or not api_hash or not phone:
             connected = False
@@ -104,8 +119,8 @@ class TelegramAccount(object):
         #     return
         result = Secret.password_store_sync(self.schema, self.keyring_attributes, Secret.COLLECTION_DEFAULT,
             "Rhythmbox: Telegram credentials", secret, None)
-        # if not result:
-        #     print("Couldn't create keyring item!")
+        if not result:
+            print("Couldn't create keyring item!")
 
     def set_connected(self, connected):
         api_id, api_hash, phone, connected_ = self.get_secure()
