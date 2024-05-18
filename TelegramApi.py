@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
-from telegram_fn import MessageType, message_type_set, message_set, audio_content_set, photo_content_set, mime_types, \
+from common import MessageType, message_type_set, message_set, audio_content_set, photo_content_set, mime_types, \
     API_ERRORS, get_content_type, is_msg_valid, get_audio_type, get_chat_info, timestamp, empty_cb, cb
 from TelegramStorage import TelegramStorage
 
