@@ -146,7 +146,6 @@ def empty_cb(*args, **kwargs):
 def cb(fn):
     return fn if fn else empty_cb
 
-
 def get_option_title(options, value):
     for option in options:
         if option[1] == value:
@@ -176,8 +175,6 @@ def get_audio_tags(file_path):
 
     return tags
 
-# Parse a filename pattern and replace markers with values from the tags
-#
 # Valid markers so far are:
 # %at -- album title
 # %aa -- album artist
@@ -201,6 +198,8 @@ filepath_pattern_markers = {
     "%at": "title",
     "%aa": "artist",
     "%aA": "artist_lower",
+    "%as": "artist",
+    "%aS": "artist_lower",
     "%ay": "year",
     "%ag": "genre",
     "%aG": "genre_lower",
@@ -209,7 +208,18 @@ filepath_pattern_markers = {
     "%tt": "title",
     "%ta": "artist",
     "%tA": "artist_lower",
+    "%ts": "artist",
+    "%tS": "artist_lower",
 }
 
-def filepath_parse_pattern(pattern, filename):
-    pass
+# Parse a filename pattern and replace markers with values from the tags
+def filepath_parse_pattern(pattern, tags):
+    tags['artist_lower'] = tags['artist'].lower() if tags['artist'] else None
+    tags['genre_lower'] = tags['genre'].lower() if tags['genre'] else None
+    tags['track_number_padded'] = "%02i" % tags['track_number'] if tags['track_number'] else None
+
+    for marker in filepath_pattern_markers:
+        tag = tags.get(filepath_pattern_markers[marker], '')
+        pattern = pattern.replace(marker, tag)
+
+    return pattern
