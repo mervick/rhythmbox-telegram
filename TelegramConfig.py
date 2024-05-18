@@ -83,20 +83,20 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         notebook = Gtk.Notebook(vexpand=True, hexpand=True)
         main_box.add(notebook)
 
-        page1 = PrefsConnectPage(self)
-        page2 = PrefsChannelsPage(self)
-        page3 = PrefsSettingsPage(self)
-        page4 = PrefsTempPage(self)
+        self.page1 = PrefsConnectPage(self)
+        self.page2 = PrefsChannelsPage(self)
+        self.page3 = PrefsSettingsPage(self)
+        self.page4 = PrefsTempPage(self)
 
-        page1.register_signals()
-        page2.register_signals()
-        page3.register_signals()
-        page4.register_signals()
+        self.page1.register_signals()
+        self.page2.register_signals()
+        self.page3.register_signals()
+        self.page4.register_signals()
 
-        page1.create_widget().append_to(notebook)
-        page2.create_widget().append_to(notebook)
-        page3.create_widget().append_to(notebook)
-        page4.create_widget().append_to(notebook)
+        self.page1.create_widget().append_to(notebook)
+        self.page2.create_widget().append_to(notebook)
+        self.page3.create_widget().append_to(notebook)
+        self.page4.create_widget().append_to(notebook)
 
         GLib.timeout_add(1000, self.update_window)
 
