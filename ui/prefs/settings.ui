@@ -104,13 +104,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="library_location_button">
+                      <object class="GtkButton" id="library_location_btn">
                         <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="halign">True</property>
-                        <property name="valign">True</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
@@ -172,7 +172,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox">
+                  <object class="GtkComboBox" id="conflict_resolve_combo">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="width-request">300</property>
@@ -296,7 +296,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox">
+                  <object class="GtkComboBox" id="dir_hierarchy_combo">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="width-request">300</property>
@@ -324,7 +324,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox">
+                  <object class="GtkComboBox" id="name_template_combo">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="width-request">300</property>
@@ -352,7 +352,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="layout_example_label">
+                  <object class="GtkLabel" id="template_example_label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
@@ -448,7 +448,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox">
+                  <object class="GtkComboBox" id="page_group_combo">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="width-request">300</property>
@@ -476,7 +476,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox">
+                  <object class="GtkComboBox" id="color_scheme_combo">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="width-request">300</property>
