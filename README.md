@@ -61,9 +61,9 @@ After successfully connecting Telegram to Rhythmbox, in the plugin settings, you
 
 We strive to protect your data by implementing various security measures.
 
-- All your authorization data is **encrypted** and stored in the Gnome [GSettings](https://wiki.gnome.org/HowDoI/GSettings) storage.  
+- All your authentication data, is **encrypted** and stored within GNOME Keyring. This ensures that sensitive information is securely protected within the GNOME environment.
 - All your data obtained from Telegram (except audio files and their metadata) is **encrypted** using a user-provided encryption key and managed by the official Telegram client - [TDLib](https://core.telegram.org/tdlib).  
-- All received audio files and their metadata are stored in `~/.local/share/rhythmbox/telegram` in an **UNENCRYPTED** format, you can clean it whenever you want.
+- All received audio files and their metadata are stored in `~/.local/share/rhythmbox/telegram` in an **unencrypted** format, you can clean it whenever you want. However, it's important to note that deleting these files will also remove them from the database. You can delete audio files from the plugin settings without compromising the integrity of the database.
 
 
 ## License
