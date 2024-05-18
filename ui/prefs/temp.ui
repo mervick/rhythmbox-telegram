@@ -373,7 +373,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <object class="GtkButton" id="clear_tmp_btn">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
-                <property name="receives-default">False</property>
+                <property name="receives-default">True</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
                 <property name="width-request">180</property>
