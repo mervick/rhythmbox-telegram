@@ -16,16 +16,19 @@
 
 import rb
 from gi.repository import RB
+from gi.repository import GdkPixbuf
 from gi.repository import GObject, Gtk, Gdk, Gio, GLib
 from TelegramEntry import to_location
-from TelegramStorage import TgLoader
+from TelegramLoader import PlaylistLoader
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
+
 class TelegramSource(RB.BrowserSource):
     def __init__(self):
+        self.is_activated = False
         RB.BrowserSource.__init__(self)
         self.app = Gio.Application.get_default()
         self.initialised = False
@@ -51,6 +54,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = chat_id
         self.last_track = None
         self.loader = None
+        # ActionsColumn(self)
 
     def do_deselected(self):
         print('do_deselected %s' % self.chat_id)
@@ -66,7 +70,7 @@ class TelegramSource(RB.BrowserSource):
             self.initialised = True
             self.add_entries()
 
-        self.loader = TgLoader(self.chat_id, self.add_entry)
+        self.loader = PlaylistLoader(self.chat_id, self.add_entry)
         self.loader.start()
 
     def add_entries(self):
