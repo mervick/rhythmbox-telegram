@@ -17,13 +17,11 @@
 from datetime import datetime
 import enum
 import rb
-from gi.repository import RB
-from gi.repository import GLib
-from gi.repository import GObject
-from TelegramApi import AsyncCb
+from gi.repository import RB, GLib, Gio
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
+
 
 class MessageType(enum.Enum):
     NONE = None
@@ -105,6 +103,13 @@ API_ERRORS = {
 }
 
 
+def file_uri(path):
+    return GLib.filename_to_uri(path, None)
+#     return 'file://%s' % uri
+
+def open_path(path):
+    Gio.app_info_get_default_for_uri(file_uri(path), None)
+
 def get_content_type(data):
     if '@type' in data['content'] and MessageType.has(data['content']['@type']):
         return MessageType(data['content']['@type'])
@@ -183,6 +188,12 @@ conflict_resolve_variants = [
     [_('Overwrite'), 'overwrite'],
     [_('Skip'), 'skip'],
 ]
+
+
+def get_option_title(options, value):
+    for option in options:
+        if option[1] == value:
+            return option[0]
 
 def get_audio_tags(file_path):
     tags = {}
