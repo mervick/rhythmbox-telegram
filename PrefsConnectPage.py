@@ -16,7 +16,7 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-import json
+# import json
 import re
 from gi.repository import Gtk
 from telegram.client import AuthorizationState
@@ -42,7 +42,7 @@ class PrefsConnectPage(PrefsPage):
     api = None
 
     def _create_widget(self):
-        settings_box = self.ui.get_object('connect_vbox')
+        # settings_box = self.ui.get_object('connect_vbox')
         logo = self.ui.get_object("logo")
         api_id_entry = self.ui.get_object("api_id_entry")
         api_hash_entry = self.ui.get_object("api_hash_entry")
@@ -53,6 +53,7 @@ class PrefsConnectPage(PrefsPage):
         helpbox = self.ui.get_object('helpbox')
 
         def update_connect(connected=None):
+            print('update_connect %s ' % connected)
             self.on_change("connected", connected)
             if connected is not None:
                 self.connected = connected
@@ -60,6 +61,11 @@ class PrefsConnectPage(PrefsPage):
                 connected = self.connected
             enabled = not self.loading and not connected
             upd_spinner()
+
+            self.prefs.page2.box.set_sensitive(connected)
+            self.prefs.page3.box.set_sensitive(connected)
+            self.prefs.page4.box.set_sensitive(connected)
+
             details_box.set_sensitive(enabled)
             helpbox.set_sensitive(enabled)
             connect_btn.set_sensitive(not self.loading)
@@ -82,6 +88,7 @@ class PrefsConnectPage(PrefsPage):
             return connected
 
         def fill_account_details():
+            print('fill_account_details')
             # helpbox.set_size_request(450, -1)
             logo.set_size_request(500, -1)
             (api_id, api_hash, phone_number, connected) = self.prefs.account.get_secure()
@@ -103,6 +110,7 @@ class PrefsConnectPage(PrefsPage):
                 connect_api()
 
         def account_details_changed(entry, event):
+            print('account_details_changed')
             api_id = re.sub("\D", "", api_id_entry.get_text())
             api_hash = api_hash_entry.get_text().strip()
             phone_number = re.sub("(?!(^\+)|\d).", "", phone_entry.get_text())
@@ -141,6 +149,7 @@ class PrefsConnectPage(PrefsPage):
                 self.spinner.show()
 
         def connect_btn_clicked(event):
+            print('connect_btn_clicked')
             self.loading = True
             if update_connect(not self.connected):
                 connect_api()
@@ -148,6 +157,7 @@ class PrefsConnectPage(PrefsPage):
                 disconnect_api()
 
         def set_state(state):
+            print('set_state %s' % state)
             self.loading = False
             update_connect(state)
             self.prefs.account.set_connected(state)
@@ -169,6 +179,7 @@ class PrefsConnectPage(PrefsPage):
             return state
 
         def validate(api_id, api_hash, phone_number):
+            print('validate')
             errors = []
             if not api_id:
                 self.set_error(api_id_entry)
@@ -192,6 +203,7 @@ class PrefsConnectPage(PrefsPage):
             return True
 
         def connect_api(code=None):
+            print('connect_api')
             (api_id, api_hash, phone_number, connected) = self.prefs.account.get_secure()
 
             if validate(api_id, api_hash, phone_number):
@@ -221,6 +233,7 @@ class PrefsConnectPage(PrefsPage):
                 set_state(False)
 
         def disconnect_api():
+            print('disconnect_api')
             print('emit.channels-clear')
             self.prefs.emit('channels-clear')
 #             search_list_box.reset()
