@@ -45,19 +45,67 @@
     <key name="connected" type="b">
       <default>false</default>
       <summary>Whether is telegram API connected</summary>
-      <description>Whether is telegram API connected</description>
+      <description>Indicates whether the Telegram API is currently connected</description>
     </key>
 
     <key name="channels" type="s">
       <default>'[]'</default>
       <summary>Selected channels</summary>
-      <description>Selected music channels</description>
+      <description>The music from these channels will be shown and played in the music player</description>
     </key>
 
-    <key name="download-template" type="s">
-      <default>'%ARTIST%/%ARTIST% - %ALBUM% (%YEAR%)/%NUM% %TITLE%'</default>
+    <key name="library-path" type="ms">
+      <default>''</default>
+      <summary>Music library location</summary>
+      <description>The directory where the base library of downloaded files will be stored</description>
+    </key>
+
+    <key name="conflict-resolve" type="s">
+      <default>'rename'</default>
+      <choices>
+        <choice value='rename'/>
+        <choice value='overwrite'/>
+        <choice value='skip'/>
+      </choices>
+      <summary>File download conflict handling</summary>
+      <description>Determines how the plugin should handle situations where a file being downloaded has the same name as an existing file</description>
+    </key>
+
+    <key name="folder-hierarchy" type="s">
+      <default>'%aa/%at (%ay)'</default>
+      <summary>Folder hierarchy</summary>
+      <description>Folder hierarchy for downloading music according to a specified template</description>
+    </key>
+
+    <key name="filename-template" type="s">
+      <default>'%tN. %tt'</default>
       <summary>Download file name template</summary>
-      <description>File name template to save into your music library</description>
+      <description>File name template to downloading music into your library</description>
+    </key>
+
+    <key name="page-group" type="s">
+      <default>'telegram'</default>
+      <choices>
+        <choice value='telegram'/>
+        <choice value='library'/>
+        <choice value='shared'/>
+        <choice value='stores'/>
+        <choice value='devices'/>
+        <choice value='playlists'/>
+      </choices>
+      <summary>Page group</summary>
+      <description>Group where your playlists will be organized</description>
+    </key>
+
+    <key name="color-scheme" type="s">
+      <default>'auto'</default>
+      <choices>
+        <choice value='auto'/>
+        <choice value='dark'/>
+        <choice value='light'/>
+      </choices>
+      <summary>Color scheme</summary>
+      <description>Choose the color scheme for the application's interface.</description>
     </key>
 
     <child name="source" schema="org.gnome.rhythmbox.source"/>
