@@ -17,13 +17,65 @@
 import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
-from gi.repository import GObject, Gtk, Gdk, Gio, GLib
+from gi.repository import GObject, Gtk, Gio, GLib
 from TelegramEntry import to_location
 from TelegramLoader import PlaylistLoader
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
+
+def empty_cb(*a, **b):
+    pass
+
+state_dark_icons = {
+    'DEFAULT' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/download-dark.svg',
+    'STATE_ERROR' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/error.svg',
+    'STATE_IN_LIBRARY' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/library-dark.svg',
+    'STATE_DOWNLOADED' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/empty.svg',
+}
+
+state_light_icons = {
+    'DEFAULT' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/download-light.svg',
+    'STATE_ERROR' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/error.svg',
+    'STATE_IN_LIBRARY' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/library-light.svg',
+    'STATE_DOWNLOADED' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/empty.svg',
+}
+
+
+class StateColumn:
+    def __init__(self, source):
+        column_title = Gtk.TreeViewColumn()  # "Title",Gtk.CellRendererText(),text=0)
+        renderer = Gtk.CellRendererPixbuf()
+        column_title.set_title(" ")
+        column_title.set_cell_data_func(renderer, self.model_data_func, "image")
+
+        # image_widget = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.MENU)
+        # column_title.set_widget(image_widget)
+        # Gtk.Widget.show_all(image_widget)
+
+        column_title.set_expand(False)
+        column_title.set_resizable(False)
+
+        column_title.pack_start(renderer, expand=False)
+        # column_title.pack_start(renderer, expand=True)
+        column_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        column_title.set_fixed_width(36)
+
+        entry_view = source.get_entry_view()
+        entry_view.append_column_custom(column_title, ' ', "tg-state", empty_cb, None, None)
+        visible_columns = entry_view.get_property("visible-columns")
+        visible_columns.append('tg-state')
+        entry_view.set_property("visible-columns", visible_columns)
+        # entry_view.set_property("has-tooltip", True)
+
+    def model_data_func(self, column, cell, model, iter, infostr):
+        entry = model.get_value(iter, 0)
+        state = entry.get_string(RB.RhythmDBPropType.COMMENT)
+        # obj = model.get_value(iter,1)
+        filepath = state_dark_icons[state] if state in state_dark_icons else state_dark_icons['DEFAULT']
+        icon = GdkPixbuf.Pixbuf.new_from_file(filepath)
+        cell.set_property("pixbuf", icon)
 
 
 class TelegramSource(RB.BrowserSource):
@@ -54,7 +106,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = chat_id
         self.last_track = None
         self.loader = None
-        # ActionsColumn(self)
+        StateColumn(self)
 
     def do_deselected(self):
         print('do_deselected %s' % self.chat_id)
@@ -81,41 +133,13 @@ class TelegramSource(RB.BrowserSource):
     def add_entry(self, track, pref=''):
         location = '%s%s' % (to_location(self.api.hash, track.date, self.chat_id, track.message_id), pref)
         entry = self.db.entry_lookup_by_location(location)
-
-        #  * RBEntryViewColumn:
-        #  * @RB_ENTRY_VIEW_COL_TRACK_NUMBER: the track number column
-        #  * @RB_ENTRY_VIEW_COL_TITLE: the title column
-        #  * @RB_ENTRY_VIEW_COL_ARTIST: the artist column
-        #  * @RB_ENTRY_VIEW_COL_COMPOSER: the composer column
-        #  * @RB_ENTRY_VIEW_COL_ALBUM: the album column
-        #  * @RB_ENTRY_VIEW_COL_GENRE: the genre column
-        #  * @RB_ENTRY_VIEW_COL_DURATION: the duration column
-        #  * @RB_ENTRY_VIEW_COL_QUALITY: the quality (bitrate) column
-        #  * @RB_ENTRY_VIEW_COL_RATING: the rating column
-        #  * @RB_ENTRY_VIEW_COL_PLAY_COUNT: the play count column
-        #  * @RB_ENTRY_VIEW_COL_YEAR: the year (release date) column
-        #  * @RB_ENTRY_VIEW_COL_LAST_PLAYED: the last played time column
-        #  * @RB_ENTRY_VIEW_COL_FIRST_SEEN: the first seen (imported) column
-        #  * @RB_ENTRY_VIEW_COL_LAST_SEEN: the last seen column
-        #  * @RB_ENTRY_VIEW_COL_LOCATION: the location column
-        #  * @RB_ENTRY_VIEW_COL_BPM: the BPM column
-        #  * @RB_ENTRY_VIEW_COL_COMMENT: the comment column
-
         if not entry:
             entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
             self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
             self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artist)
-#             self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, track.artist)
             self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration)
-#             self.db.entry_set(entry, RB.RhythmDBPropType.RATING, 0)
-
-#             if item['artwork_url'] is not None:
-#               db.entry_set(entry, RB.RhythmDBPropType.MB_ALBUMID, item['artwork_url'])
-
-#             dt = datetime.strptime(item['created_at'], '%Y/%m/%d %H:%M:%S %z')
-#             db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(dt.timestamp()))
-
             self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(track.date))
+            self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, track.get_state())
             dt = GLib.DateTime.new_from_unix_local(int(track.date))
             date = GLib.Date.new_dmy(dt.get_day_of_month(), GLib.DateMonth(dt.get_month()), dt.get_year())
 
