@@ -33,3 +33,4 @@
 * avoid download already downloaded audio files
 * save tags to db
 * audio: add track_number to db
+* fix loading playlist after changing list in settings
