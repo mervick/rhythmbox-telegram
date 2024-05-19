@@ -54,13 +54,13 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
             # return loc
             chat_id, message_id = get_location_data(loc)
-            print("converted track uri: %s" % loc)
+            # print("converted track uri: %s" % loc)
             # print("chat_id: %s" % chat_id)
-            print("message_id: %s" % message_id)
+            # print("message_id: %s" % message_id)
             audio = self.storage.get_audio(chat_id, message_id)
             # print('audio %s' % audio)
             if not audio:
-                print('== return None')
+                # print('== return None')
                 return None
             if self.plugin.is_downloading:
                 print('== is_downloading, return None')
@@ -82,11 +82,13 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, tags['duration'])
                 self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['date'])
                 self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, tags['genre'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
                 self.db.commit()
 
-                # print(tags)
                 return file_uri(file_path)
             else:
+                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.db.commit()
                 return None
 
         return uri
