@@ -195,7 +195,7 @@ def get_audio_tags(file_path):
 # %tS -- track artist sortname (lowercase)
 
 filepath_pattern_markers = {
-    "%at": "title",
+    "%at": "album",
     "%aa": "artist",
     "%aA": "artist_lower",
     "%as": "artist",
@@ -219,7 +219,7 @@ def filepath_parse_pattern(pattern, tags):
     tags['track_number_padded'] = "%02i" % tags['track_number'] if tags['track_number'] else None
 
     for marker in filepath_pattern_markers:
-        tag = tags.get(filepath_pattern_markers[marker], '')
+        tag = str(tags.get(filepath_pattern_markers[marker], ''))
         pattern = pattern.replace(marker, tag)
 
     return pattern
