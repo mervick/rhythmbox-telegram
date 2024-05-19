@@ -20,6 +20,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk
 from PrefsPage import PrefsPage, set_combo_text_column
+from common import filepath_parse_pattern
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -68,6 +69,15 @@ conflict_resolve_variants = [
     [_('Skip'), 'skip'],
 ]
 
+example_tags = {
+    "artist": "Korn",
+    "album": "Issues",
+    "title": "Hey Daddy",
+    "track_number": 10,
+    "date": "",
+    "year": 1999,
+    "genre": "Nu-Metal",
+}
 
 class PrefsSettingsPage(PrefsPage):
     name = _('Settings')
@@ -94,6 +104,8 @@ class PrefsSettingsPage(PrefsPage):
         self._init_combo(self.page_group_combo, page_groups, 'page-group')
         self._init_combo(self.dir_hierarchy_combo, library_layout_paths, 'folder-hierarchy')
         self._init_combo(self.name_template_combo, library_layout_filenames, 'filename-template')
+
+        self._update('filename-template', self.settings['filename-template'])
 
     def _init_combo(self, combo, variants, name):
         idx = 0
@@ -131,7 +143,9 @@ class PrefsSettingsPage(PrefsPage):
                 self.show_error(_('Directory %s does not exists') % value,
                                 _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'))
         elif name in ['folder-hierarchy', 'filename-template']:
-            pass
+            example = filepath_parse_pattern(
+                "%s/%s.mp3" % (self.settings['folder-hierarchy'], self.settings['filename-template']), example_tags)
+            self.template_example_label.set_markup('<small><i><b>%s</b> %s</i></small>' % (_("Example Path:"), example))
 
     def _libpath_entry_cb(self, entry, event):
         self._update('library-path', entry.get_text())
