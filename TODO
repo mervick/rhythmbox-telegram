@@ -32,3 +32,4 @@
 * reloading only changed group pages
 * avoid download already downloaded audio files
 * save tags to db
+* audio: add track_number to db
