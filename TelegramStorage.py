@@ -119,6 +119,8 @@ class TgPlaylist:
 
 
 class TgAudio:
+    is_error = False
+
     def __str__(self) -> str:
         return f'TgAudio <{self.chat_id},{self.message_id}>'
 
@@ -173,6 +175,15 @@ class TgAudio:
         if not isfile:
             self.is_downloaded = False
 
+    def get_state(self):
+        if self.is_error:
+            return 'STATE_ERROR'
+        if self.is_moved:
+            return 'STATE_IN_LIBRARY'
+        if self.is_downloaded:
+            return 'STATE_DOWNLOADED'
+        return ''
+
     def get_path(self, priority=1, wait=False, done=empty_cb):
         print('get_path')
         if not self._is_file_exists():
@@ -192,7 +203,10 @@ class TgAudio:
                     self.update(data)
                     done(self)
 
-                api.download_audio_idle(self.chat_id, self.message_id, priority=priority, done=on_done)
+                def on_error():
+                    self.is_error = True
+
+                api.download_audio_idle(self.chat_id, self.message_id, priority=priority, done=on_done, cancel=on_error)
                 return None
 
         return self.local_path
