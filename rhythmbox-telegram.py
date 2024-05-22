@@ -23,7 +23,8 @@ from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
 # from TelegramConfig import TelegramConfig
 from TelegramConfig import account, TelegramConfig
-from TelegramEntry import TelegramEntryType
+from TelegramEntry import TelegramEntryType, get_location_data
+
 
 # from gi.repository.Gdk import Color
 # import gettext
@@ -40,7 +41,6 @@ class Telegram(GObject.GObject, Peas.Activatable):
     __gsignals__ = {
         'reload_sources': (GObject.SIGNAL_RUN_FIRST, None, ())
     }
-
 
     def __init__(self):
         super(Telegram, self).__init__()
@@ -67,15 +67,26 @@ class Telegram(GObject.GObject, Peas.Activatable):
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
-        print('==========ACTIVATE============')
         self.account = account(self)
         self.sources = []
 
-        # self.entry_type = TelegramEntryType()
-        # self.db.register_entry_type(self.entry_type)
+        # Connect to the entry-deleted signal of the RhythmDB
+        self.db.connect('entry-deleted', self.on_entry_deleted)
 
         app = Gio.Application.get_default()
         # self.parent = dialog.get_toplevel().get_parent_window()
+
+        action = Gio.SimpleAction(name="tg-browse")
+        action.connect("activate", self.browse_action_cb)
+        app.add_action(action)
+
+        action = Gio.SimpleAction(name="tg-download")
+        action.connect("activate", self.download_action_cb)
+        app.add_action(action)
+
+        action = Gio.SimpleAction(name="tg-hide")
+        action.connect("activate", self.hide_action_cb)
+        app.add_action(action)
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
@@ -83,18 +94,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         app.link_shared_menus(self.toolbar)
 
         rb.append_plugin_source_path(self, "icons")
-
         api_id, api_hash, phone_number, self.connected = self.account.get_secure()
-        print('==========================================================================')
-        print(self.connected)
-        print('==========================================================================')
-
-        # action = Gio.SimpleAction(name='tg-reload-sources')
-        # action.connect('activate', self.load_sources)
-        # app.add_action(action)
-        # app.connect("tg_reload_sources", self.load_sources)
-#         self.page_group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
-#         self.shell.append_display_page(self.page_group, None)
 
         if self.connected:
             self.api = TelegramApi.api(api_id, api_hash, phone_number)
@@ -102,20 +102,16 @@ class Telegram(GObject.GObject, Peas.Activatable):
             self.storage = self.api.storage
             # if self.api.is_ready():
 
-            print(self.api.is_ready())
-
-            # # if self.api.is_ready():
-            # def mess_ready():
-            #     print('==========================================================================')
-            #     print(self.api.get_any_audio())
-            #     print('==========================================================================')
-            #
-            # self.api.load_messages_idle(mess_ready)
-
             self.do_reload_sources()
 
+    def on_entry_deleted(self, db, entry):
+        loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        chat_id, message_id = get_location_data(loc)
+        audio = self.storage.get_audio(chat_id, message_id)
+        audio.save({"is_hidden": True})
+
     def do_reload_sources(self):
-        print('======RUN do_reload_sources()')
+        print('do_reload_sources()')
         for source in self.sources:
             source.delete_thyself()
             self.sources = []
@@ -154,9 +150,6 @@ class Telegram(GObject.GObject, Peas.Activatable):
                 self.shell.register_entry_type_for_source(source, entry_type)
                 self.shell.append_display_page(source, group)
 
-        print('========================================================================== shell')
-        print(self.shell)
-
     def do_deactivate(self):
         print('Telegram plugin deactivating')
         shell = self.object
@@ -173,11 +166,15 @@ class Telegram(GObject.GObject, Peas.Activatable):
         print(entry)
         self.source.playing_entry_changed(entry)
 
-    def download_album_action_cb(self, action, parameter):
+    def browse_action_cb(self, action, parameter):
         shell = self.object
-        shell.props.selected_page.download_album()
+        shell.props.selected_page.browse_action()
 
-    def artist_info_action_cb(self, action, parameter):
+    def download_action_cb(self, action, parameter):
+        shell = self.object
+        shell.props.selected_page.download_action()
+
+    def hide_action_cb(self, action, hide_action):
         shell = self.object
         shell.props.selected_page.display_artist_info()
 
