@@ -178,5 +178,14 @@ class TelegramSource(RB.BrowserSource):
     def do_can_add_to_queue(self):
         return True
 
+    def browse_action(self):
+        pass
+
+    def download_action(self):
+        pass
+
+    def hide_action(self):
+        pass
+
 
 GObject.type_register(TelegramSource)
