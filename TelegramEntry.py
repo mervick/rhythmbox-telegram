@@ -20,8 +20,8 @@ from gi.repository import GLib
 from common import get_audio_tags, file_uri
 
 
-def to_location(hash, date, chat_id, audio_id):
-    return 'tg://%s/%s/%s/%s' % (hash, date, chat_id, audio_id)
+def to_location(api_hash, created_at, chat_id, audio_id):
+    return 'tg://%s/%s/%s/%s' % (api_hash, created_at, chat_id, audio_id)
 
 def get_location_audio_id(location):
     return location.split('/')[-1]

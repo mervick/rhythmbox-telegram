@@ -89,6 +89,7 @@ class TelegramSource(RB.BrowserSource):
         self.player = None
         self.entry_type = None
         self.api = None
+        self.loader = None
         self.storage = None
         self.chat_id = None
         self.last_track = None
@@ -131,40 +132,39 @@ class TelegramSource(RB.BrowserSource):
             self.add_entry(audio)
 
     def add_entry(self, track, pref=''):
-        location = '%s%s' % (to_location(self.api.hash, track.date, self.chat_id, track.message_id), pref)
+        location = '%s%s' % (to_location(self.api.hash, track.created_at, self.chat_id, track.message_id), pref)
         entry = self.db.entry_lookup_by_location(location)
         if not entry:
             entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
             self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, track.title)
             self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, track.artist)
             self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, track.duration)
-            self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(track.date))
+            self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(track.created_at))
             self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, track.get_state())
-            dt = GLib.DateTime.new_from_unix_local(int(track.date))
-            date = GLib.Date.new_dmy(dt.get_day_of_month(), GLib.DateMonth(dt.get_month()), dt.get_year())
-
-            self.db.entry_set(entry, RB.RhythmDBPropType.DATE, date.get_julian())
+            # dt = GLib.DateTime.new_from_unix_local(int(track.date))
+            # date = GLib.Date.new_dmy(dt.get_day_of_month(), GLib.DateMonth(dt.get_month()), dt.get_year())
+            self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(track.date))
             self.db.commit()
 
-    def playing_entry_changed_cb(self, player, entry):
-        '''
-        playing_entry_changed_cb changes the album artwork on every
-        track change.
-        '''
-        if not entry:
-            return
-        if entry.get_entry_type() != self.props.entry_type:
-            return
-
-        au = entry.get_string(RB.RhythmDBPropType.MB_ALBUMID)
-        if au:
-            key = RB.ExtDBKey.create_storage(
-                "title", entry.get_string(RB.RhythmDBPropType.TITLE))
-            key.add_field("artist", entry.get_string(
-                RB.RhythmDBPropType.ARTIST))
-            key.add_field("album", entry.get_string(
-                RB.RhythmDBPropType.ALBUM))
-            self.art_store.store_uri(key, RB.ExtDBSourceType.EMBEDDED, au)
+    # def playing_entry_changed_cb(self, player, entry):
+    #     '''
+    #     playing_entry_changed_cb changes the album artwork on every
+    #     track change.
+    #     '''
+    #     if not entry:
+    #         return
+    #     if entry.get_entry_type() != self.props.entry_type:
+    #         return
+    #
+    #     au = entry.get_string(RB.RhythmDBPropType.MB_ALBUMID)
+    #     if au:
+    #         key = RB.ExtDBKey.create_storage(
+    #             "title", entry.get_string(RB.RhythmDBPropType.TITLE))
+    #         key.add_field("artist", entry.get_string(
+    #             RB.RhythmDBPropType.ARTIST))
+    #         key.add_field("album", entry.get_string(
+    #             RB.RhythmDBPropType.ALBUM))
+    #         self.art_store.store_uri(key, RB.ExtDBSourceType.EMBEDDED, au)
 
     def do_can_delete(self):
         return True

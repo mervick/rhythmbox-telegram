@@ -20,8 +20,7 @@ import os
 import logging
 import re
 import schema as SQL
-from common import audio_content_set, empty_cb
-
+from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year
 
 logger = logging.getLogger(__name__)
 
@@ -125,23 +124,23 @@ class TgAudio:
         return f'TgAudio <{self.chat_id},{self.message_id}>'
 
     def __init__(self, data):
-        self._data = data
         self.update(data)
 
     def update(self, data):
         if type(data) == tuple:
-            id_, chat_id, message_id, mime_type, title, artist, album, year, genre, file_name, date, \
-                size, duration, is_downloaded, is_moved, is_hidden, local_path, info_id = data
+            id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
+                date, size, duration, is_downloaded, is_moved, is_hidden, local_path, info_id = data
             self.id = id_
             self.chat_id = chat_id
             self.message_id = message_id
             self.mime_type = mime_type
+            self.track_number = track_number
             self.title = title
             self.artist = artist
             self.album = album
-            self.year = year
             self.genre = genre
             self.file_name = file_name
+            self.created_at = created_at
             self.date = date
             self.size = size
             self.duration = duration
@@ -155,12 +154,13 @@ class TgAudio:
             self.chat_id = data['chat_id']
             self.message_id = data['message_id']
             self.mime_type = data['mime_type']
+            self.track_number = data['track_number']
             self.title = data['title']
             self.artist = data['artist']
             self.album = data.get('album')
-            self.year = data.get('year')
             self.genre = data.get('genre')
             self.file_name = data['file_name']
+            self.created_at = data['created_at']
             self.date = data['date']
             self.size = data['size']
             self.duration = data['duration']
@@ -169,6 +169,29 @@ class TgAudio:
             self.is_hidden = data.get('is_hidden', False)
             self.local_path = data.get('local_path')
             self.info_id = data.get('info_id')
+
+    def update_tags(self, file_path=None):
+        file_path = file_path if file_path else self.get_path(wait=True)
+        if file_path:
+            tags = get_audio_tags(file_path)
+            self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, tags['track_number'])
+
+            self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, tags['title'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, tags['artist'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, tags['album'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, tags['duration'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['date'])
+            # self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['year'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, tags['genre'])
+            self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+            self.db.commit()
+            return
+
+        self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+        self.db.commit()
+
+    def get_year(self):
+        return get_year(self.date)
 
     def _is_file_exists(self):
         isfile = self.is_downloaded and os.path.isfile(self.local_path)
@@ -374,9 +397,9 @@ class TelegramStorage:
             logger.warning('Audio message: %d not uploaded, skipping...', audio_id)
             return
 
+        d['track_number'] = 1
         d['chat_id'] = data['chat_id']
         d['message_id'] = data['id']
-        d['date'] = data['date']
         d['mime_type'] = audio['mime_type']
         d['file_name'] = audio['file_name']
         d['artist'] = audio['performer']
@@ -385,14 +408,16 @@ class TelegramStorage:
         d['size'] = audio['audio']['size']
         d['local_path'] = local['path']
         d['is_downloaded'] = 1 if local['is_downloading_completed'] else 0
+        d['created_at'] = data['date']
+        d['date'] = get_date(data['date'])
 
         self.db_cur.execute("""
             INSERT INTO `audio` (
-                chat_id, message_id, mime_type, title, artist, file_name, date, size, duration,
-                local_path, is_downloaded)
+                chat_id, message_id, mime_type, title, artist, file_name, `date`, `created_at`, size, duration,
+                local_path, is_downloaded, track_number)
             VALUES (
-                :chat_id, :message_id, :mime_type, :title, :artist, :file_name, :date, :size, :duration,
-                :local_path, :is_downloaded)
+                :chat_id, :message_id, :mime_type, :title, :artist, :file_name, :date, :created_at, :size, :duration,
+                :local_path, :is_downloaded, :track_number)
         """ , d)
 
         d['id'] = self.db_cur.lastrowid
