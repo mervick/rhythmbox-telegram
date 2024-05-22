@@ -178,6 +178,8 @@ class TgAudio:
     def get_state(self):
         if self.is_error:
             return 'STATE_ERROR'
+        if self.is_hidden:
+            return 'STATE_ERROR'
         if self.is_moved:
             return 'STATE_IN_LIBRARY'
         if self.is_downloaded:
@@ -344,9 +346,10 @@ class TelegramStorage:
             return TgAudio(result)
         return result
 
-    def get_chat_audio(self, chat_id, limit=None, convert=True):
+    def get_chat_audio(self, chat_id, limit=None, convert=True, show_hidden=False):
+        and_where = '' if show_hidden else 'AND is_hidden = "0"'
         audio = self.db.execute(
-            'SELECT * FROM `audio` WHERE chat_id = %s %s' % (chat_id, ("LIMIT %i" % limit) if limit else ''))
+            'SELECT * FROM `audio` WHERE chat_id = %s %s %s' % (chat_id, and_where, ("LIMIT %i" % limit) if limit else ''))
         result = audio.fetchall()
         if result and convert:
             items = []
