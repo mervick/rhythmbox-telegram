@@ -409,6 +409,16 @@ class TelegramApi(GObject.Object):
         r.wait()
         return r.update
 
+    def get_message_link(self, chat_id, message_id):
+        r = self.tg.call_method('getMessageLink', {
+            'chat_id': int(chat_id),
+            'message_id': int(message_id),
+            "for_album": False,
+            "for_group": False
+        })
+        r.wait()
+        return r.update['link'] if 'link' in r.update else None
+
     def download_audio_async(self, chat_id, message_id, priority=1):
         # msg = self.load_message_async(chat_id, message_id)
         r = self.tg.get_message(chat_id, message_id)
