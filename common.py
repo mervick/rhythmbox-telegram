@@ -151,27 +151,31 @@ def get_option_title(options, value):
         if option[1] == value:
             return option[0]
 
+META_TAGS = {
+    'title': RB.MetaDataField.TITLE,
+    'artist': RB.MetaDataField.ARTIST,
+    'album': RB.MetaDataField.ALBUM,
+    'track_number': RB.MetaDataField.TRACK_NUMBER,
+    'date': RB.MetaDataField.DATE,
+    'duration': RB.MetaDataField.DURATION,
+    'genre': RB.MetaDataField.GENRE,
+}
+
 def get_audio_tags(file_path):
     tags = {}
     metadata = RB.MetaData()
     uri = GLib.filename_to_uri(file_path, None)
     metadata.load(uri)
 
-    title = metadata.get(RB.MetaDataField.TITLE)
-    tags['title'] = title[1] if title[0] else None
-    artist = metadata.get(RB.MetaDataField.ARTIST)
-    tags['artist'] = artist[1] if artist[0] else None
-    album = metadata.get(RB.MetaDataField.ALBUM)
-    tags['album'] = album[1] if album[0] else None
-    track_number = metadata.get(RB.MetaDataField.TRACK_NUMBER)
-    tags['track_number'] = track_number[1] if track_number[0] else None
-    date = metadata.get(RB.MetaDataField.DATE)
-    tags['date'] = date[1] if date[0] else None
-    tags['year'] = GLib.Date.new_julian(date[1]).get_year() if date[0] else None
-    duration = metadata.get(RB.MetaDataField.DURATION)
-    tags['duration'] = duration[1] if duration[0] else None
-    genre = metadata.get(RB.MetaDataField.GENRE)
-    tags['genre'] = genre[1] if genre[0] else None
+    for tag_name in META_TAGS:
+        tags[tag_name] = None
+        try:
+            tag = metadata.get(META_TAGS[tag_name])
+            tags[tag_name] = tag[1] if tag[0] else None
+            if tag_name == 'date':
+                tags['year'] = GLib.Date.new_julian(tag[1]).get_year() if tag[0] else None
+        except TypeError:
+            pass
 
     return tags
 
