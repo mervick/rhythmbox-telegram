@@ -20,7 +20,7 @@ import os
 import logging
 import re
 import schema as SQL
-from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year
+from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +238,11 @@ class TgAudio:
 
     def get_link(self):
         return TelegramStorage.loaded().api.get_message_link(self.chat_id, self.message_id)
+
+    def get_file_ext(self):
+        if self.mime_type in mime_types.keys():
+            return mime_types[self.mime_type]
+        return os.path.splitext(self.file_name)[1][1:]
 
 
 class TelegramStorage:
