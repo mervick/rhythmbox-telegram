@@ -14,31 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import rb
 from gi.repository import RB
-from gi.repository import GLib
-from common import get_audio_tags, file_uri
-
-
-def to_location(api_hash, created_at, chat_id, audio_id):
-    return 'tg://%s/%s/%s/%s' % (api_hash, created_at, chat_id, audio_id)
-
-def get_location_audio_id(location):
-    return location.split('/')[-1]
-
-def get_location_data(location):
-    d = location.split('/')
-    return [d[-2], d[-1]]
+from common import file_uri, get_location_data
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
     def __init__(self, plugin):
         RB.RhythmDBEntryType.__init__(self, name='telegram')
+        self.source = None
         self.plugin = plugin
-        self.account = plugin.account
-        self.settings = plugin.settings
-        self.api = plugin.api
-        self.storage = plugin.storage
         self.shell = plugin.shell
         self.db = plugin.db
 
@@ -46,31 +30,19 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self.source = source
 
     def do_get_playback_uri(self, entry):
-        print('================do_get_playback_uri==================')
         uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
-        print(uri)
-
         if not uri:
-            loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            # return loc
-            chat_id, message_id = get_location_data(loc)
-            # print("converted track uri: %s" % loc)
-            # print("chat_id: %s" % chat_id)
-            # print("message_id: %s" % message_id)
-            audio = self.storage.get_audio(chat_id, message_id)
-            # print('audio %s' % audio)
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            chat_id, message_id = get_location_data(location)
+            audio = self.plugin.storage.get_audio(chat_id, message_id)
             if not audio:
-                # print('== return None')
                 return None
             if self.plugin.is_downloading:
-                print('== is_downloading, return None')
                 return None
 
             self.plugin.is_downloading = True
-            print('== start downloading')
             file_path = audio.get_path(wait=True)
             self.plugin.is_downloading = False
-            print('== get file_path %s' % file_path)
 
             if file_path:
                 audio.update_tags(file_path)
@@ -93,6 +65,5 @@ class TelegramEntryType(RB.RhythmDBEntryType):
 
         return uri
 
-    def do_can_sync_metadata(self, entry):
-#         return False
+    def do_can_sync_metadata(self, entry): # noqa
         return True

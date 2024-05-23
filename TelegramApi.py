@@ -16,23 +16,16 @@
 
 import uuid
 import threading
-import sqlite3
-import rb
 from gi.repository import RB
-from gi.repository import GObject, Gtk, Gdk, Gio, GLib
+from gi.repository import GObject, Gdk, Gio, GLib
 import os
 import hashlib
-from datetime import datetime
 import logging
-import enum
-import re
-import json
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
-from common import MessageType, message_type_set, message_set, audio_content_set, photo_content_set, mime_types, \
-    API_ERRORS, get_content_type, is_msg_valid, get_audio_type, get_chat_info, timestamp, empty_cb, cb
+from common import MessageType, audio_content_set, API_ERRORS, get_content_type, is_msg_valid, get_chat_info, empty_cb, cb
 from TelegramStorage import TelegramStorage
 
 # import gettext
@@ -40,10 +33,6 @@ from TelegramStorage import TelegramStorage
 
 logger = logging.getLogger(__name__)
 
-# import logging.config
-# logging.config.fileConfig('/path/to/logging.conf')
-# logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-# logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 def inst_key(api_hash, phone):
     return '|'.join([phone.strip('+'), api_hash])

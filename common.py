@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime
 import enum
-import rb
+from datetime import datetime
 from gi.repository import RB, GLib, Gio
 
 import gettext
@@ -103,6 +102,16 @@ API_ERRORS = {
 }
 
 
+def to_location(api_hash, created_at, chat_id, audio_id):
+    return 'tg://%s/%s/%s/%s' % (api_hash, created_at, chat_id, audio_id)
+
+def get_location_audio_id(location):
+    return location.split('/')[-1]
+
+def get_location_data(location):
+    d = location.split('/')
+    return [d[-2], d[-1]]
+
 def file_uri(path):
     return GLib.filename_to_uri(path, None)
 #     return 'file://%s' % uri
@@ -117,12 +126,6 @@ def get_content_type(data):
 
 def is_msg_valid(data):
     return message_set <= set(data)
-
-def get_audio_type(mime_type):
-    if mime_type in mime_types.keys():
-        return mime_types[mime_type]
-    mime = mime_type.split('/', 2)
-    return mime[1] if len(mime) > 1 else mime_type
 
 def get_chat_info(chat):
     # photo = chat['photo'] if 'photo' in chat else {"minithumbnail": None}
@@ -198,6 +201,13 @@ def get_audio_tags(file_path):
 # %ts -- track artist sortname
 # %tS -- track artist sortname (lowercase)
 
+filename_illegal = '<>:"/\\|?*'
+
+def clear_filename(filename):
+    for char in filename_illegal:
+        filename = filename.replace(char, '')
+    return filename
+
 filepath_pattern_markers = {
     "%at": "album",
     "%aa": "artist",
@@ -216,14 +226,14 @@ filepath_pattern_markers = {
     "%tS": "artist_lower",
 }
 
-# Parse a filename pattern and replace markers with values from the tags
 def filepath_parse_pattern(pattern, tags):
+    # Parse a filename pattern and replace markers with values from the tags
     tags['artist_lower'] = tags['artist'].lower() if tags['artist'] else None
     tags['genre_lower'] = tags['genre'].lower() if tags['genre'] else None
     tags['track_number_padded'] = "%02i" % tags['track_number'] if tags['track_number'] else None
 
     for marker in filepath_pattern_markers:
-        tag = str(tags.get(filepath_pattern_markers[marker], ''))
+        tag = clear_filename(str(tags.get(filepath_pattern_markers[marker], '')))
         pattern = pattern.replace(marker, tag)
 
     return pattern
