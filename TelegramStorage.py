@@ -150,20 +150,20 @@ class TgAudio:
             self.local_path = local_path
             self.info_id = info_id
         else:
-            self.id = data['id']
+            self.id = data.get('id', 0)
             self.chat_id = data['chat_id']
             self.message_id = data['message_id']
-            self.mime_type = data['mime_type']
-            self.track_number = data['track_number']
+            self.mime_type = data.get('mime_type', '')
+            self.track_number = data.get('track_number', 0)
             self.title = data.get('title', '')
             self.artist = data.get('artist', '')
             self.album = data.get('album', '')
             self.genre = data.get('genre', '')
-            self.file_name = data['file_name']
-            self.created_at = data['created_at']
-            self.date = data['date']
-            self.size = data['size']
-            self.duration = data['duration']
+            self.file_name = data.get('file_name', '')
+            self.created_at = data.get('created_at', 0)
+            self.date = data.get('date', 0)
+            self.size = data.get('size', 0)
+            self.duration = data.get('duration', 0)
             self.is_downloaded = data.get('is_downloaded', False)
             self.is_moved = data.get('is_moved', False)
             self.is_hidden = data.get('is_hidden', False)
@@ -235,6 +235,9 @@ class TgAudio:
             for k in data.keys():
                 setattr(self, k, data[k])
         return res
+
+    def get_link(self):
+        return TelegramStorage.loaded().api.get_message_link(self.chat_id, self.message_id)
 
 
 class TelegramStorage:
