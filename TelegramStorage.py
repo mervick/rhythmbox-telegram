@@ -137,7 +137,7 @@ class TgAudio:
             self.track_number = track_number
             self.title = title
             self.artist = artist
-            self.album = album
+            self.album = album if album else ''
             self.genre = genre
             self.file_name = file_name
             self.created_at = created_at
@@ -155,10 +155,10 @@ class TgAudio:
             self.message_id = data['message_id']
             self.mime_type = data['mime_type']
             self.track_number = data['track_number']
-            self.title = data['title']
-            self.artist = data['artist']
-            self.album = data.get('album')
-            self.genre = data.get('genre')
+            self.title = data.get('title', '')
+            self.artist = data.get('artist', '')
+            self.album = data.get('album', '')
+            self.genre = data.get('genre', '')
             self.file_name = data['file_name']
             self.created_at = data['created_at']
             self.date = data['date']
@@ -174,21 +174,8 @@ class TgAudio:
         file_path = file_path if file_path else self.get_path(wait=True)
         if file_path:
             tags = get_audio_tags(file_path)
-            self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, tags['track_number'])
-
-            self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, tags['title'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, tags['artist'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, tags['album'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, tags['duration'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['date'])
-            # self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['year'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, tags['genre'])
-            self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-            self.db.commit()
-            return
-
-        self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-        self.db.commit()
+            del tags['year']
+            self.save(tags)
 
     def get_year(self):
         return get_year(self.date)
@@ -339,27 +326,6 @@ class TelegramStorage:
             set_values.append(data[k])
         set_keys = ', '.join(set_keys)
         return set_keys, set_values
-
-#     def update_audio(self, chat_id, message_id, data):
-#         # @TODO remove ?
-#         if not data:
-#             return
-#         set_keys = []
-#         set_values = []
-#         for k in data.keys():
-#             set_keys.append(f'`{k}` = ?')
-#             set_values.append(data[k])
-#         set_keys = ', '.join(set_keys)
-#         set_values.append(chat_id)
-#         set_values.append(message_id)
-#
-#         self.db_cur.execute(
-#             f"UPDATE `audio` SET {set_keys} WHERE chat_id = ? and message_id = ? LIMIT 1",
-#             tuple(set_values)
-#         )
-#         result = self.db_cur.rowcount > 0
-#         self.db.commit()
-#         return result
 
     def get_audio(self, chat_id, message_id, convert=True):
         audio = self.db.execute(

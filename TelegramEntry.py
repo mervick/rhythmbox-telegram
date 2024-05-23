@@ -73,15 +73,15 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             print('== get file_path %s' % file_path)
 
             if file_path:
-                tags = get_audio_tags(file_path)
+                audio.update_tags(file_path)
 
-                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, tags['track_number'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, tags['title'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, tags['artist'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, tags['album'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, tags['duration'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, tags['date'])
-                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, tags['genre'])
+                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
+                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
+                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
+                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
                 self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
                 self.db.commit()
 
