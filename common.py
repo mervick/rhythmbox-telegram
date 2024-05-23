@@ -223,3 +223,12 @@ def filepath_parse_pattern(pattern, tags):
         pattern = pattern.replace(marker, tag)
 
     return pattern
+
+def get_date(unix_ts):
+    dt = GLib.DateTime.new_from_unix_local(int(unix_ts))
+    date = GLib.Date.new_dmy(dt.get_day_of_month(), GLib.DateMonth(dt.get_month()), dt.get_year())
+    return date.get_julian()
+
+def get_year(julian):
+    date = GLib.Date.new_julian(julian)
+    return date.get_year()
