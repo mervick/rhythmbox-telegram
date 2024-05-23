@@ -17,11 +17,14 @@
 import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
-from gi.repository import GObject, Gtk, Gio, GLib
-from TelegramEntry import to_location
+from gi.repository import GObject, Gtk, Gio, GLib, Gdk
+from TelegramEntry import to_location, get_location_data
 from TelegramLoader import PlaylistLoader
 
 import gettext
+
+from TelegramStorage import TgAudio
+
 gettext.install('rhythmbox', RB.locale_dir())
 
 
@@ -90,20 +93,22 @@ class TelegramSource(RB.BrowserSource):
         self.entry_type = None
         self.api = None
         self.loader = None
+        self.plugin = None
         self.storage = None
         self.chat_id = None
         self.last_track = None
         self._is_downloading = 0
 
-    def setup(self, api, chat_id):
+    def setup(self, plugin, chat_id):
         self.initialised = False
         shell = self.props.shell
         self.shell = shell
         self.db = shell.props.db
         self.player = shell.props.shell_player
         self.entry_type = self.props.entry_type
-        self.api = api
-        self.storage = api.storage
+        self.plugin = plugin.api
+        self.api = plugin.api
+        self.storage = plugin.api.storage
         self.chat_id = chat_id
         self.last_track = None
         self.loader = None
@@ -159,10 +164,21 @@ class TelegramSource(RB.BrowserSource):
         return True
 
     def browse_action(self):
-        pass
+        screen = self.props.shell.props.window.get_screen()
+        tracks = self.get_entry_view().get_selected_entries()
+        if len(tracks) == 0:
+            return
+        entry = tracks[0]
+        location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        chat_id, message_id = get_location_data(location)
+        audio = TgAudio({"chat_id": chat_id,  "message_id": message_id})
+        url = audio.get_link()
+        Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
 
     def download_action(self):
-        pass
+        selection = self.shell.get_property('selection')
+        entries = selection.get_selected_entries()
+        return entries if entries else []
 
     def hide_action(self):
         pass
