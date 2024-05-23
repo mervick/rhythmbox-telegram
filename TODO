@@ -36,3 +36,4 @@
 * fix loading playlist after changing list in settings
 * settings: first show window and only after that connecting
 * improve reloading sources
+* fix empty sources in case the source was loaded and then the sources were reloaded using do_reload_sources
