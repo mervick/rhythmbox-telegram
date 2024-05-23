@@ -34,3 +34,5 @@
 * save tags to db
 * audio: add track_number to db
 * fix loading playlist after changing list in settings
+* settings: first show window and only after that connecting
+* improve reloading sources
