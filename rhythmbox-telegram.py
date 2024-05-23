@@ -21,9 +21,9 @@ from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
-# from TelegramConfig import TelegramConfig
 from TelegramConfig import account, TelegramConfig
-from TelegramEntry import TelegramEntryType, get_location_data
+from TelegramEntry import TelegramEntryType
+from common import get_location_data
 
 
 # from gi.repository.Gdk import Color
@@ -50,6 +50,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.settings = None
         self.account = None
         self.connected = False
+        self.is_api_loaded = False
         self.is_downloading = False
         self.api = None
         self.storage = None
@@ -104,6 +105,14 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
             self.do_reload_sources()
 
+    # def load_api(self):
+    #     api_id, api_hash, phone_number, self.connected = self.account.get_secure()
+    #     if self.connected:
+    #         self.api = TelegramApi.api(api_id, api_hash, phone_number)
+    #         self.api.login()
+    #         self.storage = self.api.storage
+    #         self.is_api_loaded = True
+
     def on_entry_deleted(self, db, entry):
         loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(loc)
@@ -144,7 +153,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
                 entry_type = TelegramEntryType(self)
                 source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=icon,
                     plugin=self, settings=self.settings.get_child("source"), name=chat['title'], toolbar_menu=self.toolbar)
-                source.setup(self.api, chat['id'])
+                source.setup(self, chat['id'])
                 entry_type.setup(source)
                 self.sources.append(source)
                 self.shell.register_entry_type_for_source(source, entry_type)
