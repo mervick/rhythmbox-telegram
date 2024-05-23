@@ -9,18 +9,17 @@
         <attribute name="accel">&lt;Alt&gt;e</attribute>
       </submenu>
       <item>
-        <attribute name="label" translatable="yes">Browse</attribute>
-        <attribute name="rb-property-bind">show-browser</attribute>
-        <attribute name="accel">&lt;Primary&gt;b</attribute>
+        <attribute name="label" translatable="yes">Browse in chat</attribute>
+        <attribute name="action">app.tg-browse</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Download</attribute>
-        <attribute name="action">app.tg-album-download</attribute>
+        <attribute name="action">app.tg-download</attribute>
       </item>
-      <item>
-        <attribute name="label" translatable="yes">Artist</attribute>
-        <attribute name="action">app.tg-artist-info</attribute>
-      </item>
+<!--      <item>-->
+<!--        <attribute name="label" translatable="yes">Hide</attribute>-->
+<!--        <attribute name="action">app.tg-hide</attribute>-->
+<!--      </item>-->
     </section>
   </menu>
 </interface>
