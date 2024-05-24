@@ -28,23 +28,24 @@ gettext.install('rhythmbox', RB.locale_dir())
 
 
 state_dark_icons = {
-    'DEFAULT' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/download-dark.svg',
-    'STATE_ERROR' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/error.svg',
-    'STATE_IN_LIBRARY' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/library-dark.svg',
-    'STATE_DOWNLOADED' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/empty.svg',
+    'DEFAULT' : '/icons/hicolor/scalable/state/download-dark.svg',
+    'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
+    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-dark.svg',
+    'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
 }
 
 state_light_icons = {
-    'DEFAULT' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/download-light.svg',
-    'STATE_ERROR' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/error.svg',
-    'STATE_IN_LIBRARY' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/library-light.svg',
-    'STATE_DOWNLOADED' : '/home/data/projects/tg-rhythmbox/rhythmbox-telegram/icons/hicolor/scalable/state/empty.svg',
+    'DEFAULT' : '/icons/hicolor/scalable/state/download-light.svg',
+    'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
+    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-light.svg',
+    'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
 }
 
 
 class StateColumn:
     def __init__(self, source):
-        column_title = Gtk.TreeViewColumn()  # "Title",Gtk.CellRendererText(),text=0)
+        self.plugin_dir = source.plugin.plugin_info.get_data_dir()
+        column_title = Gtk.TreeViewColumn()
         renderer = Gtk.CellRendererPixbuf()
         column_title.set_title(" ")
         column_title.set_cell_data_func(renderer, self.model_data_func, "image") # noqa
@@ -71,9 +72,8 @@ class StateColumn:
     def model_data_func(self, column, cell, model, iter, infostr): # noqa
         entry = model.get_value(iter, 0)
         state = entry.get_string(RB.RhythmDBPropType.COMMENT)
-        # obj = model.get_value(iter,1)
         filepath = state_dark_icons[state] if state in state_dark_icons else state_dark_icons['DEFAULT']
-        icon = GdkPixbuf.Pixbuf.new_from_file(filepath)
+        icon = GdkPixbuf.Pixbuf.new_from_file(self.plugin_dir + filepath)
         cell.set_property("pixbuf", icon)
 
 
@@ -107,8 +107,7 @@ class TelegramSource(RB.BrowserSource):
             self.loader.stop()
 
     def do_selected(self):
-        # GTK_SORT_ASCENDING = 0, GTK_SORT_DESCENDING = 1
-        self.get_entry_view().set_sorting_order("Location", 1) # noqa
+        self.get_entry_view().set_sorting_order("Location", 1)  # GTK_SORT_ASCENDING = 0, GTK_SORT_DESCENDING = 1
         print('do_selected %s' % self.chat_id)
 
         if not self.initialised:
