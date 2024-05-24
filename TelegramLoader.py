@@ -42,7 +42,6 @@ class AudioDownloader:
     def _move(self, audio):
         entry = self.entries[self._idx]
         audio.update_tags()
-
         tags = {
             'title': audio.title,
             'artist': audio.artist,
@@ -52,7 +51,6 @@ class AudioDownloader:
             'duration': audio.duration,
             'genre': audio.genre,
             'year': audio.get_year(),
-
         }
         file_ext = audio.get_file_ext()
         filename = filepath_parse_pattern(
@@ -60,7 +58,6 @@ class AudioDownloader:
                          f'.{file_ext}' if len(file_ext) else ''), tags)
         filename = "%s/%s" % (self.library_location, filename)
         file_dir = os.path.dirname(filename)
-
         os.makedirs(file_dir, exist_ok=True)
         shutil.move(audio.local_path, filename)
         audio.save({"local_path": filename, "is_moved": True})
