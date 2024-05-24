@@ -17,6 +17,7 @@
 import os
 import re
 from rb import rbconfig # noqa
+from common import show_error
 
 Secret = None
 if rbconfig.libsecret_enabled:
@@ -26,9 +27,6 @@ if rbconfig.libsecret_enabled:
         from gi.repository import Secret
     except ImportError:
         pass
-
-if Secret is None:
-    print("You need to install libsecret for safe saving Telegram credentials")
 
 __instance = None
 
@@ -42,12 +40,16 @@ def instance(plugin):
 
 class TelegramAccount(object):
     def __init__(self, plugin):
-        self.settings = plugin.settings  # Gio.Settings.new(TELEGRAM_SCHEMA)
+        self.settings = plugin.settings
         self.plugin = plugin
         self.secret = None
 
+        if Secret is None:
+            print("You need to install libsecret for secure storage of Telegram secret keys")
+            show_error("You need to install libsecret for secure storage of Telegram secret keys",
+                       "Due to the absence of libsecret, Telegram secret keys will be stored in plaintext in the Gnome GSettings")
+
         if Secret is not None:
-            # print("Secret is defined")
             self.schema = Secret.Schema.new('org.gnome.rhythmbox.plugins.telegram', Secret.SchemaFlags.DONT_MATCH_NAME,
                 {"rhythmbox-plugin": Secret.SchemaAttributeType.STRING})
             self.keyring_attributes = {"rhythmbox-plugin": "telegram"}
@@ -111,12 +113,8 @@ class TelegramAccount(object):
             return
         secret = '\n'.join((api_id, api_hash, phone, str(connected)))
         if secret == self.secret:
-            # print("Account details not changed")
             return
         self.secret = secret
-        # if Secret is None:
-        #     print("Account details were not saved because libsecret was not found")
-        #     return
         result = Secret.password_store_sync(self.schema, self.keyring_attributes, Secret.COLLECTION_DEFAULT,
             "Rhythmbox: Telegram credentials", secret, None)
         if not result:
