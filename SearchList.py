@@ -65,10 +65,7 @@ class SearchListBox:
         items = []
         for item in self.selected:
             if item["id"] == selected["id"]:
-                # del self.selected[i]
-                # self.selected = list(self.selected)
                 self.flow_box.remove(widget)
-                # return
             else:
                 items.append(item)
         self.selected = items
@@ -96,15 +93,12 @@ class SearchListBox:
 
     def search(self, event=None, force=False):
         query = self.entry.get_text().strip()
-        # self.entry.set_text(query)
         if self.query != query or force:
             self.query = query
             self.clear_list()
             if query:
                 query_casefold = query.casefold()
                 for item in self.items:
-                    # if item['title'].find(query) != -1:
-                    # if query_casefold in item['title'].casefold():
                     if query_casefold in item['casefold']:
                         self._add_item(item)
             else:
@@ -115,8 +109,6 @@ class SearchListBox:
         self.items = []
         for item in items:
             self.add(item, update=False)
-            # if item not in self.items and item["title"]:
-            #     self.add(item)
         self._sort()
         self.search(force=True)
 
@@ -134,7 +126,6 @@ class SearchListBox:
                 item = dict(item)
                 item["casefold"] = item["title"].casefold()
                 self.items.append(item)
-                # self._add_item(item)
         if update:
             self._sort()
             self.search()
