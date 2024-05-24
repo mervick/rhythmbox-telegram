@@ -16,24 +16,14 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-import json
-import re
 import rb
 from gi.repository import RB
-from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk, GLib, Gdk
-from telegram.client import AuthorizationState
-from DialogCode import DialogCode
-from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
+from gi.repository import GObject, Gtk, Peas, PeasGtk, GLib
 import TelegramAccount
-from SearchList import SearchListBox
-from PrefsPage import PrefsPage
 from PrefsConnectPage import PrefsConnectPage
 from PrefsChannelsPage import PrefsChannelsPage
 from PrefsSettingsPage import PrefsSettingsPage
 from PrefsTempPage import PrefsTempPage
-
-# import gettext
-# gettext.install('rhythmbox', RB.locale_dir())
 
 __plugin = None
 
@@ -63,10 +53,9 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
     def __init__(self):
         GObject.GObject.__init__(self)
         self.shell = self.object
-#         print('set_account %s' % account())
-#         self.account = account()
-#         self.plugin = self.account.plugin
-#         self.settings = self.account.settings
+        self.account = None
+        self.plugin = None
+        self.settings = None
 
     def find_plugin_file(self, file):
         return rb.find_plugin_file(self, file)
@@ -76,7 +65,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         self.plugin = self.account.plugin
         self.settings = self.account.settings
 
-        # Create Notebook
         main_box = Gtk.Box()
         self.main_box = main_box
         main_box.set_border_width(5)
@@ -112,7 +100,6 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
     def update_window(self):
         gtk_win = self.main_box.get_toplevel()
-#         gtk_win = settings_box.get_toplevel()
         gtk_win.set_default_size(500, 600)
         gtk_win.set_resizable(False)
         donate_btn = gtk_win.add_button("Donate", Gtk.ResponseType.HELP)
