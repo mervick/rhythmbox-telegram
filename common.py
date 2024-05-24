@@ -263,3 +263,9 @@ def show_error(title, description=None): # noqa
     err_dialog.set_application(Gio.Application.get_default())
     err_dialog.run() # noqa
     err_dialog.destroy()
+
+def detect_theme_scheme():
+    theme = str(Gtk.Settings.get_default().get_property('gtk-theme-name')).lower().find('dark')
+    dark = Gtk.Settings.get_default().get_property('gtk-application-prefer-dark-theme')
+
+    return 'dark' if theme != -1 or dark else 'light'
