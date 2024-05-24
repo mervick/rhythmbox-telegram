@@ -20,7 +20,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk
 from PrefsPage import PrefsPage, set_combo_text_column
-from common import filepath_parse_pattern
+from common import filepath_parse_pattern, show_error
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -140,8 +140,8 @@ class PrefsSettingsPage(PrefsPage):
                 self.library_location_entry.set_text(value)
                 self.account.settings.set_string('library-path', value)
             else:
-                self.show_error(_('Directory %s does not exists') % value,
-                                _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'))
+                show_error(_('Directory %s does not exists') % value,
+                           _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'))
         elif name in ['folder-hierarchy', 'filename-template']:
             example = filepath_parse_pattern(
                 "%s/%s.mp3" % (self.settings['folder-hierarchy'], self.settings['filename-template']), example_tags)

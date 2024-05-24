@@ -16,7 +16,7 @@
 
 import enum
 from datetime import datetime
-from gi.repository import RB, GLib, Gio
+from gi.repository import RB, GLib, Gio, Gtk
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -143,7 +143,7 @@ def get_chat_info(chat):
 def timestamp():
     return datetime.timestamp(datetime.now())
 
-def empty_cb(*args, **kwargs):
+def empty_cb(*args, **kwargs): # noqa
     pass
 
 def cb(fn):
@@ -246,3 +246,11 @@ def get_date(unix_ts):
 def get_year(julian):
     date = GLib.Date.new_julian(julian)
     return date.get_year()
+
+def show_error(title, description=None): # noqa
+    err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
+    if description is not None:
+        err_dialog.format_secondary_text(str(description)) # noqa
+    err_dialog.set_application(Gio.Application.get_default())
+    err_dialog.run() # noqa
+    err_dialog.destroy()

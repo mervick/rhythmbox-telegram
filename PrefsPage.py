@@ -74,14 +74,6 @@ class PrefsPage(GObject.GObject):
                 self.set_error(widget, False)
             self.has_errors.clear()
 
-    def show_error(self, title, description=None): # noqa
-        err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
-        if description is not None:
-            err_dialog.format_secondary_text(str(description)) # noqa
-        err_dialog.set_application(Gio.Application.get_default())
-        err_dialog.run() # noqa
-        err_dialog.destroy()
-
     def on_change(self, name, value):
         print('==ON_CHANGE %s %s' % (name, value))
         txt = json.dumps(value)

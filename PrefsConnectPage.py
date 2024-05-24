@@ -23,6 +23,7 @@ from telegram.client import AuthorizationState
 from DialogCode import DialogCode
 from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
 from PrefsPage import PrefsPage
+from common import show_error
 
 
 def safe_cast(val, to_type, default=None):
@@ -197,7 +198,7 @@ class PrefsConnectPage(PrefsPage):
                 self.set_error(phone_entry)
                 errors.append(_('The phone number is invalid'))
             if errors:
-                self.show_error(_('Validation error'), errors[0])
+                show_error(_('Validation error'), errors[0])
                 return False
 
             return True
@@ -215,18 +216,18 @@ class PrefsConnectPage(PrefsPage):
                 except TelegramAuthStateError as e:
                     if self.api.state == AuthorizationState.WAIT_CODE:
                         def unable_to_login():
-                            self.show_error(_("Unable to login Telegram"), _('Login code is required'))
+                            show_error(_("Unable to login Telegram"), _('Login code is required'))
                             set_state(False)
 
                         DialogCode(self, connect_api, unable_to_login)
                         return
                     else:
-                        self.show_error(_("Unable to login Telegram"), e)
+                        show_error(_("Unable to login Telegram"), e)
                 except TelegramAuthError as e:
                     err = self.api.get_error()
-                    self.show_error(_("Unable to login Telegram"), err if err else e)
+                    show_error(_("Unable to login Telegram"), err if err else e)
                 except RuntimeError as e:
-                    self.show_error(_("Unable to login Telegram"), e)
+                    show_error(_("Unable to login Telegram"), e)
 
                 set_state(self.api.state == AuthorizationState.READY)
             else:
