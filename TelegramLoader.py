@@ -35,7 +35,6 @@ class AudioDownloader:
         self._idx = 0
 
     def start(self):
-        print(f'AudioDownloader.start')
         self._load()
         return self
 
@@ -82,7 +81,6 @@ class AudioDownloader:
         GLib.timeout_add(5, self._load)
 
     def stop(self):
-        print(f'AudioDownloader.stop')
         self._terminated = True
 
     def _load(self):
@@ -90,7 +88,6 @@ class AudioDownloader:
             entry = self.entries[self._idx]
             location = entry.get_string(RB.RhythmDBPropType.LOCATION)
             chat_id, message_id = get_location_data(location)
-            print(f'AudioDownloader.load  {message_id}')
             audio = self.plugin.storage.get_audio(chat_id, message_id)
             if not audio or audio.is_moved:
                 self._next()
@@ -117,9 +114,7 @@ class PlaylistLoader:
         self._loaded = False
 
     def start(self):
-        # print(f'PlaylistLoader.start')
         self.playlist = TgPlaylist.read(self.chat_id )
-        # print(self.playlist.segments)
         self.playlist.segments.insert(0, [0,0])
         self.segment = self.playlist.segment(1)
         blob = {}
@@ -129,25 +124,19 @@ class PlaylistLoader:
     def _add_audio(self, audio):
         # update audio, add entries to playlist
         if audio.message_id == self.segment[0]:
-            # print('end of page')
             self._end_of_page = True
         if audio.message_id == self.segment[1]:
-            # print('end of page')
             self._end_of_page = True
         if not self._end_of_page:
             self.add_entry(audio)
 
     def _next(self, blob, cmd):
         self.page = self.page + 1
-        # print('PlaylistLoader.next %s' % cmd)
         last_msg_id = blob.get('last_msg_id', 0)
 
         if last_msg_id == 0:
-            # print('tg.loader.BREAK')
             GLib.timeout_add(60 * 5000, self.start)
             return
-
-        # print("blob %s" % blob)
 
         if self.playlist.segments[0][0] == 0:
             self.playlist.segments[0][0] = last_msg_id
@@ -162,17 +151,12 @@ class PlaylistLoader:
 
         self._end_of_page = False
 
-        # if last_msg_id == self.offset_msg_id:
-        #     print('BREAK INFINITY LOOP')
-#             return
-
 #         if cmd == 'DONE' or offset_msg_id == -1 or (last_msg_id == self.offset_msg_id and self._loaded):
         if cmd == 'DONE' or offset_msg_id == -1 or last_msg_id == self.offset_msg_id:
 #             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
             self.playlist.segments = [[ self.playlist.segments[0][0], offset_msg_id]]
             self.playlist.save()
             self._loaded = True
-            # print('tg.loader.DONE')
             GLib.timeout_add(60 * 5000, self.start)
             return
 
@@ -181,16 +165,11 @@ class PlaylistLoader:
         self.segment = self.playlist.segment(1)
 
         self.offset_msg_id = offset_msg_id
-        # print('timeout_add')
         GLib.timeout_add(5000 if self.page > 10 else 1000, self._load, {"offset_msg_id": offset_msg_id})
 
     def stop(self):
-        # print(f'PlaylistLoader.stop')
         self._terminated = True
 
     def _load(self, blob={}, limit=50):
         if not self._terminated:
-            # print(f'PlaylistLoader.load  {self.chat_id}')
-            # print(blob)
             self.api.load_messages_idle( self.chat_id, update=self._add_audio, done=self._next, blob={**blob}, limit=limit)
-
