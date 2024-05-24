@@ -1,2 +1,0 @@
-fixes clear channels list in channels prefs page
-fixes reloading group pages on change any values, reload it only on change connect and channels
