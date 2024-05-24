@@ -19,7 +19,8 @@ import shutil
 from gi.repository import RB
 from gi.repository import GLib
 from common import get_location_data, filepath_parse_pattern
-from TelegramStorage import TelegramStorage, TgPlaylist
+from TelegramStorage import TgPlaylist
+from TelegramApi import TelegramApi
 
 
 class AudioDownloader:
@@ -35,7 +36,18 @@ class AudioDownloader:
         self._idx = 0
 
     def start(self):
-        self._load()
+        entries = []
+        for entry in self.entries:
+            state = entry.get_string(RB.RhythmDBPropType.COMMENT)
+            if state != 'STATE_IN_LIBRARY':
+                entries.append(entry)
+                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, 'STATE_LOADING')
+                self.plugin.db.commit()
+        self.entries = entries
+        if len(entries) > 0:
+            self._load()
+        else:
+            self.stop()
         return self
 
     def _move(self, audio):
@@ -89,7 +101,12 @@ class AudioDownloader:
             location = entry.get_string(RB.RhythmDBPropType.LOCATION)
             chat_id, message_id = get_location_data(location)
             audio = self.plugin.storage.get_audio(chat_id, message_id)
-            if not audio or audio.is_moved:
+            if not audio:
+                self._next()
+                return
+            if audio.is_moved:
+                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.plugin.db.commit()
                 self._next()
                 return
             file_path = audio.get_path(wait=False, done=self._move)
@@ -102,7 +119,7 @@ class PlaylistLoader:
         return f'PlaylistLoader <{self.chat_id}>'
 
     def __init__(self, chat_id, add_entry):
-        self.api = TelegramStorage.loaded().api
+        self.api = TelegramApi.loaded()
         self.playlist = TgPlaylist.read(chat_id)
         self.chat_id = chat_id
         self.add_entry = add_entry
@@ -115,7 +132,7 @@ class PlaylistLoader:
 
     def start(self):
         self.playlist = TgPlaylist.read(self.chat_id )
-        self.playlist.segments.insert(0, [0,0])
+        self.playlist.segments.insert(0, [0, 0])
         self.segment = self.playlist.segment(1)
         blob = {}
         self._load(blob, limit=1)
