@@ -21,17 +21,9 @@ from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
-from TelegramConfig import account, TelegramConfig
+from TelegramConfig import account, TelegramConfig  # TelegramConfig is REQUIRED for show config page
 from TelegramEntry import TelegramEntryType
 from common import get_location_data
-
-
-# from gi.repository.Gdk import Color
-# import gettext
-# gettext.install('rhythmbox', RB.locale_dir())
-
-# REQUIRED for show config page
-# from TelegramConfig import TelegramConfig
 
 
 class Telegram(GObject.GObject, Peas.Activatable):
@@ -62,7 +54,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         print('Telegram plugin activating')
         self.shell = self.object
         self.db = self.shell.props.db
-        self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir()+'/images/telegram.svg'))
+        self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         schema_source = Gio.SettingsSchemaSource.new_from_directory(
             self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
@@ -186,4 +178,3 @@ class Telegram(GObject.GObject, Peas.Activatable):
     def hide_action_cb(self, action, hide_action):
         shell = self.object
         shell.props.selected_page.display_artist_info()
-
