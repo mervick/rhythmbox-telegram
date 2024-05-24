@@ -17,7 +17,7 @@
 import os
 import re
 from rb import rbconfig # noqa
-from common import show_error
+from common import SingletonMeta, show_error
 
 Secret = None
 if rbconfig.libsecret_enabled:
@@ -28,18 +28,9 @@ if rbconfig.libsecret_enabled:
     except ImportError:
         pass
 
-__instance = None
 
-
-def instance(plugin):
-    global __instance
-    if __instance is None:
-        __instance = TelegramAccount(plugin)
-    return __instance
-
-
-class TelegramAccount(object):
-    def __init__(self, plugin):
+class TelegramAccount(metaclass=SingletonMeta):
+    def __init__(self, plugin=None):
         self.settings = plugin.settings
         self.plugin = plugin
         self.secret = None

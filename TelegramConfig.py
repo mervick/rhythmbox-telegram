@@ -24,14 +24,7 @@ from PrefsConnectPage import PrefsConnectPage
 from PrefsChannelsPage import PrefsChannelsPage
 from PrefsSettingsPage import PrefsSettingsPage
 from PrefsTempPage import PrefsTempPage
-
-__plugin = None
-
-def account(plugin=None):
-    global __plugin
-    if plugin is not None:
-        __plugin = plugin
-    return TelegramAccount.instance(__plugin)
+from TelegramAccount import TelegramAccount
 
 
 class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
@@ -61,7 +54,7 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         return rb.find_plugin_file(self, file)
 
     def do_create_configure_widget(self):
-        self.account = account()
+        self.account = TelegramAccount()
         self.plugin = self.account.plugin
         self.settings = self.account.settings
 

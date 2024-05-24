@@ -21,7 +21,8 @@ from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Peas, PeasGtk
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
-from TelegramConfig import account, TelegramConfig  # TelegramConfig is REQUIRED for show config page
+from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
+from TelegramAccount import TelegramAccount
 from TelegramEntry import TelegramEntryType
 from common import get_location_data
 
@@ -60,7 +61,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
-        self.account = account(self)
+        self.account = TelegramAccount(self)
         self.sources = []
 
         # Connect to the entry-deleted signal of the RhythmDB
