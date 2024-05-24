@@ -16,8 +16,8 @@
 
 from gi.repository import RB
 from gi.repository import GdkPixbuf
-from gi.repository import GObject, Gtk, Gio, Gdk
-from common import to_location, get_location_data, empty_cb
+from gi.repository import GObject, Gtk, Gio, Gdk, GLib
+from common import to_location, get_location_data, empty_cb, detect_theme_scheme
 from TelegramLoader import PlaylistLoader, AudioDownloader
 
 import gettext
@@ -43,38 +43,96 @@ state_light_icons = {
 
 
 class StateColumn:
+    _icon_cache = {}
+
     def __init__(self, source):
+        scheme = source.plugin.settings['color-scheme']
+        if scheme == 'auto':
+            scheme = detect_theme_scheme()
+        self.icons = state_dark_icons if scheme == 'dark' else state_light_icons
+        # reset icon cache after change scheme
+        if StateColumn._icon_cache.get('scheme') != scheme:
+            StateColumn._icon_cache = {'scheme': scheme}
+
+        self._pulse = 0
+        self._models = {}
+        self.timeout_id = None
         self.plugin_dir = source.plugin.plugin_info.get_data_dir()
-        column_title = Gtk.TreeViewColumn()
-        renderer = Gtk.CellRendererPixbuf()
-        column_title.set_title(" ")
-        column_title.set_cell_data_func(renderer, self.model_data_func, "image") # noqa
 
-        # image_widget = Gtk.Image.new_from_icon_name("audio-volume-high-symbolic", Gtk.IconSize.MENU)
-        # column_title.set_widget(image_widget)
-        # Gtk.Widget.show_all(image_widget)
+        column = Gtk.TreeViewColumn()
+        pixbuf_renderer = Gtk.CellRendererPixbuf()
+        spinner_renderer = Gtk.CellRendererSpinner()
 
-        column_title.set_expand(False)
-        column_title.set_resizable(False)
+        column.add_attribute(spinner_renderer, "active", 1)
+        column.add_attribute(spinner_renderer, "pulse", 1)
 
-        column_title.pack_start(renderer, expand=False)
-        # column_title.pack_start(renderer, expand=True)
-        column_title.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        column_title.set_fixed_width(36)
+        column.set_title(" ")
+        column.set_cell_data_func(pixbuf_renderer, self.model_data_func, "pixbuf") # noqa
+        column.set_cell_data_func(spinner_renderer, self.model_data_func, "spinner") # noqa
+
+        column.pack_start(spinner_renderer, expand=True)
+        column.pack_start(pixbuf_renderer, expand=True)
+
+        column.set_expand(False)
+        column.set_resizable(False)
+
+        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        column.set_fixed_width(36)
 
         entry_view = source.get_entry_view()
-        entry_view.append_column_custom(column_title, ' ', "tg-state", empty_cb, None, None)
+        self.entry_view = entry_view
+        entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
         visible_columns = entry_view.get_property("visible-columns")
         visible_columns.append('tg-state')
         entry_view.set_property("visible-columns", visible_columns)
-        # entry_view.set_property("has-tooltip", True)
 
-    def model_data_func(self, column, cell, model, iter, infostr): # noqa
+    def activate(self):
+        if not self.timeout_id:
+            self.timeout_id = GLib.timeout_add(100, self.spinner_pulse)
+
+    def deactivate(self):
+        if self.timeout_id:
+            GLib.source_remove(self.timeout_id)
+            self.timeout_id = None
+
+    def spinner_pulse(self):
+        self._pulse = 0 if self._pulse == 999999 else self._pulse + 1
+
+        for idx in self._models.keys():
+            model, iter = self._models[idx]
+            if model and iter:
+                model.emit("row_changed", model.get_path(iter), iter)
+            else:
+                del self._models[idx]
+        return True
+
+    def model_data_func(self, column, cell, model, iter, cell_type): # noqa
         entry = model.get_value(iter, 0)
+        idx = model.get_value(iter, 1)
         state = entry.get_string(RB.RhythmDBPropType.COMMENT)
-        filepath = state_dark_icons[state] if state in state_dark_icons else state_dark_icons['DEFAULT']
-        icon = GdkPixbuf.Pixbuf.new_from_file(self.plugin_dir + filepath)
-        cell.set_property("pixbuf", icon)
+        is_spinner = cell_type == 'spinner'
+
+        if state == 'STATE_LOADING':
+            cell.props.visible = is_spinner
+            if is_spinner:
+                self._models[idx] = [model, iter]
+                cell.props.active = True
+                cell.props.pulse = self._pulse
+        else:
+            cell.props.visible = not is_spinner
+            if is_spinner:
+                if idx in self._models:
+                    del self._models[idx]
+                cell.props.active = False
+            else:
+                if state in StateColumn._icon_cache:
+                    icon = StateColumn._icon_cache[state]
+                else:
+                    filename = self.icons[state] if state in self.icons else self.icons['DEFAULT']
+                    filepath = self.plugin_dir + filename
+                    icon = GdkPixbuf.Pixbuf.new_from_file(filepath)
+                    StateColumn._icon_cache[state] = icon
+                cell.props.pixbuf = icon
 
 
 class TelegramSource(RB.BrowserSource):
@@ -99,16 +157,16 @@ class TelegramSource(RB.BrowserSource):
         self.plugin = plugin
         self.chat_id = chat_id
         self.loader = None
-        StateColumn(self) # noqa
+        self.state_column = StateColumn(self) # noqa
 
     def do_deselected(self):
-        print('do_deselected %s' % self.chat_id)
+        self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
 
     def do_selected(self):
-        self.get_entry_view().set_sorting_order("Location", 1)  # GTK_SORT_ASCENDING = 0, GTK_SORT_DESCENDING = 1
-        print('do_selected %s' % self.chat_id)
+        self.state_column.activate()
+        self.get_entry_view().set_sorting_order("Location", Gtk.SortType.DESCENDING)
 
         if not self.initialised:
             self.initialised = True
