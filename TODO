@@ -39,3 +39,4 @@
 * fix empty sources in case the source was loaded and then the sources were reloaded using do_reload_sources
 * implement audio upload action to wait for the complete upload of previous audio files
 * skip downloaded audio
+* add_audio: check if audio exists update only custom fields
