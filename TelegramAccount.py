@@ -17,6 +17,7 @@
 import os
 import re
 from rb import rbconfig # noqa
+from gi.repository import Gio
 from common import SingletonMeta, show_error
 
 Secret = None
@@ -31,9 +32,19 @@ if rbconfig.libsecret_enabled:
 
 class TelegramAccount(metaclass=SingletonMeta):
     def __init__(self, plugin=None):
-        self.settings = plugin.settings
         self.plugin = plugin
+        self.activated = False
+        self.settings = None
         self.secret = None
+
+    def init(self):
+        if self.activated:
+            return
+        self.activated = True
+        schema_source = Gio.SettingsSchemaSource.new_from_directory(
+            self.plugin.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
+        schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
+        self.settings = Gio.Settings.new_full(schema, None, None)
 
         if Secret is None:
             print("You need to install libsecret for secure storage of Telegram secret keys")

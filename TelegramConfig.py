@@ -19,7 +19,6 @@ gi.require_version('Gtk', '3.0')
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Peas, PeasGtk, GLib
-import TelegramAccount
 from PrefsConnectPage import PrefsConnectPage
 from PrefsChannelsPage import PrefsChannelsPage
 from PrefsSettingsPage import PrefsSettingsPage
@@ -55,6 +54,7 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
 
     def do_create_configure_widget(self):
         self.account = TelegramAccount()
+        self.account.init()
         self.plugin = self.account.plugin
         self.settings = self.account.settings
 

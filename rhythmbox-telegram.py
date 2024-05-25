@@ -37,11 +37,11 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
     def __init__(self):
         super(Telegram, self).__init__()
+        self.account = TelegramAccount(self)
         self.shell = None
         self.db = None
         self.icon = None
         self.settings = None
-        self.account = None
         self.connected = False
         self.is_api_loaded = False
         self.is_downloading = False
@@ -55,13 +55,10 @@ class Telegram(GObject.GObject, Peas.Activatable):
         print('Telegram plugin activating')
         self.shell = self.object
         self.db = self.shell.props.db
+        self.account.init()
+        self.settings = self.account.settings
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
-        schema_source = Gio.SettingsSchemaSource.new_from_directory(
-            self.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
-        schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
-        self.settings = Gio.Settings.new_full(schema, None, None)
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
-        self.account = TelegramAccount(self)
         self.sources = []
 
         # Connect to the entry-deleted signal of the RhythmDB
