@@ -1,21 +1,6 @@
 * parse info from photo
 * fix hang (sometimes) on play next song (when current song ends) if it not loaded yet next song
-* remove audio (hide)
-* download files to library
-* open message in telegram desktop
-* update album, year, genre
-* show additional fields: album, genre, ratings, number
-* remove audio db? put all data to the playlist?
-* custom view page group: Telegram, Library, ...
 * fix playing count
-* option to set default sort order (asc|desc)
-* auto update playlist each 5 minutes after full loading
-* remove deleted from chat audio, mark as invalid, add is_invalid
-* fix update audio files, save is_downloaded, is_moved, is_hidden flags
-* add no uploaded audio to db, but skip downloading, update is_uploading state, add is_uploading flag?
-* add option for color-scheme
-* auto detect color-scheme
-* add download directory option
 * ability to set custom names for channels
 * ability to clear temp files
 * fix reloading sources on page group on channels list box changes
@@ -23,16 +8,12 @@
 * fix connect spinner in settings page
 * detect audio quality - if it possible
 * add audio type / quality (flac)
-* do something with account() and config() in TelegramConfig.py
 * fix reloading group pages on config page init
 * fix reloading group pages on init channels value in config
 * improve reloading group pages process, dont reload already loaded pages
 * fix playlist becomes empty after reloading
-* update audio tags after downloading/while playing
 * reloading only changed group pages
 * avoid download already downloaded audio files
-* save tags to db
-* audio: add track_number to db
 * fix loading playlist after changing list in settings
 * settings: first show window and only after that connecting
 * improve reloading sources
