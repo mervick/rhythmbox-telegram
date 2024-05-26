@@ -189,18 +189,6 @@ class TelegramApi(GObject.Object):
         })
         r.wait()
 
-    def _load_chats(self):
-        # self.tg.add_update_handler('updateNewChat', self._update_new_chat)
-        extra = 2
-        while True:
-            total_count = len(self.chats)
-            self._load_chats_async()
-            if total_count + 10 >= len(self.chats):
-                if extra == 0:
-                    break
-                extra -= 1
-        # self.tg.remove_update_handler('updateNewChat', self._update_new_chat)
-
     def _listen_chats(self):
         self.tg.add_update_handler('updateNewChat', self._update_new_chat)
 
@@ -230,15 +218,6 @@ class TelegramApi(GObject.Object):
                 raise Exception('Invalid chat id')
 
             self.chats_info[chat_id] = get_chat_info(r.update)
-
-    def get_chats_async(self, updater=None, refresh=False):
-        if not self.chats or refresh:
-            self._listen_chats()
-            self._get_chats_async()
-            self._load_chats_info_async()
-            self._load_chats()
-            self._stop_chats()
-        return self.chats_info
 
     def _get_joined_chats(self):
         chats = dict()
@@ -366,11 +345,6 @@ class TelegramApi(GObject.Object):
         blob['done'](blob, 'NEXT')
         return False
 
-    def load_message_async(self, chat_id, message_id):
-        r = self.tg.get_message(chat_id, message_id)
-        r.wait()
-        return r.update
-
     def _download_audio_async(self, data, priority=1):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
@@ -473,9 +447,6 @@ class TelegramApi(GObject.Object):
             return True
         blob.get('done')(r.update)
         return False
-
-    def _updateMe(self, update):
-        pass
 
     def get_logged(self):
         r = self.tg.get_me()
