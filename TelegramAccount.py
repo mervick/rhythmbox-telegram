@@ -37,10 +37,16 @@ class TelegramAccount(metaclass=SingletonMeta):
         self.settings = None
         self.secret = None
 
+    def unlock_keyring(self):
+        schema_test = Secret.Schema.new('org.gnome.rhythmbox.plugins.telegram-test', Secret.SchemaFlags.DONT_MATCH_NAME,
+                                        {"test": Secret.SchemaAttributeType.STRING})
+        return Secret.password_store_sync(schema_test, {"test": "test"}, Secret.COLLECTION_DEFAULT, "test", 'test', None)
+
     def init(self):
         if self.activated:
             return
         self.activated = True
+
         schema_source = Gio.SettingsSchemaSource.new_from_directory(
             self.plugin.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
@@ -50,16 +56,17 @@ class TelegramAccount(metaclass=SingletonMeta):
             print("You need to install libsecret for secure storage of Telegram secret keys")
             show_error("You need to install libsecret for secure storage of Telegram secret keys",
                        "Due to the absence of libsecret, Telegram secret keys will be stored in plaintext in the Gnome GSettings")
-
-        if Secret is not None:
+        else:
+            self.unlock_keyring()
             self.schema = Secret.Schema.new('org.gnome.rhythmbox.plugins.telegram', Secret.SchemaFlags.DONT_MATCH_NAME,
                 {"rhythmbox-plugin": Secret.SchemaAttributeType.STRING})
             self.keyring_attributes = {"rhythmbox-plugin": "telegram"}
             self.secret_service = Secret.Service.get_sync(Secret.ServiceFlags.OPEN_SESSION, None)
             items = self.secret_service.search_sync(self.schema, self.keyring_attributes,
                 Secret.SearchFlags.LOAD_SECRETS, None)
-            if not items:
+            if not items or len(items) == 0 or not items[0].get_secret():
                 print("Couldn't find an existing keyring entry")
+                show_error("Couldn't find an existing keyring entry")
                 return
             self.secret = items[0].get_secret().get().decode("utf-8")
 
