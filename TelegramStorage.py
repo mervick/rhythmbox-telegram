@@ -103,9 +103,6 @@ class TgPlaylist:
         self._data = TgPlaylist.read(self.chat_id)._data
 
     def save(self):
-        # print('TgPlaylist.save')
-        segments = [segment for segment in self.segments if segment[0] != 0]
-        # print(segments)
         playlist = {
             "chat_id": self.chat_id,
             "title": self.title,
@@ -185,10 +182,10 @@ class TgAudio:
         return get_year(self.date)
 
     def _is_file_exists(self):
-        print('== _is_file_exists %s' % self.local_path)
-        isfile = self.is_downloaded and os.path.isfile(self.local_path)
+        isfile = self.is_downloaded and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
             self.is_downloaded = False
+        return isfile
 
     def get_state(self):
         if self.is_error:
@@ -202,13 +199,10 @@ class TgAudio:
         return ''
 
     def get_path(self, priority=1, wait=False, done=empty_cb):
-        # print('get_path')
         if not self._is_file_exists():
-            print('not_downloaded')
             api = TelegramStorage.loaded().api
             if wait:
                 audio = api.download_audio_async(self.chat_id, self.message_id, priority)
-                print('== audio %s' % audio)
                 if not audio:
                     self.is_error = True
                     # @TODO remove audio or mark as invalid
@@ -217,7 +211,6 @@ class TgAudio:
                 return self.local_path
             else:
                 def on_done(data):
-                    # update = TelegramApi.loaded().add_audio(data, convert=False)
                     self.update(data)
                     done(self)
 
@@ -307,7 +300,6 @@ class TelegramStorage:
         sql = f"UPDATE `{table}` SET {set_keys} WHERE {set_where}"
         if limit and limit > 0:
             sql = f'{sql} LIMIT {limit}'
-        # print(sql)
         self.db_cur.execute(sql, tuple(set_values))
         result = self.db_cur.rowcount > 0
         self.db.commit()
@@ -324,7 +316,6 @@ class TelegramStorage:
         set_keys = ', '.join(set_keys)
         set_place = ', '.join(set_place)
         sql = f"INSERT INTO `{table}` ({set_keys}) VALUES ({set_place})"
-        # print(sql)
         self.db_cur.execute(sql, tuple(set_values))
         result = self.db_cur.rowcount > 0
         self.db.commit()
@@ -364,7 +355,6 @@ class TelegramStorage:
     def add_audio(self, data, convert=True, commit=True):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
-            # print(data['content'])
             return
         d = {}
         content = data['content']
@@ -391,6 +381,22 @@ class TelegramStorage:
         d['created_at'] = data['date']
         d['date'] = get_date(data['date'])
 
+        tg_audio = self.get_audio(d['chat_id'], d['message_id'], True)
+        if tg_audio:
+            if len(d['local_path']) > 1:
+                tg_audio.save({
+                    'size': d['size'],
+                    'local_path': d['local_path'],
+                    'is_downloaded': d['is_downloaded'],
+                    'is_moved': 0,
+                })
+                d['id'] = tg_audio.id
+            d['size'] = tg_audio.size
+            d['local_path'] = tg_audio.local_path
+            d['is_downloaded'] = tg_audio.is_downloaded
+            d['is_moved'] = tg_audio.is_moved
+            return d if not convert else tg_audio
+
         self.db_cur.execute("""
             INSERT INTO `audio` (
                 chat_id, message_id, mime_type, title, artist, file_name, `date`, `created_at`, size, duration,
@@ -405,32 +411,3 @@ class TelegramStorage:
         if commit:
             self.db.commit()
         return result
-
-#     def add_photo(self, data):
-#         if not ('photo' in data['content'] and 'sizes' in data['content']['photo']):
-#             logger.warning('Photo message content has no required keys, skipping...')
-#             print(data['content'])
-#             return
-#
-#         d = {}
-#         content = data['content']
-#         photo = content['photo']['sizes'][0]
-#
-#         d['info'] = ''
-#         d['caption'] = ''
-#         d['chat_id'] = data['chat_id']
-#         d['message_id'] = data['id']
-#         d['date'] = data['date']
-#
-#         if 'caption' in content and 'text' in content['caption']:
-#             caption = content['caption']['text']
-#             info = parse_info(caption)
-#             d['info'] = json.dumps(info)
-#
-#         self.db_cur.execute("""
-#             INSERT INTO `info` (chat_id, message_id, caption, date, info)
-#             VALUES (:chat_id, :message_id, :caption, :date, :info)
-#         """, d)
-#
-#         logger.info('Info added %d', self.db_cur.lastrowid)
-#         return self.db_cur.lastrowid
