@@ -116,6 +116,8 @@ class TelegramApi(GObject.Object):
     artist_audio = []
     artist_document = 0
 
+    _is_loaded_chats = False
+    _is_listen_chats = False
     last_message_id = 0
     state = None
 
@@ -190,7 +192,9 @@ class TelegramApi(GObject.Object):
         r.wait()
 
     def _listen_chats(self):
-        self.tg.add_update_handler('updateNewChat', self._update_new_chat)
+        if not self._is_listen_chats:
+            self._is_listen_chats = True
+            self.tg.add_update_handler('updateNewChat', self._update_new_chat)
 
     def _stop_chats(self):
         self.tg.remove_update_handler('updateNewChat', self._update_new_chat)
@@ -204,11 +208,15 @@ class TelegramApi(GObject.Object):
         if not r.update or not r.update['total_count']:
             return 0
 
-        self.chats = r.update['chat_ids']
+        for id in r.update['chat_ids']:
+            if id not in self.chats:
+                self.chats.append(id)
+
+        # self.chats = r.update['chat_ids']
         return r.update['total_count']
 
     def _load_chats_info_async(self):
-        self.chats_info = {}
+        # self.chats_info = {}
         for chat_id in self.chats:
             r = self.tg.get_chat(chat_id)
             r.wait()
@@ -231,8 +239,9 @@ class TelegramApi(GObject.Object):
 
         # start, reset chats, listen, get chats
         if step == 0:
-            self.chats = []
-            self.chats_info = {}
+            # self._stop_chats()
+            # self.chats = []
+            # self.chats_info = {}
             self._listen_chats()
             self._get_chats_async()
             data["step"] = 1
@@ -266,21 +275,24 @@ class TelegramApi(GObject.Object):
 
         # callback, stop
         else:
-            self._stop_chats()
+            # self._stop_chats()
             data["update"](self._get_joined_chats())
             return False
         return True
 
     def reset_chats(self):
+        self._is_loaded_chats = False
         self.total_count = 0
         self.chats = []
         self.chats_info = {}
 
     def get_chats_idle(self, update):
-        if not self.chats:
-            Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
-            return
-        update(self._get_joined_chats())
+        if not self._is_loaded_chats:
+            if not self.chats:
+                Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
+                return
+            update(self._get_joined_chats())
+            self._is_loaded_chats = True
 
     def load_message_idle(self, chat_id, message_id, done=empty_cb, cancel=empty_cb):
         blob = {
