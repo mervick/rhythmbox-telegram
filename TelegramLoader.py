@@ -50,7 +50,31 @@ class AudioDownloader:
             self.stop()
         return self
 
-    def _move(self, audio):
+    def _move_file(self, src, dst):
+        dst_dir = os.path.dirname(dst)
+        os.makedirs(dst_dir, exist_ok=True)
+        dst_base = os.path.basename(dst)
+        name, ext = os.path.splitext(dst_base)
+
+        if self.conflict_resolve == 'skip':
+            if os.path.exists(dst):
+                print(f"File '{dst}' already exists. Skipping.")
+                return
+            else:
+                shutil.move(src, dst)
+
+        elif self.conflict_resolve == 'overwrite':
+            shutil.move(src, dst)
+
+        elif self.conflict_resolve == 'rename':
+            counter = 1
+            new_dst = dst
+            while os.path.exists(new_dst):
+                new_dst = os.path.join(dst_dir, f"{name} ({counter}){ext}")
+                counter += 1
+            shutil.move(src, new_dst)
+
+    def _process(self, audio):
         entry = self.entries[self._idx]
         audio.update_tags()
         tags = {
@@ -68,9 +92,7 @@ class AudioDownloader:
             "%s/%s%s" % (self.folder_hierarchy, self.filename_template,
                          f'.{file_ext}' if len(file_ext) else ''), tags)
         filename = "%s/%s" % (self.library_location, filename)
-        file_dir = os.path.dirname(filename)
-        os.makedirs(file_dir, exist_ok=True)
-        shutil.move(audio.local_path, filename)
+        self._move_file(audio.local_path, filename)
         audio.save({"local_path": filename, "is_moved": True})
 
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
@@ -109,9 +131,9 @@ class AudioDownloader:
                 self.plugin.db.commit()
                 self._next()
                 return
-            file_path = audio.get_path(wait=False, done=self._move)
+            file_path = audio.get_path(wait=False, done=self._process)
             if file_path:
-                self._move(audio)
+                self._process(audio)
 
 
 class PlaylistLoader:
