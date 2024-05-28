@@ -48,8 +48,8 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.is_downloading = False
         self.api = None
         self.storage = None
-        self.page_group = None
-        self.sources = []
+        self.group_id = None
+        self.sources = {}
         self._created_group = False
 
     def do_activate(self):
@@ -60,7 +60,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.settings = self.account.settings
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
-        self.sources = []
+        self.sources = {}
 
         # Connect to the entry-deleted signal of the RhythmDB
         self.db.connect('entry-deleted', self.on_entry_deleted)
@@ -112,43 +112,65 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
     def do_reload_sources(self):
         print('do_reload_sources()')
-        for source in self.sources:
-            source.delete_thyself()
-            self.sources = []
 
         selected = json.loads(self.settings['channels']) if self.connected else []
+        # for idx in self.sources:
+        #     self.sources[idx].delete_thyself()
+        #     self.sources = {}
 
         print('== RELOAD.selected %s' % selected)
 
         if self.connected and selected:
             group_id = self.settings['page-group']
-            print('group_id %s' % group_id)
-            if group_id == 'telegram':
-                if not self._created_group:
-                    group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'),
-                                                category=RB.DisplayPageGroupType.TRANSIENT)
-                    self.shell.append_display_page(group, None)
-                    self._created_group = True
-                else:
-                    group = RB.DisplayPageGroup.get_by_id(group_id)
+            print(f'selected {selected}')
+            print(f'self.group_id {self.group_id}')
+            print(f'group_id {group_id}')
+
+            if group_id != self.group_id:
+                print(f'clear all')
+                for idx in self.sources:
+                    self.sources[idx].delete_thyself()
+                self.sources = {}
+
+            for idx in list(self.sources.keys()):
+                id_list = [chat['id'] for chat in selected]
+                if idx not in id_list:
+                    print(f'{idx} not in selected')
+                    self.sources[idx].delete_thyself()
+                    del self.sources[idx]
+
+            # print('group_id %s' % group_id)
+            if group_id == 'telegram' and not self._created_group:
+                group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'),
+                                            category=RB.DisplayPageGroupType.TRANSIENT)
+                self.shell.append_display_page(group, None)
+                self._created_group = True
             else:
                 group = RB.DisplayPageGroup.get_by_id(group_id)
 
-            # if group is None:
-            #   group = RB.DisplayPageGroup(shell=self.shell, id='telegram', name=_('Telegram'), category=RB.DisplayPageGroupType.TRANSIENT)
-            #   self.shell.append_display_page(group, None)
-
+            self.group_id = group_id
             icon = Gio.ThemedIcon.new("telegram-symbolic")
 
             for chat in selected:
-                entry_type = TelegramEntryType(self)
-                source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=icon,
-                    plugin=self, settings=self.settings.get_child("source"), name=chat['title'], toolbar_menu=self.toolbar)
-                source.setup(self, chat['id'])
-                entry_type.setup(source)
-                self.sources.append(source)
-                self.shell.register_entry_type_for_source(source, entry_type)
-                self.shell.append_display_page(source, group)
+                chat_id = chat['id']
+                if chat_id not in self.sources:
+                    print(f'Create  source {chat_id}')
+                    entry_type = TelegramEntryType(self)
+                    source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=icon,
+                        plugin=self, settings=self.settings.get_child("source"), name=chat['title'], toolbar_menu=self.toolbar)
+                    source.setup(self, chat_id)
+                    entry_type.setup(source)
+                    self.sources[chat_id] = source
+                    self.shell.register_entry_type_for_source(source, entry_type)
+                    self.shell.append_display_page(source, group)
+                    print(f'append  {chat_id}')
+                # else:
+                #     source = self.sources[chat_id]
+        else:
+            print(f'clear all2')
+            for idx in self.sources:
+                self.sources[idx].delete_thyself()
+            self.sources = {}
 
     def do_deactivate(self):
         print('Telegram plugin deactivating')
@@ -158,9 +180,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
         # self.db.commit()
         self.db = None
         self.entry_type = None
-        for source in self.sources:
-            source.delete_thyself()
-        self.sources = []
+        for idx in self.sources:
+            self.sources[idx].delete_thyself()
+        self.sources = {}
 
     def playing_entry_changed(self, sp, entry):
         print(entry)
