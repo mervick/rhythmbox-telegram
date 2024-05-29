@@ -126,7 +126,7 @@ class TgAudio:
     def update(self, data):
         if type(data) == tuple:
             id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
-                date, size, duration, is_downloaded, is_moved, is_hidden, local_path, info_id = data
+                date, size, duration, is_downloaded, is_moved, is_hidden, local_path, play_count = data
             self.id = id_
             self.chat_id = chat_id
             self.message_id = message_id
@@ -134,8 +134,8 @@ class TgAudio:
             self.track_number = track_number
             self.title = title
             self.artist = artist
-            self.album = album if album else ''
-            self.genre = genre
+            self.album = album or ''
+            self.genre = genre or ''
             self.file_name = file_name
             self.created_at = created_at
             self.date = date
@@ -145,7 +145,7 @@ class TgAudio:
             self.is_moved = is_moved
             self.is_hidden = is_hidden
             self.local_path = local_path
-            self.info_id = info_id
+            self.play_count = play_count or 0
         else:
             self.id = data.get('id', 0)
             self.chat_id = data['chat_id']
@@ -165,7 +165,7 @@ class TgAudio:
             self.is_moved = data.get('is_moved', False)
             self.is_hidden = data.get('is_hidden', False)
             self.local_path = data.get('local_path')
-            self.info_id = data.get('info_id')
+            self.play_count = data.get('play_count', 0)
 
     def update_tags(self, file_path=None):
         file_path = file_path if file_path else self.get_path(wait=True)

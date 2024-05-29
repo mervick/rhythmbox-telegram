@@ -1,4 +1,3 @@
-* fix playing count
 * ability to set custom names for channels
 * ability to clear temp files
 * fix connect spinner in settings page
@@ -8,3 +7,7 @@
 * implement audio upload action to wait for the complete upload of previous audio files
 * skip downloaded audio
 * tg_playlist: remove duplicated segments
+* add option to see hidden tracks
+* hide/unhide action
+* add icons for hidden state
+* update is_downloaded state while deleting temp files

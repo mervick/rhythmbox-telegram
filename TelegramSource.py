@@ -147,6 +147,7 @@ class TelegramSource(RB.BrowserSource):
         self.loader = None
         self.plugin = None
         self.chat_id = None
+        self.entry_updated_id = None
         self.loaded_entries = []
 
     def setup(self, plugin, chat_id):
@@ -160,11 +161,31 @@ class TelegramSource(RB.BrowserSource):
         self.loader = None
         self.state_column = StateColumn(self) # noqa
         self.loaded_entries = []
+        self.activate()
+
+    def activate(self):
+        self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
+
+    def deactivate(self):
+        self.db.disconnect(self.entry_updated_id)
+
+    def on_entry_changed(self, db, entry, changes):
+        if self.entry_type != entry.get_entry_type():
+            return
+        for change in changes:
+            if change.prop == RB.RhythmDBPropType.PLAY_COUNT:
+                play_count = entry.get_ulong(RB.RhythmDBPropType.PLAY_COUNT)
+                loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
+                chat_id, message_id = get_location_data(loc)
+                audio = self.plugin.storage.get_audio(chat_id, message_id)
+                audio.save({"play_count": play_count})
 
     def hide_thyself(self):
+        self.deactivate()
         self.set_property('visibility', False)
 
     def show_thyself(self):
+        self.activate()
         self.set_property('visibility', True)
 
     def do_deselected(self):
@@ -203,6 +224,7 @@ class TelegramSource(RB.BrowserSource):
                 self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
                 self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
                 self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
+                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
                 self.db.commit()
 
     def do_can_delete(self):

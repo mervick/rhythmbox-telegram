@@ -53,7 +53,7 @@ CREATE TABLE audio (
    `is_moved` INT(1) DEFAULT '0',
    `is_hidden` INT(1) DEFAULT '0',
    `local_path` TEXT DEFAULT NULL,
-   `info_id` INTEGER DEFAULT NULL,
+   `play_count` INTEGER DEFAULT '0',
     UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
 );
 '''
