@@ -161,6 +161,12 @@ class TelegramSource(RB.BrowserSource):
         self.state_column = StateColumn(self) # noqa
         self.loaded_entries = []
 
+    def hide_thyself(self):
+        self.set_property('visibility', False)
+
+    def show_thyself(self):
+        self.set_property('visibility', True)
+
     def do_deselected(self):
         self.state_column.deactivate()
         if self.loader is not None:
