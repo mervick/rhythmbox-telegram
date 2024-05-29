@@ -361,7 +361,7 @@ class TelegramApi(GObject.Object):
 
     def _download_audio_async(self, data, priority=1):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
-            logger.warning('Audio message has no required keys, skipping...')
+            print('Audio message has no required keys, skipping...')
             print(data['content'])
             return None
 
@@ -371,7 +371,7 @@ class TelegramApi(GObject.Object):
         audio_id = audio['audio']['id']
 
         if not completed:
-            logger.warning('Audio message: %d not uploaded, skipping...', audio_id)
+            print('Audio message: %d not uploaded, skipping...', audio_id)
             return None
 
         return self.download_file_async(audio_id, priority=priority)
@@ -397,14 +397,11 @@ class TelegramApi(GObject.Object):
         return r.update['link'] if 'link' in r.update else None
 
     def download_audio_async(self, chat_id, message_id, priority=1):
-        # msg = self.load_message_async(chat_id, message_id)
         r = self.tg.get_message(chat_id, message_id)
         r.wait()
         msg = r.update
-        print('== msg: %s' % msg)
         if msg:
             file = self._download_audio_async(msg, priority=priority)
-            print('== file: %s' % file)
             if file:
                 msg['content']['audio']['audio'] = file
                 return self.storage.add_audio(msg, convert=False, commit=True)
