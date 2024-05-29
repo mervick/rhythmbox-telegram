@@ -225,6 +225,7 @@ class TelegramSource(RB.BrowserSource):
                 self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
                 self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
                 self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
+                self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
                 self.db.commit()
 
     def do_can_delete(self):
