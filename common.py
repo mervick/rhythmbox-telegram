@@ -59,6 +59,8 @@ mime_types = {
     'audio/x-midi': 'midi',
     'audio/mid': 'midi',
     'audio/mpeg': 'mp3',
+    'audio/mpeg3': 'mp3',
+    'audio/mp3': 'mp3',
     'audio/mpga': 'mpga',
     'audio/mp4': 'mp4',
     'audio/ogg': 'ogg',
