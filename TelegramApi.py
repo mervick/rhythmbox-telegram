@@ -284,6 +284,8 @@ class TelegramApi(GObject.Object):
         return True
 
     def reset_chats(self):
+        cache = TgCache(TgCache.KEY_CHANNELS)
+        cache.set({})
         self.total_count = 0
         self.chats = []
         self.chats_info = {}
