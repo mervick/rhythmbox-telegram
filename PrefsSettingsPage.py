@@ -86,6 +86,7 @@ class PrefsSettingsPage(PrefsPage):
     _values = {}
 
     def _create_widget(self):
+        self._values = {}
         self.library_location_entry = self.ui.get_object('library_location_entry')
         self.library_location_btn = self.ui.get_object('library_location_btn')
         self.conflict_resolve_combo = self.ui.get_object('conflict_resolve_combo')
