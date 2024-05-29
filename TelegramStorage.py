@@ -277,6 +277,7 @@ class TelegramStorage:
         if create_db:
             try:
                 # self.db.execute(SQL.TABLE_PARAMS)
+                self.db.execute(SQL.TABLE_CACHE)
                 self.db.execute(SQL.TABLE_PLAYLIST)
                 self.db.execute(SQL.TABLE_AUDIO)
                 # self.db.execute(SQL.TABLE_DOCUMENT)

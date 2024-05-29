@@ -15,6 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+TABLE_CACHE = '''
+CREATE TABLE cache (
+   `key` INTEGER PRIMARY KEY,
+   `data` TEXT DEFAULT NULL
+);
+'''
+
 TABLE_PLAYLIST = '''
 CREATE TABLE playlist (
    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
