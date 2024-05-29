@@ -26,7 +26,7 @@ from telegram.client import Telegram
 from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
 from common import MessageType, audio_content_set, API_ERRORS, get_content_type, is_msg_valid, get_chat_info, empty_cb, cb
-from TelegramStorage import TelegramStorage
+from TelegramStorage import TelegramStorage, TgCache
 
 # import gettext
 # gettext.install('rhythmbox', RB.locale_dir())
@@ -116,7 +116,6 @@ class TelegramApi(GObject.Object):
     artist_audio = []
     artist_document = 0
 
-    _is_loaded_chats = False
     _is_listen_chats = False
     last_message_id = 0
     state = None
@@ -229,9 +228,13 @@ class TelegramApi(GObject.Object):
 
     def _get_joined_chats(self):
         chats = dict()
+        cache = TgCache(TgCache.KEY_CHANNELS)
+        if cache.get() is not None:
+            chats = cache.get()
         for k in self.chats_info.keys():
             if k in self.chats:
                 chats[k] = self.chats_info[k]
+        cache.set(chats)
         return chats
 
     def _chats_idle_cb(self, data):
@@ -281,18 +284,15 @@ class TelegramApi(GObject.Object):
         return True
 
     def reset_chats(self):
-        self._is_loaded_chats = False
         self.total_count = 0
         self.chats = []
         self.chats_info = {}
 
     def get_chats_idle(self, update):
-        if not self._is_loaded_chats:
-            if not self.chats:
-                Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
-                return
-            update(self._get_joined_chats())
-            self._is_loaded_chats = True
+        if not self.chats:
+            Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
+            return
+        update(self._get_joined_chats())
 
     def load_message_idle(self, chat_id, message_id, done=empty_cb, cancel=empty_cb):
         blob = {
