@@ -3,7 +3,7 @@
 Rhythmbox-Telegram is a Rhythmbox plugin that allows you to listen to and download music directly from your favorite music player, Rhythmbox.
 
 ![Telegram playlist in Rhythmbox](screenshots/playlist.png)
-[**More screenshots here**](screenshots/screenshots.md)
+[**More screenshots here**](screenshots)
 
 ## Key Features
 
