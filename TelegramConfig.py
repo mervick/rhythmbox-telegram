@@ -17,8 +17,8 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import rb
-from gi.repository import RB
-from gi.repository import GObject, Gtk, Peas, PeasGtk, GLib
+from gi.repository import GObject, Gtk, Gdk, GLib
+from gi.repository import Peas, PeasGtk # noqa
 from PrefsConnectPage import PrefsConnectPage
 from PrefsChannelsPage import PrefsChannelsPage
 from PrefsSettingsPage import PrefsSettingsPage
@@ -79,8 +79,7 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         self.page3.create_widget().append_to(notebook)
         self.page4.create_widget().append_to(notebook)
 
-        GLib.timeout_add(1000, self.update_window)
-
+        GLib.timeout_add(600, self.update_window)
         return main_box
 
     def get_center(self):
@@ -96,10 +95,15 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         gtk_win.set_default_size(500, 600)
         gtk_win.set_resizable(False)
         donate_btn = gtk_win.add_button("Donate", Gtk.ResponseType.HELP)
+        donate_btn.connect("pressed", self.on_donate_clicked)
         style_context = donate_btn.get_style_context()
         style_context.add_class('suggested-action')
         gtk_win.set_border_width(5)
         box = gtk_win.get_content_area()
         box.set_spacing(2)
+
+    def on_donate_clicked(self, button):
+        screen = self.plugin.shell.props.window.get_screen()
+        Gtk.show_uri(screen, 'https://github.com/mervick/rhythmbox-telegram', Gdk.CURRENT_TIME)
 
 GObject.type_register(TelegramConfig)
