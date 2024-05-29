@@ -1,23 +1,9 @@
-* parse info from photo
-* fix hang (sometimes) on play next song (when current song ends) if it not loaded yet next song
 * fix playing count
 * ability to set custom names for channels
 * ability to clear temp files
-* fix reloading sources on page group on channels list box changes
-* reloading page group after change group in settings
 * fix connect spinner in settings page
 * detect audio quality - if it possible
 * add audio type / quality (flac)
-* fix reloading group pages on config page init
-* fix reloading group pages on init channels value in config
-* improve reloading group pages process, dont reload already loaded pages
-* fix playlist becomes empty after reloading
-* reloading only changed group pages
-* avoid download already downloaded audio files
-* fix loading playlist after changing list in settings
 * settings: first show window and only after that connecting
-* improve reloading sources
-* fix empty sources in case the source was loaded and then the sources were reloaded using do_reload_sources
 * implement audio upload action to wait for the complete upload of previous audio files
 * skip downloaded audio
-* add_audio: check if audio exists update only custom fields
