@@ -59,7 +59,7 @@ class AudioDownloader:
         if self.conflict_resolve == 'skip':
             if os.path.exists(dst):
                 print(f"File '{dst}' already exists. Skipping.")
-                return
+                return dst
             else:
                 shutil.move(src, dst)
 
@@ -73,6 +73,8 @@ class AudioDownloader:
                 new_dst = os.path.join(dst_dir, f"{name} ({counter}){ext}")
                 counter += 1
             shutil.move(src, new_dst)
+            return new_dst
+        return dst
 
     def _process(self, audio):
         entry = self.entries[self._idx]
@@ -92,7 +94,7 @@ class AudioDownloader:
             "%s/%s%s" % (self.folder_hierarchy, self.filename_template,
                          f'.{file_ext}' if len(file_ext) else ''), tags)
         filename = "%s/%s" % (self.library_location, filename)
-        self._move_file(audio.local_path, filename)
+        filename = self._move_file(audio.local_path, filename)
         audio.save({"local_path": filename, "is_moved": True})
 
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
