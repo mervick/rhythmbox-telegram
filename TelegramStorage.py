@@ -238,6 +238,27 @@ class TgAudio:
         return os.path.splitext(self.file_name)[1][1:]
 
 
+class TgCache:
+    KEY_CHANNELS = 1
+
+    def __init__(self, key, default=None):
+        self.storage = TelegramStorage.loaded()
+        self.key = key
+        data = self.storage.select('cache', {'key': self.key})
+        if data is not None:
+            self.data = json.loads(data[1]) if data[1] else default
+        else:
+            self.storage.insert('cache', {'key': self.key})
+            self.data = default
+
+    def set(self, data):
+        self.data = data
+        return self.storage.update('cache', {'data': json.dumps(data)}, {'key': self.key}, 1)
+
+    def get(self):
+        return self.data
+
+
 class TelegramStorage:
     __instance = None
 
@@ -252,10 +273,6 @@ class TelegramStorage:
         self.db = sqlite3.connect(self.db_file)
         self.db_cur = self.db.cursor()
         TelegramStorage.__instance = self
-
-#         self.db.execute('SHOW CREATE TABLE playlist')
-#         self.db.execute('DROP TABLE playlist')
-#         self.db.execute(SQL.TABLE_PLAYLIST)
 
         if create_db:
             try:
