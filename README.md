@@ -83,9 +83,9 @@ Your donations play a crucial role in supporting the development efforts, enabli
 ## Screenshots
 
 [//]: # (![Telegram playlist in Rhythmbox]&#40;screenshots/playlist.png&#41;)
+[//]: # (![Telegram Authorization - Entering code]&#40;screenshots/code.png&#41;)
 ![Rhythmbox settings - Enabling Telegram plugin](screenshots/settings.png)
 ![Rhythmbox-Telegram Settings - Connect](screenshots/prefs-2.png)
-![Telegram Authorization - Entering code](screenshots/code.png)
 ![Rhythmbox-Telegram Settings - View Channels](screenshots/prefs-4.png)
 ![Rhythmbox-Telegram Settings - Add Channels](screenshots/prefs-3.png)
 ![Rhythmbox-Telegram Settings - Base Settings](screenshots/prefs-5.png)
