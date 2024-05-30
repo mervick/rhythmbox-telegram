@@ -4,10 +4,10 @@
 * detect audio quality - if it possible
 * add audio type / quality (flac)
 * settings: first show window and only after that connecting
-* implement audio upload action to wait for the complete upload of previous audio files
 * skip downloaded audio
 * tg_playlist: remove duplicated segments
 * add option to see hidden tracks
 * hide/unhide action
 * add icons for hidden state
 * update is_downloaded state while deleting temp files
+* issue with get response from tg api (disconnect and connect in settings fixes issue) maybe cache?
