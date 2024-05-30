@@ -11,3 +11,4 @@
 * add icons for hidden state
 * update is_downloaded state while deleting temp files
 * issue with get response from tg api (disconnect and connect in settings fixes issue) maybe cache?
+* avoid add same entry to download queue multiple times
