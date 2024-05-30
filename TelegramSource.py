@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, detect_theme_scheme
-from TelegramLoader import PlaylistLoader, AudioDownloader
-
-import gettext
-
+from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta
+from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
 
+import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
@@ -135,6 +134,58 @@ class StateColumn:
                 cell.props.pixbuf = icon
 
 
+class DownloadBar(metaclass=SingletonMeta):
+    def __init__(self, plugin):
+        self.plugin = plugin
+        self.source = None
+        self.active = False
+        self.info = {}
+        plugin.connect('update_download_info', self.update_download_info)
+
+    def deactivate(self, source):
+        print('deactivate bar')
+        self.active = False
+
+    def activate(self, source):
+        print('activate bar')
+        self.source = source
+        if source.bar_ui is None:
+            entry_view = source.get_entry_view()
+            builder = Gtk.Builder()
+            builder.add_from_file(rb.find_plugin_file(source.plugin, "ui/status.ui"))
+            status_box = builder.get_object('status_box')
+            source.bar_ui = {
+                "box": status_box,
+                "counter": builder.get_object('counter_label'),
+                "filename": builder.get_object('filename_label'),
+                "progress": builder.get_object('progress_bar'),
+            }
+            entry_view.pack_end(status_box, False, False, 0)
+            status_box.show_all()
+            status_box.props.visible = False
+
+        self.active = True
+        self._update_ui()
+
+    def _update_ui(self):
+        if not self.active:
+            print('not active')
+            return
+
+        if self.source:
+            is_visible = self.info.get('active', False)
+            self.source.bar_ui["box"].props.visible = is_visible
+            if is_visible:
+                self.source.bar_ui["counter"].set_text(_('File %s of %s') % (self.info.get('index', 1), self.info.get('total', 1)))
+                self.source.bar_ui["filename"].set_text(self.info.get('filename', ''))
+                self.source.bar_ui["progress"].set_fraction(self.info.get('fraction', 0.0))
+
+    def update_download_info(self, plugin,  info):
+        print('update_download_info (%s)' % info)
+        self.info = info
+        self._update_ui()
+
+
 class TelegramSource(RB.BrowserSource):
     def __init__(self):
         self.is_activated = False
@@ -147,6 +198,8 @@ class TelegramSource(RB.BrowserSource):
         self.loader = None
         self.plugin = None
         self.chat_id = None
+        self.bar = None
+        self.bar_ui = None
         self.entry_updated_id = None
         self.loaded_entries = []
 
@@ -155,6 +208,7 @@ class TelegramSource(RB.BrowserSource):
         shell = self.props.shell
         self.shell = shell
         self.db = shell.props.db
+        self.set_property("query-model", RB.RhythmDBQueryModel.new_empty(self.db))
         self.entry_type = self.props.entry_type
         self.plugin = plugin
         self.chat_id = chat_id
@@ -189,6 +243,7 @@ class TelegramSource(RB.BrowserSource):
         self.set_property('visibility', True)
 
     def do_deselected(self):
+        self.bar.deactivate(self)
         self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
@@ -196,6 +251,8 @@ class TelegramSource(RB.BrowserSource):
     def do_selected(self):
         self.state_column.activate()
         self.get_entry_view().set_sorting_order("Location", Gtk.SortType.DESCENDING)
+        self.bar = DownloadBar(self.plugin)
+        self.bar.activate(self)
 
         if not self.initialised:
             self.initialised = True
@@ -240,6 +297,15 @@ class TelegramSource(RB.BrowserSource):
     def do_can_add_to_queue(self):
         return True
 
+    # def add_status_bar(self):
+    #     entry_view = self.get_entry_view()
+    #     builder = Gtk.Builder()
+    #     builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/status.ui"))
+    #     self.status_ui = builder
+    #     status_box = builder.get_object('status_box')
+    #     entry_view.pack_end(status_box, False, False, 0)
+    #     status_box.show_all()
+
     def browse_action(self):
         screen = self.props.shell.props.window.get_screen()
         entries = self.get_entry_view().get_selected_entries()
@@ -256,7 +322,10 @@ class TelegramSource(RB.BrowserSource):
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
-        AudioDownloader(self.plugin, entries).start()
+        downloader = self.plugin.downloader
+        downloader.setup()
+        downloader.add_entries(entries)
+        downloader.start()
 
     def hide_action(self):
         pass
