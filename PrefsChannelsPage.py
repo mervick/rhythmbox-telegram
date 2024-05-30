@@ -28,23 +28,18 @@ class PrefsChannelsPage(PrefsPage):
     ui_file = 'ui/prefs/channels.ui'
 
     def on_list_box_change(self, v):
-        print('==== on_list_box_change')
         self.prefs.settings.set_string('channels', json.dumps(v))
         self.on_change("channels", [channel["id"] for channel in v])
 
     def on_channels_clear(self, obj=None):
-        print('==== on_channels_clear')
         self.search_list_box.reset()
         self.prefs.account.settings.set_string('channels', '[]')
 
     def on_channels_reload(self, obj=None):
-        print('=== ON_CHANNELS_RELOAD')
         selected = json.loads(self.prefs.account.settings['channels'])
         self.search_list_box.set_selected(selected)
-        print('==== SELECTED: %s' % selected)
 
     def on_channels_fetch(self, obj=None):
-        print('==== on_channels_fetch')
         def _set_chats(chats):
             self.search_list_box.clear_list()
             self.search_list_box.set_items(list(chats.values()))
