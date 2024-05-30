@@ -20,6 +20,7 @@ from gi.overrides import GLib # noqa
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio
 from gi.repository import Peas, PeasGtk # noqa
+from TelegramLoader import AudioDownloader
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi
 from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
@@ -33,7 +34,8 @@ class Telegram(GObject.GObject, Peas.Activatable):
     object = GObject.property(type=GObject.GObject)
 
     __gsignals__ = {
-        'reload_sources': (GObject.SIGNAL_RUN_FIRST, None, ())
+        'reload_sources': (GObject.SIGNAL_RUN_FIRST, None, ()),
+        'update_download_info': (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):
@@ -48,7 +50,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.is_downloading = False
         self.api = None
         self.storage = None
+        self.downloader = None
         self.group_id = None
+        self.rhythmdb_settings = None
         self.sources = {}
         self.deleted_sources = {}
         self._created_group = False
@@ -61,6 +65,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.settings = self.account.settings
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
+        self.downloader = AudioDownloader(self)
         self.group_id = None
         self.sources = {}
         self.deleted_sources = {}
