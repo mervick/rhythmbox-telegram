@@ -18,35 +18,70 @@ import os
 import shutil
 from gi.repository import RB
 from gi.repository import GLib
-from common import get_location_data, filepath_parse_pattern
+from common import get_location_data, filepath_parse_pattern, SingletonMeta
 from TelegramStorage import TgPlaylist
 from TelegramApi import TelegramApi
 
 
-class AudioDownloader:
-    def __init__(self, plugin, entries):
+class AudioDownloader(metaclass=SingletonMeta):
+    def __init__(self, plugin):
         self.plugin = plugin
-        self.entries = entries
-        self.library_location = plugin.account.get_library_path()
-        self.folder_hierarchy = plugin.settings['folder-hierarchy']
-        self.conflict_resolve = plugin.settings['conflict-resolve']
-        self.filename_template = plugin.settings['filename-template']
-        self._terminated = False
-        self._loaded = False
+        self.entries = []
+        self._running = False
         self._idx = 0
+        self._info = {}
+        self.setup()
 
-    def start(self):
-        entries = []
-        for entry in self.entries:
+    def setup(self):
+        self.library_location = self.plugin.account.get_library_path() # noqa
+        self.folder_hierarchy = self.plugin.settings['folder-hierarchy'] # noqa
+        self.conflict_resolve = self.plugin.settings['conflict-resolve'] # noqa
+        self.filename_template = self.plugin.settings['filename-template'] # noqa
+
+    def add_entries(self, entries):
+        for entry in entries:
             state = entry.get_string(RB.RhythmDBPropType.COMMENT)
             if state != 'STATE_IN_LIBRARY':
-                entries.append(entry)
+                self.entries.append(entry)
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, 'STATE_LOADING')
                 self.plugin.db.commit()
-        self.entries = entries
-        if len(entries) > 0:
-            self._load()
+
+    def stop(self):
+        self._running = False
+        self.entries = []
+        self._idx = 0
+        self._update_progress()
+
+    def _update_progress(self, audio=None):
+        print('_update_progress')
+        filename = ''
+        if audio is not None:
+            if len(audio.title) and len(audio.artist):
+                filename = '%s - %s.%s' % (audio.artist, audio.title, audio.get_file_ext())
+            else:
+                filename = audio.file_name
+        total = len(self.entries)
+        info = {
+            "active": self._running,
+            "index": self._idx + 1,
+            "total": total,
+            "filename": filename if len(filename) else self._info.get('filename', ''),
+            "fraction": self._idx / total if total > 0 else 1.0,
+        }
+        self._info = info
+        self.plugin.emit('update_download_info', info)
+
+    def start(self):
+        if len(self.entries) > 0:
+            if not self._running:
+                self._info = {}
+                self._running = True
+                self._idx = 0
+                self._load()
+            else:
+                self._update_progress()
         else:
+            pass
             self.stop()
         return self
 
@@ -112,15 +147,12 @@ class AudioDownloader:
     def _next(self):
         self._idx = self._idx + 1
         if self._idx >= len(self.entries):
-            self._terminated = True
+            self.stop()
             return
         GLib.timeout_add(5, self._load)
 
-    def stop(self):
-        self._terminated = True
-
     def _load(self):
-        if not self._terminated:
+        if self._running:
             entry = self.entries[self._idx]
             location = entry.get_string(RB.RhythmDBPropType.LOCATION)
             chat_id, message_id = get_location_data(location)
@@ -128,6 +160,7 @@ class AudioDownloader:
             if not audio:
                 self._next()
                 return
+            self._update_progress(audio)
             if audio.is_moved:
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
                 self.plugin.db.commit()
