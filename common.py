@@ -258,8 +258,19 @@ def get_year(julian):
     date = GLib.Date.new_julian(julian)
     return date.get_year()
 
-def show_error(title, description=None): # noqa
-    err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
+def show_error(title, description=None, parent=None): # noqa
+    if parent is not None:
+        if not isinstance(parent, Gtk.Window):
+            parent = parent.get_toplevel()
+            if not isinstance(parent, Gtk.Window):
+                parent = None
+    err_dialog = Gtk.MessageDialog(
+        parent=parent,
+        flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        type=Gtk.MessageType.ERROR,
+        buttons=Gtk.ButtonsType.CLOSE,
+        message_format=title)
+    # err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
     if description is not None:
         err_dialog.format_secondary_text(str(description)) # noqa
     err_dialog.set_application(Gio.Application.get_default())
