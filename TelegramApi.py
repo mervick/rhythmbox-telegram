@@ -148,6 +148,7 @@ class TelegramApi(GObject.Object):
         self.hash = hasher.hexdigest()[0:10]
         plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
         self.files_dir = os.path.join(plugin_dir, hasher.hexdigest())
+        self.temp_dir = os.path.join(self.files_dir, 'files')
 
         self.tg = TelegramClient(
             api_id=self.api_id,
