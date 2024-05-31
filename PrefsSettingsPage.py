@@ -70,8 +70,8 @@ conflict_resolve_variants = [
 ]
 
 audio_visibility_variants = [
-    [_('Show Visible Audio'), 'visible'],
-    [_('Show Hidden Audio'), 'hidden'],
+    [_('Show Only Visible Audio'), 'visible'],
+    [_('Show Only Hidden Audio'), 'hidden'],
     [_('Show All Audio'), 'all'],
 ]
 
