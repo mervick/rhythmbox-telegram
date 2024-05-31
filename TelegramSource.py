@@ -335,6 +335,7 @@ class TelegramSource(RB.BrowserSource):
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
+        commit = False
         for entry in entries:
             loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
             chat_id, message_id = get_location_data(loc)
@@ -342,12 +343,15 @@ class TelegramSource(RB.BrowserSource):
             if not audio.is_hidden:
                 audio.save({"is_hidden": True})
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-                self.plugin.db.commit()
+                commit = True
+        if commit:
+            self.plugin.db.commit()
 
     def unhide_action(self):
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
+        commit = False
         for entry in entries:
             loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
             chat_id, message_id = get_location_data(loc)
@@ -355,7 +359,9 @@ class TelegramSource(RB.BrowserSource):
             if audio.is_hidden:
                 audio.save({"is_hidden": False})
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-                self.plugin.db.commit()
+                commit = True
+        if commit:
+            self.plugin.db.commit()
 
 
 GObject.type_register(TelegramSource)
