@@ -17,60 +17,11 @@
 import sqlite3
 import json
 import os
-import shutil
 import logging
-import re
 import schema as SQL
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
 
 logger = logging.getLogger(__name__)
-
-
-def parse_title(content):
-    title = [None, content]
-    s = content.strip()
-    r = re.search("^\s*([^\n]+?)\s-\s([^\n]+)\n?", s)
-    if not r:
-        r = re.search("^\s*([^\n]+?)-([^\n]+)\n?", s)
-    if r:
-        groups = r.groups()
-        title = [groups[0].strip(), groups[1].strip()]
-    return title
-
-def parse_info(content):
-    info = {"content": content}
-    title = parse_title(content)
-    info["artist"] = title[0]
-    info["title"] = title[1]
-    r = re.search("genre:\s*([^\n]*)\n", content, re.IGNORECASE)
-    if r:
-        info["genre"] = r.groups()[0].strip()
-    r = re.search("country:\s*([^\n]*)\n", content, re.IGNORECASE)
-    if r:
-        info["country"] = r.groups()[0].strip()
-    return info
-
-def parse_album_info(content):
-    genre = None
-    genres = None
-    year = None
-    artist, title = parse_title(content)
-    if not artist:
-        return None, None, year, genre, genres
-    r = re.search("^\s*([^\n]+?)\s*(\(\s*\d+\s*\))?\s*$", title)
-    if r:
-        groups = r.groups()
-        title = groups[0].strip()
-        year = groups[1].replace('(', '').replace(')', '').strip()
-    r = re.search("(?:^|\n)genre:\s*([^\n]*)(?:\n|$)", content, re.IGNORECASE)
-    if r:
-        genres = [x.strip() for x in r.groups()[0].strip().replace(',', '/').split('/')]
-    else:
-        genres = [x.replace('_', ' ').replace('-', ' ')
-            for x in re.findall("\s*#([^\s#]*)", content, re.IGNORECASE)]
-    if genres:
-        genre = ' / '.join(genres)
-    return artist, title, year, genre, genres
 
 
 class TgPlaylist:
