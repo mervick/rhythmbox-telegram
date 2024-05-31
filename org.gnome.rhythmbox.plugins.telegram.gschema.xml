@@ -108,6 +108,17 @@
       <description>Choose the color scheme for the application's interface.</description>
     </key>
 
+    <key name="audio-visibility" type="s">
+      <default>'visible'</default>
+      <choices>
+        <choice value='visible'/>
+        <choice value='hidden'/>
+        <choice value='all'/>
+      </choices>
+      <summary>Audio visibility</summary>
+      <description>Choose which audio files to display: only visible, previously hidden, or all audio files.</description>
+    </key>
+
     <child name="source" schema="org.gnome.rhythmbox.source"/>
   </schema>
 </schemalist>
