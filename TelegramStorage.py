@@ -17,6 +17,7 @@
 import sqlite3
 import json
 import os
+import shutil
 import logging
 import re
 import schema as SQL
@@ -184,6 +185,8 @@ class TgAudio:
     def _is_file_exists(self):
         isfile = self.is_downloaded and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
+            print('file not exists, is_downloaded: %s, len: %s, is_file: %s, path: %s' %
+                  (self.is_downloaded, len(self.local_path) > 1, os.path.isfile(self.local_path), self.local_path))
             self.is_downloaded = False
         return isfile
 
@@ -198,6 +201,19 @@ class TgAudio:
             return 'STATE_DOWNLOADED'
         return ''
 
+    def _move_tmp_file(self):
+        if not self.is_moved and len(self.local_path):
+            src = self.local_path
+            src_dir = os.path.dirname(src)
+            chn_dir = f"{self.chat_id}"[-12:]
+            sub_dir = f"{self.message_id}"[-2:]
+            dst_dir = os.path.join(src_dir, chn_dir, sub_dir)
+            os.makedirs(dst_dir, exist_ok=True)
+            dst = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
+            os.rename(src, dst)
+            # print('== MOVE %s to %s ==' % (src, dst))
+            self.save({"local_path": dst})
+
     def get_path(self, priority=1, wait=False, done=empty_cb):
         if not self._is_file_exists():
             api = TelegramStorage.loaded().api
@@ -208,10 +224,12 @@ class TgAudio:
                     # @TODO remove audio or mark as invalid
                     return None
                 self.update(audio)
+                self._move_tmp_file()
                 return self.local_path
             else:
                 def on_done(data):
                     self.update(data)
+                    self._move_tmp_file()
                     done(self)
 
                 def on_error():
