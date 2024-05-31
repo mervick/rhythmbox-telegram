@@ -26,10 +26,11 @@ To enable plugin, you need first install  `python-telegram` - unofficial Telegra
 pip3 install python-telegram==0.18.0
 ```
 
-Next, if Rhythmbox player is open, please close it, then proceed to download the plugin from the repository and move it to the Rhythmbox plugins folder
+Next, if Rhythmbox player is open, please close it, then proceed to download the plugin from the repository and move it to the Rhythmbox plugins folder, and compile glib schemas
 
 ```sh
 git clone https://github.com/mervick/rhythmbox-telegram ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
+glib-compile-schemas ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
 ```
 
 
