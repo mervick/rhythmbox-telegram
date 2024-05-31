@@ -18,7 +18,7 @@ import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta
+from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta, file_uri
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
 
@@ -31,6 +31,7 @@ state_dark_icons = {
     'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
     'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-dark.svg',
     'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
+    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-dark.svg',
 }
 
 state_light_icons = {
@@ -38,6 +39,7 @@ state_light_icons = {
     'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
     'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-light.svg',
     'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
+    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-light.svg',
 }
 
 
@@ -143,11 +145,9 @@ class DownloadBar(metaclass=SingletonMeta):
         plugin.connect('update_download_info', self.update_download_info)
 
     def deactivate(self, source):
-        print('deactivate bar')
         self.active = False
 
     def activate(self, source):
-        print('activate bar')
         self.source = source
         if source.bar_ui is None:
             entry_view = source.get_entry_view()
@@ -169,7 +169,6 @@ class DownloadBar(metaclass=SingletonMeta):
 
     def _update_ui(self):
         if not self.active:
-            print('not active')
             return
 
         if self.source:
@@ -181,7 +180,6 @@ class DownloadBar(metaclass=SingletonMeta):
                 self.source.bar_ui["progress"].set_fraction(self.info.get('fraction', 0.0))
 
     def update_download_info(self, plugin,  info):
-        print('update_download_info (%s)' % info)
         self.info = info
         self._update_ui()
 
@@ -262,7 +260,7 @@ class TelegramSource(RB.BrowserSource):
         self.loader.start()
 
     def add_entries(self):
-        all_audio = self.plugin.storage.get_chat_audio(self.chat_id)
+        all_audio = self.plugin.storage.get_chat_audio(self.chat_id, visibility=self.plugin.settings['audio-visibility'])
         for audio in all_audio:
             self.add_entry(audio)
 
@@ -297,15 +295,6 @@ class TelegramSource(RB.BrowserSource):
     def do_can_add_to_queue(self):
         return True
 
-    # def add_status_bar(self):
-    #     entry_view = self.get_entry_view()
-    #     builder = Gtk.Builder()
-    #     builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/status.ui"))
-    #     self.status_ui = builder
-    #     status_box = builder.get_object('status_box')
-    #     entry_view.pack_end(status_box, False, False, 0)
-    #     status_box.show_all()
-
     def browse_action(self):
         screen = self.props.shell.props.window.get_screen()
         entries = self.get_entry_view().get_selected_entries()
@@ -314,9 +303,24 @@ class TelegramSource(RB.BrowserSource):
         entry = entries[0]
         location = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(location)
-        audio = TgAudio({"chat_id": chat_id,  "message_id": message_id})
+        audio = TgAudio({"chat_id": chat_id, "message_id": message_id})
         url = audio.get_link()
         Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
+
+    def file_manager_action(self):
+        entries = self.get_entry_view().get_selected_entries()
+        if len(entries) == 0:
+            return
+        app_info = Gio.AppInfo.get_default_for_type('inode/directory', True)
+        if not app_info:
+            return
+        for entry in entries:
+            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            chat_id, message_id = get_location_data(location)
+            audio = TgAudio.load(chat_id, message_id)
+            if audio.is_file_exists():
+                app_info.launch_uris([file_uri(audio.local_path)], None)
+                return
 
     def download_action(self):
         entries = self.get_entry_view().get_selected_entries()
@@ -328,7 +332,30 @@ class TelegramSource(RB.BrowserSource):
         downloader.start()
 
     def hide_action(self):
-        pass
+        entries = self.get_entry_view().get_selected_entries()
+        if len(entries) == 0:
+            return
+        for entry in entries:
+            loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            chat_id, message_id = get_location_data(loc)
+            audio = TgAudio.load(chat_id, message_id)
+            if not audio.is_hidden:
+                audio.save({"is_hidden": True})
+                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.plugin.db.commit()
+
+    def unhide_action(self):
+        entries = self.get_entry_view().get_selected_entries()
+        if len(entries) == 0:
+            return
+        for entry in entries:
+            loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            chat_id, message_id = get_location_data(loc)
+            audio = TgAudio.load(chat_id, message_id)
+            if audio.is_hidden:
+                audio.save({"is_hidden": False})
+                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.plugin.db.commit()
 
 
 GObject.type_register(TelegramSource)
