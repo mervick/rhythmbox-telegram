@@ -124,6 +124,10 @@ class TgAudio:
     def __init__(self, data):
         self.update(data)
 
+    @staticmethod
+    def load(chat_id, message_id):
+        return TelegramStorage.loaded().get_audio(chat_id, message_id, True)
+
     def update(self, data):
         if type(data) == tuple:
             id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
@@ -182,8 +186,8 @@ class TgAudio:
     def get_year(self):
         return get_year(self.date)
 
-    def _is_file_exists(self):
-        isfile = self.is_downloaded and len(self.local_path) > 1 and os.path.isfile(self.local_path)
+    def is_file_exists(self):
+        isfile = self.is_downloaded and self.local_path and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
             print('file not exists, is_downloaded: %s, len: %s, is_file: %s, path: %s' %
                   (self.is_downloaded, len(self.local_path) > 1, os.path.isfile(self.local_path), self.local_path))
@@ -194,7 +198,7 @@ class TgAudio:
         if self.is_error:
             return 'STATE_ERROR'
         if self.is_hidden:
-            return 'STATE_ERROR'
+            return 'STATE_HIDDEN'
         if self.is_moved:
             return 'STATE_IN_LIBRARY'
         if self.is_downloaded:
@@ -205,7 +209,7 @@ class TgAudio:
         if not self.is_moved and len(self.local_path):
             src = self.local_path
             src_dir = os.path.dirname(src)
-            chn_dir = f"{self.chat_id}"[-12:]
+            chn_dir = f"{self.chat_id}".replace('-100', '')
             sub_dir = f"{self.message_id}"[-2:]
             dst_dir = os.path.join(src_dir, chn_dir, sub_dir)
             os.makedirs(dst_dir, exist_ok=True)
@@ -215,7 +219,7 @@ class TgAudio:
             self.save({"local_path": dst})
 
     def get_path(self, priority=1, wait=False, done=empty_cb):
-        if not self._is_file_exists():
+        if not self.is_file_exists():
             api = TelegramStorage.loaded().api
             if wait:
                 audio = api.download_audio_async(self.chat_id, self.message_id, priority)
@@ -376,8 +380,13 @@ class TelegramStorage:
             return TgAudio(result)
         return result
 
-    def get_chat_audio(self, chat_id, limit=None, convert=True, show_hidden=False):
-        and_where = '' if show_hidden else 'AND is_hidden = "0"'
+    def get_chat_audio(self, chat_id, limit=None, convert=True, visibility='visible'):
+        if visibility == 'visible':
+            and_where = 'AND is_hidden = "0"'
+        elif visibility == 'hidden':
+            and_where = 'AND is_hidden = "1"'
+        else:
+            and_where = ''
         audio = self.db.execute(
             'SELECT * FROM `audio` WHERE chat_id = %s %s %s' % (chat_id, and_where, ("LIMIT %i" % limit) if limit else ''))
         result = audio.fetchall()
