@@ -53,7 +53,6 @@ class AudioDownloader(metaclass=SingletonMeta):
         self._update_progress()
 
     def _update_progress(self, audio=None):
-        print('_update_progress')
         filename = ''
         if audio is not None:
             if len(audio.title) and len(audio.artist):
@@ -88,8 +87,6 @@ class AudioDownloader(metaclass=SingletonMeta):
     def _move_file(self, src, dst):
         dst_dir = os.path.dirname(dst)
         os.makedirs(dst_dir, exist_ok=True)
-        dst_base = os.path.basename(dst)
-        name, ext = os.path.splitext(dst_base)
 
         if self.conflict_resolve == 'skip':
             if os.path.exists(dst):
@@ -99,9 +96,12 @@ class AudioDownloader(metaclass=SingletonMeta):
                 shutil.move(src, dst)
 
         elif self.conflict_resolve == 'overwrite':
+            print(f"File '{dst}' already exists. Overwriting.")
             shutil.move(src, dst)
 
         elif self.conflict_resolve == 'rename':
+            dst_base = os.path.basename(dst)
+            name, ext = os.path.splitext(dst_base)
             counter = 1
             new_dst = dst
             while os.path.exists(new_dst):
