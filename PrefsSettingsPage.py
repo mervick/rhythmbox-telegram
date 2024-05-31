@@ -18,7 +18,7 @@ import os
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import RB
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 from PrefsPage import PrefsPage, set_combo_text_column
 from common import filepath_parse_pattern, show_error
 
@@ -69,6 +69,12 @@ conflict_resolve_variants = [
     [_('Skip'), 'skip'],
 ]
 
+audio_visibility_variants = [
+    [_('Show Visible Audio'), 'visible'],
+    [_('Show Hidden Audio'), 'hidden'],
+    [_('Show All Audio'), 'all'],
+]
+
 example_tags = {
     "artist": "Korn",
     "album": "Issues",
@@ -87,6 +93,8 @@ class PrefsSettingsPage(PrefsPage):
 
     def _create_widget(self):
         self._values = {}
+        self._keys_require_restart = ['page-group', 'color-scheme', 'audio-visibility']
+
         self.library_location_entry = self.ui.get_object('library_location_entry')
         self.library_location_btn = self.ui.get_object('library_location_btn')
         self.conflict_resolve_combo = self.ui.get_object('conflict_resolve_combo')
@@ -95,6 +103,8 @@ class PrefsSettingsPage(PrefsPage):
         self.template_example_label = self.ui.get_object('template_example_label')
         self.page_group_combo = self.ui.get_object('page_group_combo')
         self.color_scheme_combo = self.ui.get_object('color_scheme_combo')
+        self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
+        self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
         self.library_location_entry.set_text(self.account.get_library_path())
         self.library_location_btn.connect('clicked', self._browse_libpath_cb)
@@ -105,8 +115,13 @@ class PrefsSettingsPage(PrefsPage):
         self._init_combo(self.page_group_combo, page_groups, 'page-group')
         self._init_combo(self.dir_hierarchy_combo, library_layout_paths, 'folder-hierarchy')
         self._init_combo(self.name_template_combo, library_layout_filenames, 'filename-template')
+        self._init_combo(self.audio_visibility_combo, audio_visibility_variants, 'audio-visibility')
 
         self._update('filename-template', self.settings['filename-template'])
+        GLib.timeout_add(600, self._update_box)
+
+    def _update_box(self):
+        self.restart_warning_box.set_visible(self.plugin.require_restart_plugin)
 
     def _init_combo(self, combo, variants, name):
         idx = 0
@@ -126,6 +141,9 @@ class PrefsSettingsPage(PrefsPage):
         if tree_iter is not None:
             model = combo.get_model()
             value = model[tree_iter][0]
+            if name in self._keys_require_restart:
+                self.plugin.require_restart_plugin = True
+                self.restart_warning_box.set_visible(True)
             self.settings.set_string(name, value)
             self._update(name, value)
             self.on_change(name, value)
