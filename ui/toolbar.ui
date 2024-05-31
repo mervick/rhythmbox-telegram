@@ -26,18 +26,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <attribute name="rb-menu-link">edit-menu</attribute>
         <attribute name="accel">&lt;Alt&gt;e</attribute>
       </submenu>
-      <item>
-        <attribute name="label" translatable="yes">Browse in chat</attribute>
-        <attribute name="action">app.tg-browse</attribute>
-      </item>
+      <submenu>
+        <attribute name="label" translatable="yes">Actions</attribute>
+        <attribute name="rb-menu-link">tg-actions-menu</attribute>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">Hide selected</attribute>
+            <attribute name="action">app.tg-hide</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">Unhide selected</attribute>
+            <attribute name="action">app.tg-unhide</attribute>
+          </item>
+        </section>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">View in Telegram</attribute>
+            <attribute name="action">app.tg-browse</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">View in File Manager</attribute>
+            <attribute name="action">app.tg-file-manager</attribute>
+          </item>
+        </section>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">Download to Library</attribute>
+            <attribute name="action">app.tg-download</attribute>
+          </item>
+        </section>
+      </submenu>
       <item>
         <attribute name="label" translatable="yes">Download</attribute>
         <attribute name="action">app.tg-download</attribute>
       </item>
-<!--      <item>-->
-<!--        <attribute name="label" translatable="yes">Hide</attribute>-->
-<!--        <attribute name="action">app.tg-hide</attribute>-->
-<!--      </item>-->
     </section>
   </menu>
 </interface>

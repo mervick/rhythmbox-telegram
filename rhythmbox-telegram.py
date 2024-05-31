@@ -52,6 +52,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.storage = None
         self.downloader = None
         self.group_id = None
+        self.require_restart_plugin = False
         self.rhythmdb_settings = None
         self.sources = {}
         self.deleted_sources = {}
@@ -59,6 +60,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
     def do_activate(self):
         print('Telegram plugin activating')
+        self.require_restart_plugin = False
         self.shell = self.object
         self.db = self.shell.props.db
         self.account.init()
@@ -77,12 +79,20 @@ class Telegram(GObject.GObject, Peas.Activatable):
         action.connect("activate", self.browse_action_cb)
         app.add_action(action)
 
+        action = Gio.SimpleAction(name="tg-file-manager")
+        action.connect("activate", self.file_manager_action_cb)
+        app.add_action(action)
+
         action = Gio.SimpleAction(name="tg-download")
         action.connect("activate", self.download_action_cb)
         app.add_action(action)
 
         action = Gio.SimpleAction(name="tg-hide")
         action.connect("activate", self.hide_action_cb)
+        app.add_action(action)
+
+        action = Gio.SimpleAction(name="tg-unhide")
+        action.connect("activate", self.unhide_action_cb)
         app.add_action(action)
 
         builder = Gtk.Builder()
@@ -185,6 +195,10 @@ class Telegram(GObject.GObject, Peas.Activatable):
         print(entry)
         self.source.playing_entry_changed(entry)
 
+    def file_manager_action_cb(self, action, parameter):
+        shell = self.object
+        shell.props.selected_page.file_manager_action()
+
     def browse_action_cb(self, action, parameter):
         shell = self.object
         shell.props.selected_page.browse_action()
@@ -193,6 +207,11 @@ class Telegram(GObject.GObject, Peas.Activatable):
         shell = self.object
         shell.props.selected_page.download_action()
 
-    def hide_action_cb(self, action, hide_action):
+    def hide_action_cb(self, action, parameter):
         shell = self.object
-        shell.props.selected_page.display_artist_info()
+        shell.props.selected_page.hide_action()
+
+    def unhide_action_cb(self, action, parameter):
+        shell = self.object
+        shell.props.selected_page.unhide_action()
+
