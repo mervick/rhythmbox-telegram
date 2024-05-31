@@ -142,7 +142,8 @@ class PrefsSettingsPage(PrefsPage):
                 self.account.settings.set_string('library-path', value)
             else:
                 show_error(_('Directory %s does not exists') % value,
-                           _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'))
+                           _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'),
+                           parent=self.box)
         elif name in ['folder-hierarchy', 'filename-template']:
             example = filepath_parse_pattern(
                 "%s/%s.mp3" % (self.settings['folder-hierarchy'], self.settings['filename-template']), example_tags)
