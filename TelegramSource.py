@@ -254,15 +254,14 @@ class TelegramSource(RB.BrowserSource):
 
         if not self.initialised:
             self.initialised = True
-            self.add_entries()
+            GLib.idle_add(self.add_entries)
+            # self.add_entries()
 
         self.loader = PlaylistLoader(self.chat_id, self.add_entry)
         self.loader.start()
 
     def add_entries(self):
-        all_audio = self.plugin.storage.get_chat_audio(self.chat_id, visibility=self.plugin.settings['audio-visibility'])
-        for audio in all_audio:
-            self.add_entry(audio)
+        self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.plugin.settings['audio-visibility'])
 
     def add_entry(self, audio):
         if audio.id not in self.loaded_entries:

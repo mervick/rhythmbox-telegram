@@ -76,11 +76,6 @@ class TgAudio:
     def __init__(self, data):
         self.update(data)
 
-    @staticmethod
-    def load(chat_id, message_id):
-        # @deprecated
-        return TelegramStorage.loaded().get_audio(chat_id, message_id, True)
-
     def update(self, data):
         if type(data) == tuple:
             id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
@@ -168,7 +163,6 @@ class TgAudio:
             os.makedirs(dst_dir, exist_ok=True)
             dst = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
             os.rename(src, dst)
-            # print('== MOVE %s to %s ==' % (src, dst))
             self.save({"local_path": dst})
 
     def get_path(self, priority=1, wait=False, done=empty_cb):
@@ -251,12 +245,9 @@ class TelegramStorage:
 
         if create_db:
             try:
-                # self.db.execute(SQL.TABLE_PARAMS)
                 self.db.execute(SQL.TABLE_CACHE)
                 self.db.execute(SQL.TABLE_PLAYLIST)
                 self.db.execute(SQL.TABLE_AUDIO)
-                # self.db.execute(SQL.TABLE_DOCUMENT)
-#                 self.db.execute(SQL.TABLE_INFO)
             except Exception as e:
                 os.remove(self.db_file)
                 raise Exception(e)
@@ -338,22 +329,19 @@ class TelegramStorage:
             return TgAudio(result)
         return result
 
-    def get_chat_audio(self, chat_id, limit=None, convert=True, visibility='visible'):
+    def load_entries(self, chat_id, each, visibility='visible'):
         if visibility == 'visible':
             and_where = 'AND is_hidden = "0"'
         elif visibility == 'hidden':
             and_where = 'AND is_hidden = "1"'
         else:
             and_where = ''
-        audio = self.db.execute(
-            'SELECT * FROM `audio` WHERE chat_id = %s %s %s' % (chat_id, and_where, ("LIMIT %i" % limit) if limit else ''))
-        result = audio.fetchall()
-        if result and convert:
-            items = []
-            for item in result:
-                items.append(TgAudio(item))
-            return items
-        return result
+        cursor = self.db.cursor()
+        cursor.execute(
+            'SELECT * FROM `audio` WHERE chat_id = %s %s' % (chat_id, and_where))
+        for row in cursor:
+            each(TgAudio(row))
+        cursor.close()
 
     def add_audio(self, data, convert=True, commit=True):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
