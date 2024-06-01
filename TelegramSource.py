@@ -274,6 +274,7 @@ class TelegramSource(RB.BrowserSource):
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
                 self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
                 self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
