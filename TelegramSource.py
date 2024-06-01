@@ -315,9 +315,7 @@ class TelegramSource(RB.BrowserSource):
         if not app_info:
             return
         for entry in entries:
-            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            chat_id, message_id = get_location_data(location)
-            audio = TgAudio.load(chat_id, message_id)
+            audio = self.plugin.storage.get_entry_audio(entry)
             if audio.is_file_exists():
                 app_info.launch_uris([file_uri(audio.local_path)], None)
                 return
@@ -337,9 +335,7 @@ class TelegramSource(RB.BrowserSource):
             return
         commit = False
         for entry in entries:
-            loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            chat_id, message_id = get_location_data(loc)
-            audio = TgAudio.load(chat_id, message_id)
+            audio = self.plugin.storage.get_entry_audio(entry)
             if not audio.is_hidden:
                 audio.save({"is_hidden": True})
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
@@ -353,9 +349,7 @@ class TelegramSource(RB.BrowserSource):
             return
         commit = False
         for entry in entries:
-            loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            chat_id, message_id = get_location_data(loc)
-            audio = TgAudio.load(chat_id, message_id)
+            audio = self.plugin.storage.get_entry_audio(entry)
             if audio.is_hidden:
                 audio.save({"is_hidden": False})
                 self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())

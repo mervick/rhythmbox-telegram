@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from gi.repository import RB
 import sqlite3
 import json
 import os
 import logging
 import schema as SQL
-from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
+from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, get_location_data
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ class TgAudio:
 
     @staticmethod
     def load(chat_id, message_id):
+        # @deprecated
         return TelegramStorage.loaded().get_audio(chat_id, message_id, True)
 
     def update(self, data):
@@ -322,6 +324,11 @@ class TelegramStorage:
             set_values.append(data[k])
         set_keys = ', '.join(set_keys)
         return set_keys, set_values
+
+    def get_entry_audio(self, entry):
+        uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        chat_id, message_id = get_location_data(uri)
+        return self.get_audio(chat_id, message_id, True)
 
     def get_audio(self, chat_id, message_id, convert=True):
         audio = self.db.execute(
