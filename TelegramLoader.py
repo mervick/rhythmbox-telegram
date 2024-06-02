@@ -85,7 +85,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         return self
 
     def _move_file(self, src, dst):
-        dst_dir = os.path.dirname(dst)
+        dst_dir = str(os.path.dirname(dst)).rstrip('/')
         os.makedirs(dst_dir, exist_ok=True)
 
         if self.conflict_resolve == 'skip':
