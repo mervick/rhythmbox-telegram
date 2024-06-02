@@ -196,12 +196,13 @@ class TelegramSource(RB.BrowserSource):
         self.loader = None
         self.plugin = None
         self.chat_id = None
+        self.chat_title = None
         self.bar = None
         self.bar_ui = None
         self.entry_updated_id = None
         self.loaded_entries = []
 
-    def setup(self, plugin, chat_id):
+    def setup(self, plugin, chat_id, chat_title):
         self.initialised = False
         shell = self.props.shell
         self.shell = shell
@@ -210,10 +211,14 @@ class TelegramSource(RB.BrowserSource):
         self.entry_type = self.props.entry_type
         self.plugin = plugin
         self.chat_id = chat_id
+        self.chat_title = chat_title
         self.loader = None
         self.state_column = StateColumn(self) # noqa
         self.loaded_entries = []
         self.activate()
+
+        app = self.shell.props.application
+        self.set_property("playlist-menu", app.get_shared_menu("playlist-page-menu"))
 
     def activate(self):
         self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
@@ -274,6 +279,7 @@ class TelegramSource(RB.BrowserSource):
                 self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
                 self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
                 self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
                 self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
                 self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
@@ -283,10 +289,42 @@ class TelegramSource(RB.BrowserSource):
                 self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
                 self.db.commit()
 
+    def do_copy(self):
+        entries = self.get_entry_view().get_selected_entries()
+        if len(entries) == 0:
+            return None
+        entry_type = self.db.entry_type_get_by_name("song")
+        new_entries = []
+        for tg_entry in entries:
+            audio = self.plugin.storage.get_entry_audio(tg_entry)
+            if audio.is_moved:
+                uri = file_uri(audio.local_path)
+                entry = self.db.entry_lookup_by_location(uri)
+                if not entry:
+                    entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
+                    self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
+                    self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
+                    self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
+                    self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
+                    self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
+                    self.db.commit()
+                new_entries.append(entry)
+        return new_entries
+
     def do_can_delete(self):
         return True
 
     def do_can_copy(self):
+        return False
+
+    def do_can_paste(self):
         return False
 
     def do_can_pause(self):
@@ -294,6 +332,9 @@ class TelegramSource(RB.BrowserSource):
 
     def do_can_add_to_queue(self):
         return True
+
+    def do_can_move_to_trash(self):
+        return False
 
     def browse_action(self):
         screen = self.props.shell.props.window.get_screen()
