@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import RB
+import os
+import concurrent.futures
 import sqlite3
 import json
-import os
 import logging
 import schema as SQL
+from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, get_location_data
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,15 @@ class TgPlaylist:
         if self.id != 0:
             return TelegramStorage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
         return TelegramStorage.loaded().insert('playlist', playlist)
+
+
+def run_with_timeout(func, timeout):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(func)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            return None
 
 
 class TgAudio:
@@ -167,12 +177,17 @@ class TgAudio:
 
     def get_path(self, priority=1, wait=False, done=empty_cb):
         if not self.is_file_exists():
-            api = TelegramStorage.loaded().api
+            storage = TelegramStorage.loaded()
+            api = storage.api
             if wait:
-                audio = api.download_audio_async(self.chat_id, self.message_id, priority)
+                def download_audio():
+                    return api.download_audio(self.chat_id, self.message_id, priority)
+                audio = None
+                data = run_with_timeout(download_audio, 20)
+                if data:
+                    audio = storage.add_audio(data, convert=False, commit=True)
                 if not audio:
                     self.is_error = True
-                    # @TODO remove audio or mark as invalid
                     return None
                 self.update(audio)
                 self._move_tmp_file()

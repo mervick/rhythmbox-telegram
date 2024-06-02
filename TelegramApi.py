@@ -397,7 +397,7 @@ class TelegramApi(GObject.Object):
         r.wait()
         return r.update['link'] if 'link' in r.update else None
 
-    def download_audio_async(self, chat_id, message_id, priority=1):
+    def download_audio(self, chat_id, message_id, priority=1):
         r = self.tg.get_message(chat_id, message_id)
         r.wait()
         msg = r.update
@@ -405,7 +405,7 @@ class TelegramApi(GObject.Object):
             file = self._download_audio_async(msg, priority=priority)
             if file:
                 msg['content']['audio']['audio'] = file
-                return self.storage.add_audio(msg, convert=False, commit=True)
+                return msg
         return None
 
     def download_audio_idle(self, chat_id, message_id, priority=1, done=empty_cb, cancel=empty_cb):

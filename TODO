@@ -6,4 +6,3 @@
 * update state for entries after deleting temp files
 * update install.sh
 * add instructions using install.sh
-* fix async file download hangs by implementing a timeout
