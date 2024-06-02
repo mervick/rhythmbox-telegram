@@ -28,7 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </submenu>
       <submenu>
         <attribute name="label" translatable="yes">Actions</attribute>
-        <attribute name="rb-menu-link">tg-actions-menu</attribute>
         <section>
           <item>
             <attribute name="label" translatable="yes">Hide selected</attribute>
