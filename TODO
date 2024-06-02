@@ -9,3 +9,5 @@
 * fix async file download hangs when no internet connection
 * sync play_count song entry_type with tg entry_type
 * change is_moved & is_downloaded when user deletes song entry
+* download to album_artist instead of artist
+* fix reloading sources by saving entry types
