@@ -168,7 +168,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
                         entry_type = TelegramEntryType(self)
                         source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=icon,
                             plugin=self, settings=self.settings.get_child("source"), name=chat['title'], toolbar_menu=self.toolbar)
-                        source.setup(self, chat_id)
+                        source.setup(self, chat_id, chat['title'])
                         entry_type.setup(source)
                         self.sources[chat_id] = source
                         self.shell.register_entry_type_for_source(source, entry_type)
