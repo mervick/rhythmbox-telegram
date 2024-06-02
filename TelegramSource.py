@@ -290,33 +290,53 @@ class TelegramSource(RB.BrowserSource):
                 self.db.commit()
 
     def do_copy(self):
-        entries = self.get_entry_view().get_selected_entries()
-        if len(entries) == 0:
+        tg_entries = self.get_entry_view().get_selected_entries()
+        if len(tg_entries) == 0:
             return None
-        entry_type = self.db.entry_type_get_by_name("song")
-        new_entries = []
-        for tg_entry in entries:
+
+        sort_audio = []
+        albums = {}
+        num_format = '%0' + str(len(str(len(tg_entries)))) + 'i'
+        key_format = '%s|%s|%s' % (num_format, num_format, num_format)
+
+        for idx, tg_entry in enumerate(tg_entries):
             audio = self.plugin.storage.get_entry_audio(tg_entry)
             if audio.is_moved:
-                uri = file_uri(audio.local_path)
-                entry = self.db.entry_lookup_by_location(uri)
-                if not entry:
-                    entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
-                    self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
-                    self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
-                    self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
-                    self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
-                    self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
-                    self.db.commit()
-                new_entries.append(entry)
-        return new_entries
+                album = f'{audio.artist}|{audio.album}|{audio.get_year()}'
+                albums_keys = albums.keys()
+                if album not in albums_keys:
+                    albums[album] = len(albums_keys) + 1
+                sort_key = key_format % (albums[album], audio.track_number, idx)
+                sort_audio.append([sort_key, audio])
+
+        if len(sort_audio) == 0:
+            return None
+
+        sort_audio.sort(key=lambda d: d[0])
+        entry_type = self.db.entry_type_get_by_name("song")
+        song_entries = []
+
+        for data in sort_audio:
+            audio = data[1]
+            uri = file_uri(audio.local_path)
+            entry = self.db.entry_lookup_by_location(uri)
+            if not entry:
+                entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
+                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
+                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
+                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
+                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
+                self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
+                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
+                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
+                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
+                self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
+                self.db.commit()
+            song_entries.append(entry)
+        return song_entries
 
     def do_can_delete(self):
         return True
