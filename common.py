@@ -169,6 +169,7 @@ META_TAGS = {
     'title': RB.MetaDataField.TITLE,
     'artist': RB.MetaDataField.ARTIST,
     'album': RB.MetaDataField.ALBUM,
+    'album_artist': RB.MetaDataField.ALBUM_ARTIST,
     'track_number': RB.MetaDataField.TRACK_NUMBER,
     'date': RB.MetaDataField.DATE,
     'duration': RB.MetaDataField.DURATION,
@@ -193,6 +194,16 @@ def get_audio_tags(file_path):
 
     return tags
 
+filename_illegal1 = '<>/\\|*'
+filename_illegal2 = '":'
+
+def clear_filename(filename):
+    for char in filename_illegal1:
+        filename = filename.replace(char, '_')
+    for char in filename_illegal2:
+        filename = filename.replace(char, '')
+    return filename
+
 # Valid markers so far are:
 # %at -- album title
 # %aa -- album artist
@@ -205,26 +216,19 @@ def get_audio_tags(file_path):
 # %ag -- album genre
 # %aG -- album genre (lowercase)
 # %tn -- track number (i.e 8)
-# %tN -- track number, zero padded (i.e 08)
+# %tN -- track number, zero padded (i.e. 08)
 # %tt -- track title
 # %ta -- track artist
 # %tA -- track artist (lowercase)
 # %ts -- track artist sortname
 # %tS -- track artist sortname (lowercase)
 
-filename_illegal = '<>:"/\\|?*'
-
-def clear_filename(filename):
-    for char in filename_illegal:
-        filename = filename.replace(char, '')
-    return filename
-
 filepath_pattern_markers = {
     "%at": "album",
-    "%aa": "artist",
-    "%aA": "artist_lower",
-    "%as": "artist",
-    "%aS": "artist_lower",
+    "%aa": "album_artist",
+    "%aA": "album_artist_lower",
+    # "%as": "album_artist",
+    # "%aS": "album_artist_lower",
     "%ay": "year",
     "%ag": "genre",
     "%aG": "genre_lower",
@@ -233,13 +237,14 @@ filepath_pattern_markers = {
     "%tt": "title",
     "%ta": "artist",
     "%tA": "artist_lower",
-    "%ts": "artist",
-    "%tS": "artist_lower",
+    # "%ts": "artist",
+    # "%tS": "artist_lower",
 }
 
 def filepath_parse_pattern(pattern, tags):
     # Parse a filename pattern and replace markers with values from the tags
     tags['artist_lower'] = tags['artist'].lower() if tags['artist'] else None
+    tags['album_artist_lower'] = tags['album_artist'].lower() if tags['album_artist'] else None
     tags['genre_lower'] = tags['genre'].lower() if tags['genre'] else None
     tags['track_number_padded'] = "%02i" % tags['track_number'] if tags['track_number'] else None
 
