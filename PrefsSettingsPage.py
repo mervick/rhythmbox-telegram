@@ -77,6 +77,7 @@ audio_visibility_variants = [
 
 example_tags = {
     "artist": "Korn",
+    "album_artist": "Korn",
     "album": "Issues",
     "title": "Hey Daddy",
     "track_number": 10,
