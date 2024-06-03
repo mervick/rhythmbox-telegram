@@ -125,7 +125,6 @@ def get_location_data(location):
 
 def file_uri(path):
     return GLib.filename_to_uri(path, None)
-#     return 'file://%s' % uri
 
 def open_path(path):
     Gio.app_info_get_default_for_uri(file_uri(path), None)
@@ -204,7 +203,6 @@ def clear_filename(filename):
         filename = filename.replace(char, '')
     return filename
 
-# Valid markers so far are:
 # %at -- album title
 # %aa -- album artist
 # %aA -- album artist (lowercase)
@@ -227,8 +225,6 @@ filepath_pattern_markers = {
     "%at": "album",
     "%aa": "album_artist",
     "%aA": "album_artist_lower",
-    # "%as": "album_artist",
-    # "%aS": "album_artist_lower",
     "%ay": "year",
     "%ag": "genre",
     "%aG": "genre_lower",
@@ -237,8 +233,6 @@ filepath_pattern_markers = {
     "%tt": "title",
     "%ta": "artist",
     "%tA": "artist_lower",
-    # "%ts": "artist",
-    # "%tS": "artist_lower",
 }
 
 def filepath_parse_pattern(pattern, tags):
