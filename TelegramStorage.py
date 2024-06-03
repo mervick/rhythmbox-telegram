@@ -132,8 +132,8 @@ class TgAudio:
             self.local_path = data.get('local_path')
             self.play_count = data.get('play_count', 0)
 
-    def update_tags(self, file_path=None):
-        file_path = file_path if file_path else self.get_path(wait=True)
+    def update_tags(self):
+        file_path = self.local_path
         if file_path:
             tags = get_audio_tags(file_path)
             self.album_artist = tags.get('album_artist', '')
@@ -182,8 +182,26 @@ class TgAudio:
             os.rename(src, dst)
             self.save({"local_path": dst})
 
+    def download_file(self, done=empty_cb, error=empty_cb):
+        storage = TelegramStorage.loaded()
+        api = storage.api
+
+        def on_done(data):
+            self.update(data)
+            self._move_tmp_file()
+            done(self)
+
+        def on_error():
+            self.is_error = True
+            error()
+
+        api.download_audio_idle(self.chat_id, self.message_id, priority=1, done=on_done, cancel=on_error)
+
     def get_path(self, priority=1, wait=False, done=empty_cb):
+        # @deprecated
+        # @todo remove
         if not self.is_file_exists():
+            self.local_path = None
             storage = TelegramStorage.loaded()
             api = storage.api
             if wait:
