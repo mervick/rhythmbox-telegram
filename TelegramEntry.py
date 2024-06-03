@@ -25,49 +25,64 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self.plugin = plugin
         self.shell = plugin.shell
         self.db = plugin.db
+        self._set_entry = None
 
     def setup(self, source):
         self.source = source
 
+    def _update_entry(self, entry, audio):
+        audio.update_tags()
+
+        self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
+        self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
+        self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
+        self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
+        self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
+        self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
+        self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
+        self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
+        self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+        self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
+        self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
+        self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
+        self.db.commit()
+
     def do_get_playback_uri(self, entry):
-        uri = entry.get_string(RB.RhythmDBPropType.MOUNTPOINT)
-        if not uri:
-            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            chat_id, message_id = get_location_data(location)
-            audio = self.plugin.storage.get_audio(chat_id, message_id)
-            if not audio:
-                return None
-            if self.plugin.is_downloading:
-                return None
+        location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        chat_id, message_id = get_location_data(location)
+        audio = self.plugin.storage.get_audio(chat_id, message_id)
 
-            self.plugin.is_downloading = True
-            file_path = audio.get_path(wait=True)
+        if not audio:
+            return None
+
+        if audio.is_file_exists():
+            self._set_entry = None
+            return file_uri(audio.local_path)
+
+        if self.plugin.is_downloading:
+            return None
+
+        state = entry.get_string(RB.RhythmDBPropType.COMMENT)
+        if state == 'STATE_LOADING':
+            return None
+
+        self.plugin.is_downloading = True
+        self._set_entry = entry
+        self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, 'STATE_LOADING')
+        self.db.commit()
+
+        def on_done(au):
             self.plugin.is_downloading = False
+            self._update_entry(entry, au)
+            if self._set_entry is not None:
+                self.shell.props.shell_player.play_entry(self._set_entry, self.plugin.source)
 
-            if file_path:
-                audio.update_tags(file_path)
+        def on_error():
+            self.plugin.is_downloading = False
+            self._set_entry = None
 
-                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
-                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
-                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
-                self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
-                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
-                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
-                self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
-                self.db.commit()
-
-                return file_uri(file_path)
-            else:
-                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-                self.db.commit()
-                return None
-
-        return uri
+        audio.download_file(done=on_done, error=on_error)
+        return None
 
     def do_can_sync_metadata(self, entry): # noqa
         return True
