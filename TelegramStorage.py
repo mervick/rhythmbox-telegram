@@ -97,6 +97,7 @@ class TgAudio:
             self.track_number = track_number
             self.title = title
             self.artist = artist
+            self.album_artist = self.artist
             self.album = album or ''
             self.genre = genre or ''
             self.file_name = file_name
@@ -117,6 +118,7 @@ class TgAudio:
             self.track_number = data.get('track_number', 0)
             self.title = data.get('title', '')
             self.artist = data.get('artist', '')
+            self.album_artist = self.artist
             self.album = data.get('album', '')
             self.genre = data.get('genre', '')
             self.file_name = data.get('file_name', '')
@@ -134,12 +136,17 @@ class TgAudio:
         file_path = file_path if file_path else self.get_path(wait=True)
         if file_path:
             tags = get_audio_tags(file_path)
+            self.album_artist = tags.get('album_artist', '')
             del tags['year']
+            del tags['album_artist']
             for tag in dict(tags):
                 if tags[tag] is None:
                     del tags[tag]
             if len(tags):
                 self.save(tags)
+
+    def get_album_artist(self):
+        return self.album_artist if self.album_artist and len(self.album_artist) else self.artist
 
     def get_year(self):
         return get_year(self.date)
@@ -180,12 +187,13 @@ class TgAudio:
             storage = TelegramStorage.loaded()
             api = storage.api
             if wait:
-                def download_audio():
-                    return api.download_audio(self.chat_id, self.message_id, priority)
-                audio = None
-                data = run_with_timeout(download_audio, 20)
+                data = api.download_audio(self.chat_id, self.message_id, priority)
+                # def download_audio():
+                #     return api.download_audio(self.chat_id, self.message_id, priority)
+                # audio = None
+                # data = run_with_timeout(download_audio, 20)
                 if data:
-                    audio = storage.add_audio(data, convert=False, commit=True)
+                    audio = storage.add_audio(data, convert=False)
                 if not audio:
                     self.is_error = True
                     return None
@@ -244,7 +252,7 @@ class TgCache:
 
 
 class TelegramStorage:
-    __instance = None
+    _instance = None
 
     def __str__(self) -> str:
         return f'TelegramStorage <{self.api.hash}>'
@@ -255,24 +263,21 @@ class TelegramStorage:
         self.db_file = os.path.join(self.files_dir, 'data.sqlite')
         create_db = not os.path.exists(self.db_file)
         self.db = sqlite3.connect(self.db_file)
-        self.db_cur = self.db.cursor()
-        TelegramStorage.__instance = self
+        TelegramStorage._instance = self
 
         if create_db:
             try:
                 self.db.execute(SQL.TABLE_CACHE)
                 self.db.execute(SQL.TABLE_PLAYLIST)
                 self.db.execute(SQL.TABLE_AUDIO)
+                self.db.commit()
             except Exception as e:
                 os.remove(self.db_file)
                 raise Exception(e)
 
     @staticmethod
     def loaded():
-        return TelegramStorage.__instance
-
-    def commit(self):
-        self.db.commit()
+        return TelegramStorage._instance
 
     def select(self, table, where, limit=1):
         set_where = []
@@ -284,10 +289,10 @@ class TelegramStorage:
         sql = f"SELECT * FROM `{table}` WHERE {set_where}"
         if limit and limit > 0:
             sql = f'{sql} LIMIT {limit}'
-        cur = self.db.execute(sql, tuple(set_values))
+        cursor = self.db.execute(sql, tuple(set_values))
         if limit and limit > 1:
-            return cur.fetchall()
-        return cur.fetchone()
+            return cursor.fetchall()
+        return cursor.fetchone()
 
     def update(self, table, data, where, limit=0):
         set_keys, set_values = self._prepare(data)
@@ -299,8 +304,8 @@ class TelegramStorage:
         sql = f"UPDATE `{table}` SET {set_keys} WHERE {set_where}"
         if limit and limit > 0:
             sql = f'{sql} LIMIT {limit}'
-        self.db_cur.execute(sql, tuple(set_values))
-        result = self.db_cur.rowcount > 0
+        cursor = self.db.execute(sql, tuple(set_values))
+        result = cursor.rowcount > 0
         self.db.commit()
         return result
 
@@ -315,8 +320,8 @@ class TelegramStorage:
         set_keys = ', '.join(set_keys)
         set_place = ', '.join(set_place)
         sql = f"INSERT INTO `{table}` ({set_keys}) VALUES ({set_place})"
-        self.db_cur.execute(sql, tuple(set_values))
-        result = self.db_cur.rowcount > 0
+        cursor = self.db.execute(sql, tuple(set_values))
+        result = cursor.rowcount > 0
         self.db.commit()
         return result
 
@@ -358,7 +363,7 @@ class TelegramStorage:
             each(TgAudio(row))
         cursor.close()
 
-    def add_audio(self, data, convert=True, commit=True):
+    def add_audio(self, data, convert=True):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
             return
@@ -403,7 +408,7 @@ class TelegramStorage:
             d['is_moved'] = tg_audio.is_moved
             return d if not convert else tg_audio
 
-        self.db_cur.execute("""
+        cursor = self.db.execute("""
             INSERT INTO `audio` (
                 chat_id, message_id, mime_type, title, artist, file_name, `date`, `created_at`, size, duration,
                 local_path, is_downloaded, track_number)
@@ -412,8 +417,6 @@ class TelegramStorage:
                 :local_path, :is_downloaded, :track_number)
         """ , d)
 
-        d['id'] = self.db_cur.lastrowid
-        result = d if not convert else TgAudio(d)
-        if commit:
-            self.db.commit()
-        return result
+        d['id'] = cursor.lastrowid
+        self.db.commit()
+        return d if not convert else TgAudio(d)

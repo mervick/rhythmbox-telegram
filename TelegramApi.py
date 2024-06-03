@@ -354,7 +354,7 @@ class TelegramApi(GObject.Object):
 
                 if msg_type == MessageType.AUDIO:
                     logger.debug('Detect audio file')
-                    d = self.storage.add_audio(data, commit=True)
+                    d = self.storage.add_audio(data)
                     blob['update'](d) if d else None
 
         blob['done'](blob, 'NEXT')
@@ -413,7 +413,7 @@ class TelegramApi(GObject.Object):
 
         def set_file(file):
             update['data']['content']['audio']['audio'] = file
-            done(self.storage.add_audio(update['data'], convert=False, commit=True))
+            done(self.storage.add_audio(update['data'], convert=False))
 
         def download(data):
             update['data'] = data
