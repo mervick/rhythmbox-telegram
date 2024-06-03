@@ -54,6 +54,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.group_id = None
         self.require_restart_plugin = False
         self.rhythmdb_settings = None
+        self.source = None
         self.sources = {}
         self.deleted_sources = {}
         self._created_group = False

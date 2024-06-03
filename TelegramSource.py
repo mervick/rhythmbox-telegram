@@ -252,6 +252,7 @@ class TelegramSource(RB.BrowserSource):
             self.loader.stop()
 
     def do_selected(self):
+        self.plugin.source = self
         self.state_column.activate()
         self.get_entry_view().set_sorting_order("Location", Gtk.SortType.DESCENDING)
         self.bar = DownloadBar(self.plugin)
