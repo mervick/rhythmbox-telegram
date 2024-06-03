@@ -296,7 +296,7 @@ class TelegramSource(RB.BrowserSource):
 
         sort_audio = []
         albums = {}
-        num_format = '%0' + str(len(str(len(tg_entries)))) + 'i'
+        num_format = '%0' + str(len(str(len(tg_entries))) + 2) + 'i'
         key_format = '%s|%s|%s' % (num_format, num_format, num_format)
 
         for idx, tg_entry in enumerate(tg_entries):
