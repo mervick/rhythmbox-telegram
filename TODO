@@ -9,5 +9,7 @@
 * fix async file download hangs when no internet connection
 * sync play_count song entry_type with tg entry_type
 * change is_moved & is_downloaded when user deletes song entry
-* download to album_artist instead of artist
+* download to the album_artist instead of artist
 * fix reloading sources by saving entry types
+* make pixbuf icons in the state column fill color the same as it do in the play column (then remove color-scheme option in the settings)
+* add option "ask" in the resolve variants, create dialog which asks what to do when downloaded file already exists
