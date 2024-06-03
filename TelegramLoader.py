@@ -117,6 +117,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         tags = {
             'title': audio.title,
             'artist': audio.artist,
+            'album_artist': audio.get_album_artist(),
             'album': audio.album,
             'track_number': audio.track_number,
             'date': audio.date,
@@ -135,6 +136,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
+        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.get_album_artist())
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
         self.plugin.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
