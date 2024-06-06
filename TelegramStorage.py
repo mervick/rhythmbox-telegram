@@ -182,18 +182,18 @@ class TgAudio:
             os.rename(src, dst)
             self.save({"local_path": dst})
 
-    def download_file(self, done=empty_cb, error=empty_cb):
+    def download_file(self, success=empty_cb, fail=empty_cb):
         storage = TelegramStorage.loaded()
         api = storage.api
 
         def on_done(data):
             self.update(data)
             self._move_tmp_file()
-            done(self)
+            success(self)
 
         def on_error():
             self.is_error = True
-            error()
+            fail()
 
         api.download_audio_idle(self.chat_id, self.message_id, priority=1, done=on_done, cancel=on_error)
 
