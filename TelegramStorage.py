@@ -21,7 +21,8 @@ import json
 import logging
 import schema as SQL
 from gi.repository import RB
-from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, get_location_data
+from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
+from common import get_location_data, TG_RhythmDBPropType
 
 logger = logging.getLogger(__name__)
 
@@ -182,54 +183,25 @@ class TgAudio:
             os.rename(src, dst)
             self.save({"local_path": dst})
 
-    def download_file(self, success=empty_cb, fail=empty_cb):
+    def download(self, success=empty_cb, fail=empty_cb):
         storage = TelegramStorage.loaded()
         api = storage.api
 
-        def on_done(data):
+        def on_success(data):
             self.update(data)
             self._move_tmp_file()
             success(self)
 
-        def on_error():
+        def on_fail():
             self.is_error = True
             fail()
 
-        api.download_audio_idle(self.chat_id, self.message_id, priority=1, done=on_done, cancel=on_error)
+        api.download_audio_idle(self.chat_id, self.message_id, priority=1, done=on_success, cancel=on_fail)
 
-    def get_path(self, priority=1, wait=False, done=empty_cb):
-        # @deprecated
-        # @todo remove
+    def get_path(self):
         if not self.is_file_exists():
-            self.local_path = None
-            storage = TelegramStorage.loaded()
-            api = storage.api
-            if wait:
-                data = api.download_audio(self.chat_id, self.message_id, priority)
-                # def download_audio():
-                #     return api.download_audio(self.chat_id, self.message_id, priority)
-                # audio = None
-                # data = run_with_timeout(download_audio, 20)
-                if data:
-                    audio = storage.add_audio(data, convert=False)
-                if not audio:
-                    self.is_error = True
-                    return None
-                self.update(audio)
-                self._move_tmp_file()
-                return self.local_path
-            else:
-                def on_done(data):
-                    self.update(data)
-                    self._move_tmp_file()
-                    done(self)
-
-                def on_error():
-                    self.is_error = True
-
-                api.download_audio_idle(self.chat_id, self.message_id, priority=priority, done=on_done, cancel=on_error)
-                return None
-
+            self.local_path = None # noqa
+            return None
         return self.local_path
 
     def save(self, data):
@@ -246,6 +218,26 @@ class TgAudio:
         if self.mime_type in mime_types.keys():
             return mime_types[self.mime_type]
         return os.path.splitext(self.file_name)[1][1:]
+
+    def update_entry(self, entry, db=None, commit=True, state=True):
+        if db is None:
+            db = entry.get_entry_type().db
+        # self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, file_uri(audio.local_path))
+        db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, self.track_number)
+        db.entry_set(entry, RB.RhythmDBPropType.TITLE, self.title)
+        db.entry_set(entry, RB.RhythmDBPropType.ARTIST, self.artist)
+        db.entry_set(entry, RB.RhythmDBPropType.ALBUM, self.album)
+        db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, self.artist)
+        db.entry_set(entry, RB.RhythmDBPropType.GENRE, self.genre)
+        db.entry_set(entry, RB.RhythmDBPropType.DURATION, self.duration)
+        db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(self.created_at))
+        db.entry_set(entry, RB.RhythmDBPropType.DATE, int(self.date))
+        db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(self.play_count))
+        db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(self.size))
+        if state:
+            db.entry_set(entry, TG_RhythmDBPropType.STATE, self.get_state())
+        if commit:
+            db.commit()
 
 
 class TgCache:
