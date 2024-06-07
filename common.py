@@ -22,6 +22,10 @@ import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
+class TG_RhythmDBPropType: # noqa
+    STATE = RB.RhythmDBPropType.COMMENT
+
+
 class SingletonMeta(type):
     _instances = {}
 
