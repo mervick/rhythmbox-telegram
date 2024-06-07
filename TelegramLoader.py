@@ -16,14 +16,92 @@
 
 import os
 import shutil
-from gi.repository import RB
-from gi.repository import GLib
-from common import get_location_data, filepath_parse_pattern, SingletonMeta
+from gi.repository import GLib, RB
+from common import filepath_parse_pattern, SingletonMeta, TG_RhythmDBPropType
 from TelegramStorage import TgPlaylist
 from TelegramApi import TelegramApi
 
 
+class AudioLoader(metaclass=SingletonMeta):
+    """
+    AudioLoader is designed to sequentially download audio files into a temp directory.
+    The most recently added records to the queue are loaded first.
+    The downloading process is assigned the highest priority level.
+    """
+    def __init__(self, plugin):
+        self.plugin = plugin
+        self.entries = []
+        self._running = False
+        self._idx = 0
+
+    def is_downloading(self, entry):
+        if self._running:
+            uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            for in_entry in self.entries:
+                if in_entry:
+                    in_uri = in_entry.get_string(RB.RhythmDBPropType.LOCATION)
+                    if in_uri == uri:
+                        return True
+        return False
+
+    def add_entry(self, entry):
+        state = entry.get_string(TG_RhythmDBPropType.STATE)
+        if state != 'STATE_IN_LIBRARY' and state != 'STATE_LOADING':
+            self.entries.append(entry)
+            self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, 'STATE_LOADING')
+            self.plugin.db.commit()
+        return self
+
+    def start(self):
+        if len(self.entries) > 0:
+            if not self._running:
+                self._running = True
+                self._idx = len(self.entries) - 1
+                self._load()
+        else:
+            self.stop()
+        return self
+
+    def stop(self):
+        self._running = False
+        self.entries = []
+
+    def _process(self, audio):
+        entry = self.entries[self._idx]
+        audio.update_tags()
+        audio.update_entry(entry)
+        self._next()
+
+    def _next(self):
+        del self.entries[self._idx]
+        self._idx = len(self.entries) - 1
+        if self._idx < 0:
+            self.stop()
+            return
+        GLib.timeout_add(5, self._load)
+
+    def _load(self):
+        if self._running:
+            entry = self.entries[self._idx]
+            audio = self.plugin.storage.get_entry_audio(entry)
+            if not audio:
+                self._next()
+                return
+            file_path = audio.get_path()
+            if file_path:
+                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
+                self.plugin.db.commit()
+                self._next()
+            else:
+                audio.download(success=self._process, fail=self._next)
+
+
 class AudioDownloader(metaclass=SingletonMeta):
+    """
+    AudioDownloader is designed to sequentially download audio files into a Music library.
+    The first entries added to the queue are downloaded first.
+    The downloading process is assigned a medium priority level.
+    """
     def __init__(self, plugin):
         self.plugin = plugin
         self.entries = []
@@ -40,10 +118,10 @@ class AudioDownloader(metaclass=SingletonMeta):
 
     def add_entries(self, entries):
         for entry in entries:
-            state = entry.get_string(RB.RhythmDBPropType.COMMENT)
+            state = entry.get_string(TG_RhythmDBPropType.STATE)
             if state != 'STATE_IN_LIBRARY':
                 self.entries.append(entry)
-                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, 'STATE_LOADING')
+                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, 'STATE_LOADING')
                 self.plugin.db.commit()
 
     def stop(self):
@@ -51,6 +129,19 @@ class AudioDownloader(metaclass=SingletonMeta):
         self.entries = []
         self._idx = 0
         self._update_progress()
+
+    def start(self):
+        if len(self.entries) > 0:
+            if not self._running:
+                self._info = {}
+                self._running = True
+                self._idx = 0
+                self._load()
+            else:
+                self._update_progress()
+        else:
+            self.stop()
+        return self
 
     def _update_progress(self, audio=None):
         filename = ''
@@ -69,20 +160,6 @@ class AudioDownloader(metaclass=SingletonMeta):
         }
         self._info = info
         self.plugin.emit('update_download_info', info)
-
-    def start(self):
-        if len(self.entries) > 0:
-            if not self._running:
-                self._info = {}
-                self._running = True
-                self._idx = 0
-                self._load()
-            else:
-                self._update_progress()
-        else:
-            pass
-            self.stop()
-        return self
 
     def _move_file(self, src, dst):
         dst_dir = str(os.path.dirname(dst)).rstrip('/')
@@ -127,26 +204,15 @@ class AudioDownloader(metaclass=SingletonMeta):
         }
         file_ext = audio.get_file_ext()
         filename = filepath_parse_pattern(
-            "%s/%s%s" % (self.folder_hierarchy, self.filename_template,
-                         f'.{file_ext}' if len(file_ext) else ''), tags)
+            "%s/%s%s" % (self.folder_hierarchy, self.filename_template, f'.{file_ext}' if len(file_ext) else ''), tags)
         filename = "%s/%s" % (self.library_location, filename)
         filename = self._move_file(audio.local_path, filename)
         audio.save({"local_path": filename, "is_moved": True})
-
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.get_album_artist())
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
-        self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-        self.plugin.db.commit()
-
+        audio.update_entry(entry)
         self._next()
 
     def _next(self):
+        self.entries[self._idx] = None
         self._idx = self._idx + 1
         if self._idx >= len(self.entries):
             self.stop()
@@ -156,21 +222,21 @@ class AudioDownloader(metaclass=SingletonMeta):
     def _load(self):
         if self._running:
             entry = self.entries[self._idx]
-            location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            chat_id, message_id = get_location_data(location)
-            audio = self.plugin.storage.get_audio(chat_id, message_id)
+            audio = self.plugin.storage.get_entry_audio(entry)
             if not audio:
                 self._next()
                 return
             self._update_progress(audio)
             if audio.is_moved:
-                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
                 self.plugin.db.commit()
                 self._next()
                 return
-            file_path = audio.get_path(wait=False, done=self._process)
+            file_path = audio.get_path()
             if file_path:
                 self._process(audio)
+            else:
+                audio.download(success=self._process, fail=self._next)
 
 
 class PlaylistLoader:
