@@ -18,7 +18,7 @@ import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta, file_uri
+from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta, file_uri, TG_RhythmDBPropType
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
 
@@ -110,7 +110,7 @@ class StateColumn:
     def model_data_func(self, column, cell, model, iter, cell_type): # noqa
         entry = model.get_value(iter, 0)
         idx = model.get_value(iter, 1)
-        state = entry.get_string(RB.RhythmDBPropType.COMMENT)
+        state = entry.get_string(TG_RhythmDBPropType.STATE)
         is_spinner = cell_type == 'spinner'
 
         if state == 'STATE_LOADING':
@@ -222,9 +222,11 @@ class TelegramSource(RB.BrowserSource):
 
     def activate(self):
         self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
+        self.props.entry_type.activate()
 
     def deactivate(self):
         self.db.disconnect(self.entry_updated_id)
+        self.props.entry_type.deactivate()
 
     def on_entry_changed(self, db, entry, changes):
         if self.entry_type != entry.get_entry_type():
@@ -276,19 +278,7 @@ class TelegramSource(RB.BrowserSource):
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
-                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
-                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
-                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
-                self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
-                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
-                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
-                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
-                self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
-                self.db.commit()
+                audio.update_entry(entry, self.db)
 
     def do_copy(self):
         tg_entries = self.get_entry_view().get_selected_entries()
@@ -323,18 +313,8 @@ class TelegramSource(RB.BrowserSource):
             entry = self.db.entry_lookup_by_location(uri)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
-                self.db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, audio.track_number)
-                self.db.entry_set(entry, RB.RhythmDBPropType.TITLE, audio.title)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM, audio.album)
-                self.db.entry_set(entry, RB.RhythmDBPropType.ALBUM_ARTIST, audio.artist)
-                self.db.entry_set(entry, RB.RhythmDBPropType.GENRE, audio.genre)
-                self.db.entry_set(entry, RB.RhythmDBPropType.DURATION, audio.duration)
-                self.db.entry_set(entry, RB.RhythmDBPropType.FIRST_SEEN, int(audio.created_at))
+                audio.update_entry(entry, self.db, commit=False, state=False)
                 self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
-                self.db.entry_set(entry, RB.RhythmDBPropType.DATE, int(audio.date))
-                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(audio.play_count))
-                self.db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(audio.size))
                 self.db.commit()
             song_entries.append(entry)
         return song_entries
@@ -400,10 +380,10 @@ class TelegramSource(RB.BrowserSource):
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio.is_hidden:
                 audio.save({"is_hidden": True})
-                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
                 commit = True
         if commit:
-            self.plugin.db.commit()
+            self.db.commit()
 
     def unhide_action(self):
         entries = self.get_entry_view().get_selected_entries()
@@ -414,10 +394,10 @@ class TelegramSource(RB.BrowserSource):
             audio = self.plugin.storage.get_entry_audio(entry)
             if audio.is_hidden:
                 audio.save({"is_hidden": False})
-                self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+                self.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
                 commit = True
         if commit:
-            self.plugin.db.commit()
+            self.db.commit()
 
 
 GObject.type_register(TelegramSource)
