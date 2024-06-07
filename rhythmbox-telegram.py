@@ -20,13 +20,13 @@ from gi.overrides import GLib # noqa
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio
 from gi.repository import Peas, PeasGtk # noqa
-from TelegramLoader import AudioDownloader
+from TelegramLoader import AudioDownloader, AudioLoader
 from TelegramSource import TelegramSource
-from TelegramApi import TelegramApi
+from TelegramApi import TelegramApi, TelegramAuthError
 from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
 from TelegramAccount import TelegramAccount
 from TelegramEntry import TelegramEntryType
-from common import get_location_data
+from common import get_location_data, show_error
 
 
 class Telegram(GObject.GObject, Peas.Activatable):
@@ -50,6 +50,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.is_downloading = False
         self.api = None
         self.storage = None
+        self.loader = None
         self.downloader = None
         self.group_id = None
         self.require_restart_plugin = False
@@ -69,6 +70,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
         self.downloader = AudioDownloader(self)
+        self.loader = AudioLoader(self)
         self.group_id = None
         self.sources = {}
         self.deleted_sources = {}
@@ -105,10 +107,13 @@ class Telegram(GObject.GObject, Peas.Activatable):
         api_id, api_hash, phone_number, self.connected = self.account.get_secure()
 
         if self.connected:
-            self.api = TelegramApi.api(api_id, api_hash, phone_number)
-            self.api.login()
-            self.storage = self.api.storage
-            self.do_reload_sources()
+            try:
+                self.api = TelegramApi.api(api_id, api_hash, phone_number)
+                self.api.login()
+                self.storage = self.api.storage
+                self.do_reload_sources()
+            except TelegramAuthError as err:
+                show_error(err.get_info())
 
     # def load_api(self):
     #     api_id, api_hash, phone_number, self.connected = self.account.get_secure()
