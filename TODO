@@ -6,12 +6,10 @@
 * update state for entries after deleting temp files
 * update install.sh
 * add instructions using install.sh
-* sync play_count song entry_type with tg entry_type
+* sync play_count, rating song entry_type with tg entry_type
 * change is_moved & is_downloaded when user deletes song entry
 * fix reloading sources by saving entry types
 * make pixbuf icons in the state column fill color the same as it do in the play column (then remove color-scheme option in the settings)
 * add option "ask" in the resolve variants, create dialog which asks what to do when downloaded file already exists
 * reduce the frequency of writes to the storage (playlists)
-* sometimes audio is already downloaded but by some reason it start downloading audio again
 * improve loading playlists
-* make downloading queue for default requests
