@@ -90,7 +90,7 @@ class TgAudio:
     def update(self, data):
         if type(data) == tuple:
             id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
-                date, size, duration, is_downloaded, is_moved, is_hidden, local_path, play_count = data
+                date, size, duration, is_downloaded, is_moved, is_hidden, local_path, play_count, rating = data
             self.id = id_
             self.chat_id = chat_id
             self.message_id = message_id
@@ -111,6 +111,7 @@ class TgAudio:
             self.is_hidden = is_hidden
             self.local_path = local_path
             self.play_count = play_count or 0
+            self.rating = rating or 0
         else:
             self.id = data.get('id', 0)
             self.chat_id = data['chat_id']
@@ -132,6 +133,7 @@ class TgAudio:
             self.is_hidden = data.get('is_hidden', False)
             self.local_path = data.get('local_path')
             self.play_count = data.get('play_count', 0)
+            self.rating = data.get('rating', 0)
 
     def update_tags(self):
         file_path = self.local_path
@@ -234,6 +236,7 @@ class TgAudio:
         db.entry_set(entry, RB.RhythmDBPropType.DATE, int(self.date))
         db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, int(self.play_count))
         db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(self.size))
+        db.entry_set(entry, RB.RhythmDBPropType.RATING, float(self.rating))
         if state:
             db.entry_set(entry, TG_RhythmDBPropType.STATE, self.get_state())
         if commit:

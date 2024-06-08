@@ -213,6 +213,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = chat_id
         self.chat_title = chat_title
         self.loader = None
+        self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
         self.state_column = StateColumn(self) # noqa
         self.loaded_entries = []
         self.activate()
@@ -231,13 +232,16 @@ class TelegramSource(RB.BrowserSource):
     def on_entry_changed(self, db, entry, changes):
         if self.entry_type != entry.get_entry_type():
             return
+
         for change in changes:
             if change.prop == RB.RhythmDBPropType.PLAY_COUNT:
                 play_count = entry.get_ulong(RB.RhythmDBPropType.PLAY_COUNT)
-                loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
-                chat_id, message_id = get_location_data(loc)
-                audio = self.plugin.storage.get_audio(chat_id, message_id)
+                audio = self.plugin.storage.get_entry_audio(entry)
                 audio.save({"play_count": play_count})
+            elif change.prop == RB.RhythmDBPropType.RATING:
+                rating = entry.get_double(RB.RhythmDBPropType.RATING)
+                audio = self.plugin.storage.get_entry_audio(entry)
+                audio.save({"rating": round(rating)})
 
     def hide_thyself(self):
         self.deactivate()
