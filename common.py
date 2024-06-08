@@ -116,6 +116,17 @@ API_ERRORS = {
     'AUTH_KEY_PERM_EMPTY': _('The method is unavailable for temporary authorization key, not bound to permanent'),
 }
 
+def get_entry_state(entry):
+    entry.get_string(TG_RhythmDBPropType.STATE)
+
+def set_entry_state(db, entry, state):
+    db.entry_set(entry, TG_RhythmDBPropType.STATE, state)
+
+def get_entry_location(entry):
+    entry.get_string(RB.RhythmDBPropType.LOCATION)
+
+def is_same_entry(entry1, entry2):
+    return get_entry_location(entry1) == get_entry_location(entry2)
 
 def to_location(api_hash, created_at, chat_id, audio_id):
     return 'tg://%s/%s/%s/%s' % (api_hash, created_at, chat_id, audio_id)

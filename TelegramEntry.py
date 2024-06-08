@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import RB, GLib, GObject
-from common import file_uri, get_location_data, TG_RhythmDBPropType
+from common import file_uri, get_location_data, TG_RhythmDBPropType, is_same_entry
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
@@ -24,14 +24,13 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     }
 
     def __init__(self, plugin):
-        RB.RhythmDBEntryType.__init__(self, name='telegram')
+        RB.RhythmDBEntryType.__init__(self, name='TelegramEntryType')
         self.source = None
         self.plugin = plugin
         self.shell = plugin.shell
         self.db = plugin.db
         self.shell_player = self.shell.props.shell_player
         self._pending_playback_entry = None
-        self._was_stopped = None
         self._entry_error_id = None
         self._entry_downloaded_id = None
 
@@ -44,41 +43,19 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self.disconnect(self._entry_downloaded_id)
 
     def _on_entry_downloaded(self, entry_type, entry):
-        print('entry')
-        print(entry)
-        # print(*args)
-        playing_entry = self._pending_playback_entry
-        print('playing_entry')
-        print(playing_entry)
-
-        if not playing_entry:
+        if not self._pending_playback_entry:
             return
 
-        print('playing_entry')
-        print(playing_entry)
-        playing_location = playing_entry.get_string(RB.RhythmDBPropType.LOCATION) if playing_entry else None
-        print(playing_location)
-
-        location = entry.get_string(RB.RhythmDBPropType.LOCATION)
-        if location == playing_location:
+        if is_same_entry(entry, self._pending_playback_entry):
             self._pending_playback_entry = None
             self.shell_player.play_entry(entry, self.plugin.source)
-
-            # if self._was_stopped:
-            #     self._was_stopped = False
-            GLib.timeout_add(100, self.shell.props.shell_player.emit, "playing-changed", True)
+            # GLib.timeout_add(100, self.shell.props.shell_player.emit, "playing-changed", True)
 
     def _on_player_error(self, *args):
-        self._was_stopped = True
         self.shell.props.shell_player.stop()
 
     def setup(self, source):
         self.source = source
-
-    def do_get_playback_uri(self, entry):
-        uri = self._get_playback_uri(entry)
-        # self.latest_uri = uri
-        return uri
 
     def get_next_entry(self, current_entry):
         entry_view = self.source.props.query_model
@@ -97,7 +74,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     def _download_entry(self, entry):
         self.plugin.loader.add_entry(entry).start()
 
-    def _get_playback_uri(self, entry):
+    def do_get_playback_uri(self, entry):
         location = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(location)
         audio = self.plugin.storage.get_audio(chat_id, message_id)
@@ -114,23 +91,22 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             self._pending_playback_entry = None
             return file_uri(audio.local_path)
 
-        return_val = None
+        return_uri = None
 
         playing_entry = self.shell.props.shell_player.get_playing_entry()
-        playing_location = playing_entry.get_string(RB.RhythmDBPropType.LOCATION) if playing_entry else None
-
-        if playing_location == location:
-            self._was_stopped = True
-            GLib.idle_add(self.shell.props.shell_player.stop)
-            return_val = 'invalid'
+        if playing_entry:
+            playing_location = playing_entry.get_string(RB.RhythmDBPropType.LOCATION)
+            if playing_location == location:
+                GLib.idle_add(self.shell.props.shell_player.stop)
+                return_uri = 'invalid'
 
         state = entry.get_string(TG_RhythmDBPropType.STATE)
         if state == 'STATE_LOADING':
-            return return_val
+            return return_uri
 
         self._pending_playback_entry = entry
         self._download_entry(entry)
-        return return_val
+        return return_uri
 
     def do_can_sync_metadata(self, entry): # noqa
         return True
