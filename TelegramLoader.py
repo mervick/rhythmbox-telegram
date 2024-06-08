@@ -70,6 +70,7 @@ class AudioLoader(metaclass=SingletonMeta):
         entry = self.entries[self._idx]
         audio.update_tags()
         audio.update_entry(entry)
+        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next()
 
     def _next(self):
@@ -209,6 +210,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         filename = self._move_file(audio.local_path, filename)
         audio.save({"local_path": filename, "is_moved": True})
         audio.update_entry(entry)
+        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next()
 
     def _next(self):
