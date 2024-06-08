@@ -47,7 +47,6 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.settings = None
         self.connected = False
         self.is_api_loaded = False
-        self.is_downloading = False
         self.api = None
         self.storage = None
         self.loader = None
