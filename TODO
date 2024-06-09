@@ -2,7 +2,6 @@
 * fix connect spinner in settings page
 * show audio quality or audio type in entry view
 * tg_playlist: remove duplicated segments
-* issue with get response from tg api (disconnect and connect in settings fixes issue)
 * update state for entries after deleting temp files
 * update install.sh
 * add instructions using install.sh
@@ -13,3 +12,4 @@
 * add option "ask" in the resolve variants, create dialog which asks what to do when downloaded file already exists
 * reduce the frequency of writes to the storage (playlists)
 * improve loading playlists
+* fatal error: when current playing entry try to move to library (download) then application crash
