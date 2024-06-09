@@ -79,7 +79,7 @@ class AudioLoader(metaclass=SingletonMeta):
         if self._idx < 0:
             self.stop()
             return
-        GLib.timeout_add(5, self._load)
+        GLib.timeout_add(1000, self._load)
 
     def _load(self):
         if self._running:
@@ -219,7 +219,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         if self._idx >= len(self.entries):
             self.stop()
             return
-        GLib.timeout_add(5, self._load)
+        GLib.timeout_add(1000, self._load)
 
     def _load(self):
         if self._running:
@@ -309,7 +309,7 @@ class PlaylistLoader:
         self.segment = self.playlist.segment(1)
 
         self.offset_msg_id = offset_msg_id
-        GLib.timeout_add(5000 if self.page > 10 else 1000, self._load, {"offset_msg_id": offset_msg_id})
+        GLib.timeout_add(10000 if self.page > 10 else 5000, self._load, {"offset_msg_id": offset_msg_id})
 
     def stop(self):
         self._terminated = True
