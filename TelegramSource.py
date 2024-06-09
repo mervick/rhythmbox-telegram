@@ -200,6 +200,7 @@ class TelegramSource(RB.BrowserSource):
         self.bar = None
         self.bar_ui = None
         self.entry_updated_id = None
+        self.suppress_is_hidden = None
         self.loaded_entries = []
 
     def setup(self, plugin, chat_id, chat_title):
@@ -266,17 +267,24 @@ class TelegramSource(RB.BrowserSource):
 
         if not self.initialised:
             self.initialised = True
-            GLib.idle_add(self.add_entries)
+            visibility = self.plugin.settings['audio-visibility']
+            if visibility == 'visible':
+                self.suppress_is_hidden = 1
+            elif visibility == 'hidden':
+                self.suppress_is_hidden = 0
+            GLib.idle_add(self.add_entries, visibility)
             # self.add_entries()
 
         self.loader = PlaylistLoader(self.chat_id, self.add_entry)
         self.loader.start()
 
-    def add_entries(self):
-        self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.plugin.settings['audio-visibility'])
+    def add_entries(self, visibility):
+        self.plugin.storage.load_entries(self.chat_id, self.add_entry, visibility)
 
     def add_entry(self, audio):
         if audio.id not in self.loaded_entries:
+            if audio.is_hidden == self.suppress_is_hidden:
+                return
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, audio.created_at, self.chat_id, audio.message_id)
             entry = self.db.entry_lookup_by_location(location)
