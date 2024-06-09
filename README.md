@@ -20,7 +20,7 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegr
 
 ## Installation
 
-To enable plugin, you need first install  `python-telegram` - unofficial Telegram API library for python backed by the official Telegram library - [TDLib](https://core.telegram.org/tdlib)
+To enable plugin, you need first install  `python-telegram` - Telegram library for python backed by the official Telegram client - [TDLib](https://core.telegram.org/tdlib)
 
 ```sh
 pip3 install python-telegram==0.18.0
@@ -59,14 +59,33 @@ After obtaining the API ID, in the plugin settings, input the received `api_id` 
 
 After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels and chats to listen to your favorite music.
 
+### Enjoy the tunes!
 
-## Secure
+## Data Encryption and Storage
 
-We strive to protect your data by implementing various security measures.
+We strive to protect your data by implementing various security measures:
 
-- All your authentication data, is **encrypted** and stored within GNOME Keyring. This ensures that sensitive information is securely protected within the GNOME environment.
-- All your data obtained from Telegram (except audio files and their metadata) is **encrypted** using a user-provided encryption key and managed by the official Telegram client - [TDLib](https://core.telegram.org/tdlib).  
-- All received audio files and their metadata are stored in `~/.local/share/rhythmbox/telegram` in an **unencrypted** format, you can clean it whenever you want. However, it's important to note that deleting these files will also remove them from the database. You can delete audio files from the plugin settings without compromising the integrity of the database.
+### Authentication Data
+
+Authentication data is encrypted and stored within the GNOME Keyring. This ensures that sensitive information is securely protected within the GNOME environment, providing an additional layer of security against unauthorized access.
+
+### Data from Telegram
+
+Data obtained from Telegram is encrypted using a user-provided encryption key and managed by the official Telegram client, [TDLib](https://core.telegram.org/tdlib).  
+The encrypted databases are stored at: `~/.local/share/rhythmbox/telegram/*/database`
+
+### Temporary Audio Files
+
+Temporary audio files are stored at `~/.local/share/rhythmbox/telegram/*/files/music`  
+You can delete these files at any time. However, please note that deleting these files manually will not remove their entries from the database. For safe removal, you can delete audio files through the plugin settings, ensuring the database integrity is maintained.
+
+### Additional Data Storage
+
+**Audio Metadata:** We store metadata of audio files in an unencrypted format. This includes data obtained from Telegram, such as the chat identifier, message identifier within the chat, publication date and time, file size, file name, audio tags and the file's location in the file system.
+
+**Chat Information:** We store information about your chats, including chat names and identifiers, in an encrypted format to ensure privacy and security.
+
+This data is stored within the database at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`
 
 
 ## License
@@ -76,10 +95,5 @@ We strive to protect your data by implementing various security measures.
 
 ## Contribute
 
-If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community.  
-
-Your donations play a crucial role in supporting the development efforts, enabling the implementation of new features, bug fixes, and overall enhancements to ensure a seamless and enjoyable user experience for all. Every donation, no matter the amount, is deeply appreciated and directly contributes to the sustainability of the project.  
-
-[//]: # (Click here to make a donation and show your support.)
-
+If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community.
 
