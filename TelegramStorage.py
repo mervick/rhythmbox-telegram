@@ -22,7 +22,7 @@ import logging
 import schema as SQL
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
-from common import get_location_data, TG_RhythmDBPropType
+from common import get_location_data, TG_RhythmDBPropType, encrypt, decrypt
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +129,8 @@ class TgAudio:
             self.size = data.get('size', 0)
             self.duration = data.get('duration', 0)
             self.is_downloaded = data.get('is_downloaded', False)
-            self.is_moved = data.get('is_moved', False)
-            self.is_hidden = data.get('is_hidden', False)
+            self.is_moved = data.get('is_moved', 0)
+            self.is_hidden = data.get('is_hidden', 0)
             self.local_path = data.get('local_path')
             self.play_count = data.get('play_count', 0)
             self.rating = data.get('rating', 0)
@@ -249,16 +249,30 @@ class TgCache:
     def __init__(self, key, default=None):
         self.storage = TelegramStorage.loaded()
         self.key = key
-        data = self.storage.select('cache', {'key': self.key})
-        if data is not None:
-            self.data = json.loads(data[1]) if data[1] else default
-        else:
+        self.data = None
+        if not self.read(default):
             self.storage.insert('cache', {'key': self.key})
-            self.data = default
+
+    def read(self, default=None):
+        data = self.storage.select('cache', {'key': self.key})
+        if data is not None and len(data) >= 2:
+            try:
+                decrypted = decrypt(data[1], self.storage.api.api_hash)
+                self.data = json.loads(decrypted)
+                return True
+            except:
+                pass
+        self.data = default
+        return False
 
     def set(self, data):
-        self.data = data
-        return self.storage.update('cache', {'data': json.dumps(data)}, {'key': self.key}, 1)
+        try:
+            encrypted = encrypt(json.dumps(data), self.storage.api.api_hash)
+            self.data = data
+        except:
+            encrypted = None
+            self.data = None
+        return self.storage.update('cache', {'data': encrypted}, {'key': self.key}, 1)
 
     def get(self):
         return self.data
@@ -363,15 +377,16 @@ class TelegramStorage:
         return result
 
     def load_entries(self, chat_id, each, visibility='visible'):
+        sql = 'SELECT * FROM `audio` WHERE chat_id = ?' # noqa
+        data = (chat_id,)
         if visibility == 'visible':
-            and_where = 'AND is_hidden = "0"'
+            sql += ' AND is_hidden = ?'
+            data = (chat_id, 0)
         elif visibility == 'hidden':
-            and_where = 'AND is_hidden = "1"'
-        else:
-            and_where = ''
+            sql += ' AND is_hidden = ?'
+            data = (chat_id, 1)
         cursor = self.db.cursor()
-        cursor.execute(
-            'SELECT * FROM `audio` WHERE chat_id = %s %s' % (chat_id, and_where))
+        cursor.execute(sql, data)
         for row in cursor:
             each(TgAudio(row))
         cursor.close()
