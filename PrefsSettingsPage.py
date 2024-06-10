@@ -94,7 +94,7 @@ class PrefsSettingsPage(PrefsPage):
 
     def _create_widget(self):
         self._values = {}
-        self._keys_require_restart = ['page-group', 'color-scheme', 'audio-visibility']
+        self._keys_require_restart = ['page-group', 'audio-visibility']
 
         self.library_location_entry = self.ui.get_object('library_location_entry')
         self.library_location_btn = self.ui.get_object('library_location_btn')
@@ -103,7 +103,7 @@ class PrefsSettingsPage(PrefsPage):
         self.name_template_combo = self.ui.get_object('name_template_combo')
         self.template_example_label = self.ui.get_object('template_example_label')
         self.page_group_combo = self.ui.get_object('page_group_combo')
-        self.color_scheme_combo = self.ui.get_object('color_scheme_combo')
+        # self.color_scheme_combo = self.ui.get_object('color_scheme_combo')
         self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
         self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
@@ -112,7 +112,7 @@ class PrefsSettingsPage(PrefsPage):
         self.library_location_entry.connect("focus-out-event", self._libpath_entry_cb)
 
         self._init_combo(self.conflict_resolve_combo, conflict_resolve_variants, 'conflict-resolve')
-        self._init_combo(self.color_scheme_combo, color_schemas, 'color-scheme')
+        # self._init_combo(self.color_scheme_combo, color_schemas, 'color-scheme')
         self._init_combo(self.page_group_combo, page_groups, 'page-group')
         self._init_combo(self.dir_hierarchy_combo, library_layout_paths, 'folder-hierarchy')
         self._init_combo(self.name_template_combo, library_layout_filenames, 'filename-template')

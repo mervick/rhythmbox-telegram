@@ -291,11 +291,11 @@ def show_error(title, description=None, parent=None): # noqa
     err_dialog.run() # noqa
     err_dialog.destroy()
 
-def detect_theme_scheme():
-    theme = str(Gtk.Settings.get_default().get_property('gtk-theme-name')).lower().find('dark')
-    dark = Gtk.Settings.get_default().get_property('gtk-application-prefer-dark-theme')
-
-    return 'dark' if theme != -1 or dark else 'light'
+# def detect_theme_scheme():
+#     theme = str(Gtk.Settings.get_default().get_property('gtk-theme-name')).lower().find('dark')
+#     dark = Gtk.Settings.get_default().get_property('gtk-application-prefer-dark-theme')
+#
+#     return 'dark' if theme != -1 or dark else 'light'
 
 def encrypt(original_text, password):
     def pad(s):
