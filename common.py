@@ -117,10 +117,10 @@ API_ERRORS = {
 }
 
 def get_entry_state(entry):
-    return entry.get_string(RB.RhythmDBPropType.COMMENT)
+    return entry.get_ulong(RB.RhythmDBPropType.MTIME)
 
 def set_entry_state(db, entry, state):
-    db.entry_set(entry, RB.RhythmDBPropType.COMMENT, state)
+    db.entry_set(entry, RB.RhythmDBPropType.MTIME, state)
 
 def get_entry_location(entry):
     entry.get_string(RB.RhythmDBPropType.LOCATION)

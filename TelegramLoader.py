@@ -18,7 +18,7 @@ import os
 import shutil
 from gi.repository import GLib, RB
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
-from TelegramStorage import TgPlaylist
+from TelegramStorage import TgPlaylist, TgAudio
 from TelegramApi import TelegramApi
 
 
@@ -46,9 +46,9 @@ class AudioLoader(metaclass=SingletonMeta):
 
     def add_entry(self, entry):
         state = get_entry_state(entry)
-        if state != 'STATE_IN_LIBRARY' and state != 'STATE_LOADING':
+        if state != TgAudio.STATE_IN_LIBRARY and state != TgAudio.STATE_LOADING:
             self.entries.append(entry)
-            set_entry_state(self.plugin.db, entry, 'STATE_LOADING')
+            set_entry_state(self.plugin.db, entry, TgAudio.STATE_LOADING)
             self.plugin.db.commit()
         return self
 
@@ -120,9 +120,9 @@ class AudioDownloader(metaclass=SingletonMeta):
     def add_entries(self, entries):
         for entry in entries:
             state = get_entry_state(entry)
-            if state != 'STATE_IN_LIBRARY':
+            if state != TgAudio.STATE_IN_LIBRARY:
                 self.entries.append(entry)
-                set_entry_state(self.plugin.db, entry, 'STATE_LOADING')
+                set_entry_state(self.plugin.db, entry, TgAudio.STATE_LOADING)
                 self.plugin.db.commit()
 
     def stop(self):

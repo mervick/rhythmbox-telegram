@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import RB, GLib, GObject
+from TelegramStorage import TgAudio
 from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 
@@ -101,7 +102,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 return_uri = 'invalid'
 
         state = get_entry_state(entry)
-        if state == 'STATE_LOADING':
+        if state == TgAudio.STATE_LOADING:
             return return_uri
 
         self._pending_playback_entry = entry

@@ -79,6 +79,13 @@ def run_with_timeout(func, timeout):
 
 
 class TgAudio:
+    STATE_DEFAULT = 0
+    STATE_DOWNLOADED = 1
+    STATE_IN_LIBRARY = 2
+    STATE_LOADING = 3
+    STATE_HIDDEN = 8
+    STATE_ERROR = 9
+
     is_error = False
 
     def __str__(self) -> str:
@@ -164,14 +171,14 @@ class TgAudio:
 
     def get_state(self):
         if self.is_error:
-            return 'STATE_ERROR'
+            return TgAudio.STATE_ERROR
         if self.is_hidden:
-            return 'STATE_HIDDEN'
+            return TgAudio.STATE_HIDDEN
         if self.is_moved:
-            return 'STATE_IN_LIBRARY'
+            return TgAudio.STATE_IN_LIBRARY
         if self.is_downloaded:
-            return 'STATE_DOWNLOADED'
-        return 'STATE_DEFAULT'
+            return TgAudio.STATE_DOWNLOADED
+        return TgAudio.STATE_DEFAULT
 
     def _move_tmp_file(self):
         if not self.is_moved and len(self.local_path):

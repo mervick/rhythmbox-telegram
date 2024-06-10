@@ -16,10 +16,8 @@
 
 import rb
 from gi.repository import RB
-from gi.repository import GdkPixbuf
-from gi.repository import GObject, Gtk, Gio, Gdk, GLib, GdkPixbuf
+from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from gi.repository.Gio import ThemedIcon
-
 from common import to_location, get_location_data, empty_cb, SingletonMeta
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
@@ -30,11 +28,11 @@ gettext.install('rhythmbox', RB.locale_dir())
 
 
 state_icons = {
-    'STATE_DEFAULT' : 'tg-state-download-symbolic',
-    'STATE_ERROR' : 'tg-state-error',
-    'STATE_IN_LIBRARY' : 'tg-state-library-symbolic',
-    'STATE_DOWNLOADED' : 'tg-state-empty',
-    'STATE_HIDDEN' : 'tg-state-visibility-off-symbolic',
+    TgAudio.STATE_DEFAULT : 'tg-state-download-symbolic',
+    TgAudio.STATE_ERROR : 'tg-state-error',
+    TgAudio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
+    TgAudio.STATE_DOWNLOADED : 'tg-state-empty',
+    TgAudio.STATE_HIDDEN : 'tg-state-visibility-off-symbolic',
 }
 
 
@@ -96,10 +94,11 @@ class StateColumn:
     def model_data_func(self, column, cell, model, iter, cell_type): # noqa
         entry = model.get_value(iter, 0)
         idx = model.get_value(iter, 1)
+        # print('==== XXXX %s' % entry.get_ulong(RB.RhythmDBPropType.MTIME))
         state = get_entry_state(entry)
         is_spinner = cell_type == 'spinner'
 
-        if state == 'STATE_LOADING':
+        if state == TgAudio.STATE_LOADING:
             cell.props.visible = is_spinner
             if is_spinner:
                 self._models[idx] = [model, iter]
@@ -115,7 +114,7 @@ class StateColumn:
                 if state in StateColumn._icon_cache:
                     gicon = StateColumn._icon_cache[state]
                 else:
-                    icon_name = state_icons[state] if state in state_icons else state_icons['STATE_DEFAULT']
+                    icon_name = state_icons[state] if state in state_icons else state_icons[TgAudio.STATE_DEFAULT]
                     gicon: ThemedIcon = Gio.ThemedIcon.new(icon_name)
                     StateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
