@@ -17,8 +17,10 @@
 import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
-from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta
+from gi.repository import GObject, Gtk, Gio, Gdk, GLib, GdkPixbuf
+from gi.repository.Gio import ThemedIcon
+
+from common import to_location, get_location_data, empty_cb, SingletonMeta
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
@@ -27,20 +29,12 @@ import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
-state_dark_icons = {
-    'STATE_DEFAULT' : '/icons/hicolor/scalable/state/download-symbolic.svg',
-    'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
-    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-symbolic.svg',
-    'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
-    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-symbolic.svg',
-}
-
-state_light_icons = {
-    'STATE_DEFAULT' : '/icons/hicolor/scalable/state/download-light.svg',
-    'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
-    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-light.svg',
-    'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
-    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-light.svg',
+state_icons = {
+    'STATE_DEFAULT' : 'tg-state-download-symbolic',
+    'STATE_ERROR' : 'tg-state-error',
+    'STATE_IN_LIBRARY' : 'tg-state-library-symbolic',
+    'STATE_DOWNLOADED' : 'tg-state-empty',
+    'STATE_HIDDEN' : 'tg-state-visibility-off-symbolic',
 }
 
 
@@ -48,18 +42,9 @@ class StateColumn:
     _icon_cache = {}
 
     def __init__(self, source):
-        scheme = source.plugin.settings['color-scheme']
-        if scheme == 'auto':
-            scheme = detect_theme_scheme()
-        self.icons = state_dark_icons if scheme == 'dark' else state_light_icons
-        # reset icon cache after change scheme
-        if StateColumn._icon_cache.get('scheme') != scheme:
-            StateColumn._icon_cache = {'scheme': scheme}
-
         self._pulse = 0
         self._models = {}
         self.timeout_id = None
-        self.plugin_dir = source.plugin.plugin_info.get_data_dir()
 
         column = Gtk.TreeViewColumn()
         pixbuf_renderer = Gtk.CellRendererPixbuf()
@@ -128,13 +113,12 @@ class StateColumn:
                 cell.props.active = False
             else:
                 if state in StateColumn._icon_cache:
-                    icon = StateColumn._icon_cache[state]
+                    gicon = StateColumn._icon_cache[state]
                 else:
-                    filename = self.icons[state] if state in self.icons else self.icons['STATE_DEFAULT']
-                    filepath = self.plugin_dir + filename
-                    icon = GdkPixbuf.Pixbuf.new_from_file(filepath)
-                    StateColumn._icon_cache[state] = icon
-                cell.props.pixbuf = icon
+                    icon_name = state_icons[state] if state in state_icons else state_icons['STATE_DEFAULT']
+                    gicon: ThemedIcon = Gio.ThemedIcon.new(icon_name)
+                    StateColumn._icon_cache[state] = gicon
+                cell.props.gicon = gicon
 
 
 class DownloadBar(metaclass=SingletonMeta):
