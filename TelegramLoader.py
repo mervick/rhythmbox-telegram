@@ -17,7 +17,7 @@
 import os
 import shutil
 from gi.repository import GLib, RB
-from common import filepath_parse_pattern, SingletonMeta, TG_RhythmDBPropType
+from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from TelegramStorage import TgPlaylist
 from TelegramApi import TelegramApi
 
@@ -45,10 +45,10 @@ class AudioLoader(metaclass=SingletonMeta):
         return False
 
     def add_entry(self, entry):
-        state = entry.get_string(TG_RhythmDBPropType.STATE)
+        state = get_entry_state(entry)
         if state != 'STATE_IN_LIBRARY' and state != 'STATE_LOADING':
             self.entries.append(entry)
-            self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, 'STATE_LOADING')
+            set_entry_state(self.plugin.db, entry, 'STATE_LOADING')
             self.plugin.db.commit()
         return self
 
@@ -90,7 +90,7 @@ class AudioLoader(metaclass=SingletonMeta):
                 return
             file_path = audio.get_path()
             if file_path:
-                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
+                set_entry_state(self.plugin.db, entry, audio.get_state())
                 self.plugin.db.commit()
                 self._next()
             else:
@@ -119,10 +119,10 @@ class AudioDownloader(metaclass=SingletonMeta):
 
     def add_entries(self, entries):
         for entry in entries:
-            state = entry.get_string(TG_RhythmDBPropType.STATE)
+            state = get_entry_state(entry)
             if state != 'STATE_IN_LIBRARY':
                 self.entries.append(entry)
-                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, 'STATE_LOADING')
+                set_entry_state(self.plugin.db, entry, 'STATE_LOADING')
                 self.plugin.db.commit()
 
     def stop(self):
@@ -230,7 +230,7 @@ class AudioDownloader(metaclass=SingletonMeta):
                 return
             self._update_progress(audio)
             if audio.is_moved:
-                self.plugin.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
+                set_entry_state(self.plugin.db, entry, audio.get_state())
                 self.plugin.db.commit()
                 self._next()
                 return

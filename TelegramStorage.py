@@ -22,7 +22,7 @@ import logging
 import schema as SQL
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
-from common import get_location_data, TG_RhythmDBPropType, encrypt, decrypt
+from common import get_location_data, encrypt, decrypt, set_entry_state, show_error
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ class TgAudio:
             return 'STATE_IN_LIBRARY'
         if self.is_downloaded:
             return 'STATE_DOWNLOADED'
-        return ''
+        return 'STATE_DEFAULT'
 
     def _move_tmp_file(self):
         if not self.is_moved and len(self.local_path):
@@ -238,7 +238,7 @@ class TgAudio:
         db.entry_set(entry, RB.RhythmDBPropType.FILE_SIZE, int(self.size))
         db.entry_set(entry, RB.RhythmDBPropType.RATING, float(self.rating))
         if state:
-            db.entry_set(entry, TG_RhythmDBPropType.STATE, self.get_state())
+            set_entry_state(db, entry, self.get_state())
         if commit:
             db.commit()
 
@@ -435,6 +435,10 @@ class TelegramStorage:
             d['is_downloaded'] = tg_audio.is_downloaded
             d['is_moved'] = tg_audio.is_moved
             return d if not convert else tg_audio
+        # else:
+        #     print('No audio file %s %s' % (d['chat_id'], d['message_id']))
+        #     show_error('No audio file')
+        #     return None
 
         cursor = self.db.execute("""
             INSERT INTO `audio` (

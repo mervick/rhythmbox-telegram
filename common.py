@@ -26,10 +26,6 @@ import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
-class TG_RhythmDBPropType: # noqa
-    STATE = RB.RhythmDBPropType.COMMENT
-
-
 class SingletonMeta(type):
     _instances = {}
 
@@ -121,10 +117,10 @@ API_ERRORS = {
 }
 
 def get_entry_state(entry):
-    entry.get_string(TG_RhythmDBPropType.STATE)
+    return entry.get_string(RB.RhythmDBPropType.COMMENT)
 
 def set_entry_state(db, entry, state):
-    db.entry_set(entry, TG_RhythmDBPropType.STATE, state)
+    db.entry_set(entry, RB.RhythmDBPropType.COMMENT, state)
 
 def get_entry_location(entry):
     entry.get_string(RB.RhythmDBPropType.LOCATION)

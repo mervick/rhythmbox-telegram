@@ -18,7 +18,8 @@ import rb
 from gi.repository import RB
 from gi.repository import GdkPixbuf
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta, file_uri, TG_RhythmDBPropType
+from common import to_location, get_location_data, empty_cb, detect_theme_scheme, SingletonMeta
+from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
 
@@ -27,15 +28,15 @@ gettext.install('rhythmbox', RB.locale_dir())
 
 
 state_dark_icons = {
-    'DEFAULT' : '/icons/hicolor/scalable/state/download-dark.svg',
+    'STATE_DEFAULT' : '/icons/hicolor/scalable/state/download-symbolic.svg',
     'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
-    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-dark.svg',
+    'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-symbolic.svg',
     'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
-    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-dark.svg',
+    'STATE_HIDDEN' : '/icons/hicolor/scalable/state/visibility-off-symbolic.svg',
 }
 
 state_light_icons = {
-    'DEFAULT' : '/icons/hicolor/scalable/state/download-light.svg',
+    'STATE_DEFAULT' : '/icons/hicolor/scalable/state/download-light.svg',
     'STATE_ERROR' : '/icons/hicolor/scalable/state/error.svg',
     'STATE_IN_LIBRARY' : '/icons/hicolor/scalable/state/library-light.svg',
     'STATE_DOWNLOADED' : '/icons/hicolor/scalable/state/empty.svg',
@@ -110,7 +111,7 @@ class StateColumn:
     def model_data_func(self, column, cell, model, iter, cell_type): # noqa
         entry = model.get_value(iter, 0)
         idx = model.get_value(iter, 1)
-        state = entry.get_string(TG_RhythmDBPropType.STATE)
+        state = get_entry_state(entry)
         is_spinner = cell_type == 'spinner'
 
         if state == 'STATE_LOADING':
@@ -129,7 +130,7 @@ class StateColumn:
                 if state in StateColumn._icon_cache:
                     icon = StateColumn._icon_cache[state]
                 else:
-                    filename = self.icons[state] if state in self.icons else self.icons['DEFAULT']
+                    filename = self.icons[state] if state in self.icons else self.icons['STATE_DEFAULT']
                     filepath = self.plugin_dir + filename
                     icon = GdkPixbuf.Pixbuf.new_from_file(filepath)
                     StateColumn._icon_cache[state] = icon
@@ -392,7 +393,7 @@ class TelegramSource(RB.BrowserSource):
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio.is_hidden:
                 audio.save({"is_hidden": True})
-                self.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
+                set_entry_state(self.db, entry, audio.get_state())
                 commit = True
         if commit:
             self.db.commit()
@@ -406,7 +407,7 @@ class TelegramSource(RB.BrowserSource):
             audio = self.plugin.storage.get_entry_audio(entry)
             if audio.is_hidden:
                 audio.save({"is_hidden": False})
-                self.db.entry_set(entry, TG_RhythmDBPropType.STATE, audio.get_state())
+                set_entry_state(self.db, entry, audio.get_state())
                 commit = True
         if commit:
             self.db.commit()

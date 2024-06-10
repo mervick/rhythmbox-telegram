@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import RB, GLib, GObject
-from common import file_uri, get_location_data, TG_RhythmDBPropType, is_same_entry
+from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
@@ -100,7 +100,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 GLib.idle_add(self.shell.props.shell_player.stop)
                 return_uri = 'invalid'
 
-        state = entry.get_string(TG_RhythmDBPropType.STATE)
+        state = get_entry_state(entry)
         if state == 'STATE_LOADING':
             return return_uri
 
