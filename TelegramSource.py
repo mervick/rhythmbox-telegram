@@ -31,8 +31,8 @@ state_icons = {
     TgAudio.STATE_DEFAULT : 'tg-state-download-symbolic',
     TgAudio.STATE_ERROR : 'tg-state-error',
     TgAudio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
-    TgAudio.STATE_DOWNLOADED : 'tg-state-empty',
     TgAudio.STATE_HIDDEN : 'tg-state-visibility-off-symbolic',
+    TgAudio.STATE_DOWNLOADED : None,
 }
 
 
@@ -115,7 +115,7 @@ class StateColumn:
                     gicon = StateColumn._icon_cache[state]
                 else:
                     icon_name = state_icons[state] if state in state_icons else state_icons[TgAudio.STATE_DEFAULT]
-                    gicon: ThemedIcon = Gio.ThemedIcon.new(icon_name)
+                    gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
                     StateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
 
@@ -125,6 +125,7 @@ class DownloadBar(metaclass=SingletonMeta):
         self.plugin = plugin
         self.source = None
         self.active = False
+
         self.info = {}
         plugin.connect('update_download_info', self.update_download_info)
 
