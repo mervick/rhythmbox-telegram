@@ -168,7 +168,7 @@ class TgAudio:
         return TgAudio.STATE_DEFAULT
 
     def _upd_and_move(self):
-        if not self.is_moved and len(self.local_path):
+        if len(self.local_path or ''):
             # read tags
             tags = get_audio_tags(self.local_path)
             self.album_artist = tags.get('album_artist', '')
