@@ -251,14 +251,15 @@ filepath_pattern_markers = {
 }
 
 def filepath_parse_pattern(pattern, tags):
+    _tags = {**tags}
     # Parse a filename pattern and replace markers with values from the tags
-    tags['artist_lower'] = tags['artist'].lower() if tags['artist'] else None
-    tags['album_artist_lower'] = tags['album_artist'].lower() if tags['album_artist'] else None
-    tags['genre_lower'] = tags['genre'].lower() if tags['genre'] else None
-    tags['track_number_padded'] = "%02i" % tags['track_number'] if tags['track_number'] else None
+    _tags['artist_lower'] = _tags.get('artist', 'Unknown').lower()
+    _tags['album_artist_lower'] = _tags.get('album_artist', 'Unknown').lower()
+    _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
+    _tags['track_number_padded'] = "%02i" % _tags.get('track_number', '1')
 
     for marker in filepath_pattern_markers:
-        tag = clear_filename(str(tags.get(filepath_pattern_markers[marker], '')))
+        tag = clear_filename(str(_tags.get(filepath_pattern_markers[marker], 'Unknown')))
         pattern = pattern.replace(marker, tag)
 
     return pattern
