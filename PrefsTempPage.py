@@ -27,15 +27,18 @@ from PrefsPage import PrefsPage
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
+plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
 
 def delete_files_recursively(directory, progress_callback=None):
     for root, dirs, files in os.walk(directory, topdown=False):
         for name in files:
             file_path = os.path.join(root, name)
             try:
-                os.remove(file_path)
-                if progress_callback:
-                    progress_callback(file_path)
+                if file_path.startswith(plugin_dir):
+                    print("Deleting %s" % file_path)
+                    os.remove(file_path)
+                    if progress_callback:
+                        progress_callback(file_path)
             except Exception as e:
                 print(f"Error deleting file {file_path}: {e}")
             yield True
@@ -43,9 +46,11 @@ def delete_files_recursively(directory, progress_callback=None):
         for name in dirs:
             dir_path = os.path.join(root, name)
             try:
-                os.rmdir(dir_path)
-                if progress_callback:
-                    progress_callback(dir_path)
+                if dir_path.startswith(plugin_dir):
+                    print("rmdir %s" % dir_path)
+                    os.rmdir(dir_path)
+                    if progress_callback:
+                        progress_callback(dir_path)
             except Exception as e:
                 print(f"Error deleting directory {dir_path}: {e}")
             yield True
@@ -139,6 +144,23 @@ class PrefsTempPage(PrefsPage):
         self.temp_usage_label.set_text(_("Calculating..."))
         GLib.idle_add(self.calculate_size)
 
+    def _update_entries(self):
+        pass
+        # commit = False
+        # for source in self.plugin.get_all_sources():
+        #     entry_view = source.get_entry_view()
+        #     # print(entry_view)
+        #     model = entry_view.get_property("model")
+        #     # print(model)
+        #     # model = source.get_entry_view().get_model()
+        #     iter = model.get_iter_first()
+        #     while iter is not None:
+        #         entry = model.get_value(iter, 0)
+        #         audio = self.plugin.storage.get_entry_audio(entry)
+        #         if audio and audio.is_downloaded and not audio.is_moved:
+        #             self.plugin.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, audio.get_state())
+        #             self.plugin.db.commit()
+
     def _delete_temp_files_dialog(self, widget=None):
         self.clear_tmp_btn.set_sensitive(False)
         msg = _('Are you sure you want to delete temporary files?')
@@ -164,11 +186,13 @@ class PrefsTempPage(PrefsPage):
                 # self.progress_label.set_text('')
                 self.clear_tmp_btn.set_sensitive(True)
                 self.calculate_size()
+                # GLib.idle_add(self._update_entries)
 
             # def on_progress(path):
             #     self.progress_label.set_text(path)
 
-            start_deletion(self.temp_dir, completion_callback=on_done)
+            if len(self.temp_dir) > 10:
+                start_deletion(self.temp_dir + '/music', completion_callback=on_done)
         else:
             self.clear_tmp_btn.set_sensitive(True)
 
