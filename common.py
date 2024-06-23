@@ -256,7 +256,7 @@ def filepath_parse_pattern(pattern, tags):
     _tags['artist_lower'] = _tags.get('artist', 'Unknown').lower()
     _tags['album_artist_lower'] = _tags.get('album_artist', 'Unknown').lower()
     _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
-    _tags['track_number_padded'] = "%02i" % _tags.get('track_number', '1')
+    _tags['track_number_padded'] = "%02i" % int(_tags.get('track_number', 1))
 
     for marker in filepath_pattern_markers:
         tag = clear_filename(str(_tags.get(filepath_pattern_markers[marker], 'Unknown')))
