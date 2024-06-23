@@ -21,7 +21,7 @@ import json
 import logging
 import schema as SQL
 from gi.repository import RB
-from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types
+from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
 from common import get_location_data, encrypt, decrypt, set_entry_state, show_error
 
 logger = logging.getLogger(__name__)
@@ -142,19 +142,6 @@ class TgAudio:
             self.play_count = data.get('play_count', 0)
             self.rating = data.get('rating', 0)
 
-    def update_tags(self):
-        file_path = self.local_path
-        if file_path:
-            tags = get_audio_tags(file_path)
-            self.album_artist = tags.get('album_artist', '')
-            del tags['year']
-            del tags['album_artist']
-            for tag in dict(tags):
-                if tags[tag] is None:
-                    del tags[tag]
-            if len(tags):
-                self.save(tags)
-
     def get_album_artist(self):
         return self.album_artist if self.album_artist and len(self.album_artist) else self.artist
 
@@ -180,17 +167,29 @@ class TgAudio:
             return TgAudio.STATE_DOWNLOADED
         return TgAudio.STATE_DEFAULT
 
-    def _move_tmp_file(self):
+    def _upd_and_move(self):
         if not self.is_moved and len(self.local_path):
-            src = self.local_path
-            src_dir = os.path.dirname(src)
+            # read tags
+            tags = get_audio_tags(self.local_path)
+            self.album_artist = tags.get('album_artist', '')
+            for tag in dict(tags):
+                if tags[tag] is None:
+                    del tags[tag]
+            # format temp filename
+            src_dir = os.path.dirname(self.local_path)
             chn_dir = f"{self.chat_id}".replace('-100', '')
-            sub_dir = f"{self.message_id}"[-2:]
-            dst_dir = os.path.join(src_dir, chn_dir, sub_dir)
+            sub_dir = filepath_parse_pattern('%aa/%aa - %at (%ay)', tags)
+            dst_dir = str(os.path.join(src_dir, chn_dir, sub_dir))
             os.makedirs(dst_dir, exist_ok=True)
-            dst = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
-            os.rename(src, dst)
-            self.save({"local_path": dst})
+            new_path = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
+            os.rename(self.local_path, new_path)
+            # remove tags which not used by TgAudio
+            if tags.get('album_artist'):
+                del tags['album_artist']
+            if tags.get('year'):
+                del tags['year']
+            # write both tags and new local_path
+            self.save({**tags, "local_path": new_path})
 
     def download(self, success=empty_cb, fail=empty_cb):
         storage = TelegramStorage.loaded()
@@ -198,7 +197,7 @@ class TgAudio:
 
         def on_success(data):
             self.update(data)
-            self._move_tmp_file()
+            self._upd_and_move()
             success(self)
 
         def on_fail():
