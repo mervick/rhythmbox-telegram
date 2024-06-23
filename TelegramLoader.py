@@ -68,7 +68,6 @@ class AudioLoader(metaclass=SingletonMeta):
 
     def _process(self, audio):
         entry = self.entries[self._idx]
-        audio.update_tags()
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next()
@@ -112,7 +111,7 @@ class AudioDownloader(metaclass=SingletonMeta):
         self.setup()
 
     def setup(self):
-        self.library_location = self.plugin.account.get_library_path() # noqa
+        self.library_location = self.plugin.account.get_library_path().rstrip('/') # noqa
         self.folder_hierarchy = self.plugin.settings['folder-hierarchy'] # noqa
         self.conflict_resolve = self.plugin.settings['conflict-resolve'] # noqa
         self.filename_template = self.plugin.settings['filename-template'] # noqa
@@ -191,7 +190,6 @@ class AudioDownloader(metaclass=SingletonMeta):
 
     def _process(self, audio):
         entry = self.entries[self._idx]
-        audio.update_tags()
         tags = {
             'title': audio.title,
             'artist': audio.artist,
