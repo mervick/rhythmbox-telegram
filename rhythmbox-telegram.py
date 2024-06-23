@@ -125,9 +125,14 @@ class Telegram(GObject.GObject, Peas.Activatable):
     def on_entry_deleted(self, db, entry):
         loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
         print(f'on_entry_deleted({loc})')
-        chat_id, message_id = get_location_data(loc)
-        audio = self.storage.get_audio(chat_id, message_id)
-        audio.save({"is_hidden": True})
+        try:
+            chat_id, message_id = get_location_data(loc)
+            if chat_id and message_id:
+                audio = self.storage.get_audio(chat_id, message_id)
+                if audio:
+                    audio.save({"is_hidden": True})
+        except:
+            pass
 
     def do_reload_sources(self):
         print('do_reload_sources()')
