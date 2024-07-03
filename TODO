@@ -13,3 +13,7 @@
 * improve loading playlists
 * fatal error: when current playing entry try to move to library (download) then application crash
 * fix if file is_moved but for some reason it's not is_downloaded, it cant be moved https://github.com/mervick/rhythmbox-telegram/blob/master/TelegramStorage.py#L177
+* fix crash when playing from 1 tg source and downloading at the same time from another tg source
+* preloading prev song
+* loading next/prev song when shuffle is enabled
+* add accel labels
