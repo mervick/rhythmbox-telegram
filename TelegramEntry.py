@@ -58,6 +58,29 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     def setup(self, source):
         self.source = source
 
+    @staticmethod
+    def entry_view_iter_prev(model, iter):
+        path = model.get_path(iter)
+        if path.prev():
+            return model.get_iter(path)
+        return None
+
+    def get_prev_entry(self, current_entry):
+        entry_view = self.source.props.query_model
+        iter = entry_view.get_iter_first()
+        found = False
+
+        while iter:
+            entry = entry_view.get_value(iter, 0)
+            if found:
+                return entry
+            if entry == current_entry:
+                found = True
+                iter = self.entry_view_iter_prev(entry_view, iter)
+            else:
+                iter = entry_view.iter_next(iter)
+        return None
+
     def get_next_entry(self, current_entry):
         entry_view = self.source.props.query_model
         iter = entry_view.get_iter_first()
@@ -72,7 +95,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             iter = entry_view.iter_next(iter)
         return None
 
-    def _download_entry(self, entry):
+    def _load_entry_audio(self, entry):
         self.plugin.loader.add_entry(entry).start()
 
     def do_get_playback_uri(self, entry):
@@ -82,11 +105,16 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         if not audio:
             return None
 
+        prev_entry = self.get_prev_entry(entry)
         next_entry = self.get_next_entry(entry)
-        if next_entry:
-            next_audio = self.plugin.storage.get_entry_audio(next_entry)
-            if next_audio and not next_audio.is_file_exists():
-                GLib.idle_add(self._download_entry, next_entry)
+        prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
+        next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
+
+        if prev_audio and not prev_audio.is_file_exists():
+            GLib.idle_add(self._load_entry_audio, prev_entry)
+
+        if next_audio and not next_audio.is_file_exists():
+            GLib.idle_add(self._load_entry_audio, next_entry)
 
         if audio.is_file_exists():
             self._pending_playback_entry = None
@@ -106,7 +134,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             return return_uri
 
         self._pending_playback_entry = entry
-        self._download_entry(entry)
+        self._load_entry_audio(entry)
         return return_uri
 
     def do_can_sync_metadata(self, entry): # noqa
