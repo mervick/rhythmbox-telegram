@@ -114,14 +114,6 @@ class Telegram(GObject.GObject, Peas.Activatable):
             except TelegramAuthError as err:
                 show_error(err.get_info())
 
-    # def load_api(self):
-    #     api_id, api_hash, phone_number, self.connected = self.account.get_secure()
-    #     if self.connected:
-    #         self.api = TelegramApi.api(api_id, api_hash, phone_number)
-    #         self.api.login()
-    #         self.storage = self.api.storage
-    #         self.is_api_loaded = True
-
     def on_entry_deleted(self, db, entry):
         loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
         print(f'on_entry_deleted({loc})')
