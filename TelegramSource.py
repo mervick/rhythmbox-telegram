@@ -17,7 +17,6 @@
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from gi.repository.Gio import ThemedIcon
 from common import to_location, get_location_data, empty_cb, SingletonMeta
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
@@ -94,7 +93,6 @@ class StateColumn:
     def model_data_func(self, column, cell, model, iter, cell_type): # noqa
         entry = model.get_value(iter, 0)
         idx = model.get_value(iter, 1)
-        # print('==== XXXX %s' % entry.get_ulong(RB.RhythmDBPropType.MTIME))
         state = get_entry_state(entry)
         is_spinner = cell_type == 'spinner'
 
@@ -258,7 +256,6 @@ class TelegramSource(RB.BrowserSource):
             elif visibility == 'hidden':
                 self.suppress_is_hidden = 0
             GLib.idle_add(self.add_entries, visibility)
-            # self.add_entries()
 
         self.loader = PlaylistLoader(self.chat_id, self.add_entry)
         self.loader.start()
