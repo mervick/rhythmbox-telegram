@@ -251,8 +251,11 @@ filepath_pattern_markers = {
 }
 
 def filepath_parse_pattern(pattern, tags):
-    _tags = {**tags}
     # Parse a filename pattern and replace markers with values from the tags
+    _tags = {**tags}
+    # Remove the '\x01\x02' characters from the string, for some reason some artist have 2 or
+    # maybe even more lines separated by \x01\x02
+    _tags['artist'] = _tags.get('artist', 'Unknown').split('\x01')[0]
     _tags['artist_lower'] = _tags.get('artist', 'Unknown').lower()
     _tags['album_artist_lower'] = _tags.get('album_artist', 'Unknown').lower()
     _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
