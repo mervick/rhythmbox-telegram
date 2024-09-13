@@ -20,7 +20,7 @@ from gi.overrides import GLib # noqa
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio
 from gi.repository import Peas, PeasGtk # noqa
-from TelegramLoader import AudioDownloader, AudioLoader
+from TelegramLoader import AudioDownloader, AudioTempLoader
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi, TelegramAuthError
 from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
@@ -69,7 +69,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         self.rhythmdb_settings = Gio.Settings.new('org.gnome.rhythmbox.rhythmdb')
         self.downloader = AudioDownloader(self)
-        self.loader = AudioLoader(self)
+        self.loader = AudioTempLoader(self)
         self.group_id = None
         self.sources = {}
         self.deleted_sources = {}

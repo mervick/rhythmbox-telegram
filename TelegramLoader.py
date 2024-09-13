@@ -22,9 +22,9 @@ from TelegramStorage import TgPlaylist, TgAudio
 from TelegramApi import TelegramApi
 
 
-class AudioLoader(metaclass=SingletonMeta):
+class AudioTempLoader(metaclass=SingletonMeta):
     """
-    AudioLoader is designed to sequentially download audio files into a temp directory.
+    AudioTempLoader is designed to sequentially download audio files into a temp directory.
     The most recently added records to the queue are loaded first.
     The downloading process is assigned the highest priority level.
     """
