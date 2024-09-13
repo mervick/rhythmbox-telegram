@@ -477,33 +477,6 @@ class TelegramApi(GObject.Object):
         blob.get('done')(r.update)
         return False
 
-    def get_logged(self):
-        r = self.tg.get_me()
-        r.wait()
-
-        if r.update and '@type' in r.update:
-            user = r.update
-            photo_big = user.get('profile_photo', {}).get('big')
-            self.me = {
-                'id': user.get('id'),
-                'first_name': user.get('first_name'),
-                'last_name': user.get('last_name'),
-                'username': user.get('usernames', {}).get('editable_username'),
-                'phone_number': user.get('phone_number'),
-                'profile_photo': user.get('profile_photo', {}),
-            }
-
-            path = photo_big.get('local', {}).get('path')
-            can_be_downloaded = photo_big.get('local', {}).get('can_be_downloaded')
-            is_downloading_active = photo_big.get('local', {}).get('is_downloading_active')
-            photo_id = photo_big.get('id')
-
-            if photo_id and can_be_downloaded and not is_downloading_active:
-                self.download_file(photo_id, 32)
-
-            logger.debug(path)
-        return self.me
-
 
 def format_error(r: AsyncResult):
     message = None
