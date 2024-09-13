@@ -69,8 +69,29 @@ The following actions are carried out:
 * Retrieving the contact list (necessary to fetch groups and channels)
 * Iterating over all messages in groups and channels selected as "Music Sources" in the plugin settings (only audio files are searched; messages and audio messages are ignored)
 * Downloading of audio files
+* Getting a public link to a message with an audio file
 
 No other operations are conducted.
+
+### TDLib API Methods and Handlers Used
+
+The plugin uses only the following methods and handlers:
+
+* `setTdlibParameters`
+* `checkDatabaseEncryptionKey`
+* `getAuthorizationState`
+* `setAuthenticationPhoneNumber`
+* `checkAuthenticationPassword`
+* `checkAuthenticationCode`
+* `loadChats`
+* `getChats`
+* `getChat`
+* `getMessage`
+* `getChatHistory`
+* `downloadFile`
+* `getMessageLink`
+* `updateAuthorizationState`
+* `updateNewChat`
 
 ### Caching and Audio File Retrieval
 
