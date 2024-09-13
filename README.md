@@ -57,9 +57,24 @@ After obtaining the API ID, in the plugin settings, input the received `api_id` 
 
 ### Adding your music to Rhythmbox
 
-After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels and chats to listen to your favorite music.
+After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels, groups and chats to listen to your favorite music.
 
-### Enjoy the tunes!
+## Telegram API Usage and Operations
+
+The plugin uses the Telegram API strictly for reading purposes. **No write operations are performed**.  
+
+The following actions are carried out:
+
+* Authorization process
+* Retrieving the contact list (necessary to fetch groups and channels)
+* Iterating over all messages in groups and channels selected as "Music Sources" in the plugin settings (only audio files are searched; messages and audio messages are ignored)
+* Downloading of audio files
+
+No other operations are conducted.
+
+### Caching and Audio File Retrieval
+
+The plugin caches information about retrieved audio files. The audio file list is initially fetched in small batches to stay within API quota limits. If the initial retrieval is incomplete, remaining tracks will be loaded later. The plugin automatically fetches new files and continues to load any remaining tracks with intervals of 5-10 minutes, both during initialization and while retrieving new content. This approach ensures efficient, quota-compliant, and timely updates of new content.
 
 ## Data Encryption and Storage
 
