@@ -50,7 +50,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Telegram Music Channels</property>
+                <property name="label" translatable="yes">Telegram Music Sources</property>
                 <property name="xalign">0</property>
               </object>
               <packing>
@@ -82,7 +82,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </child>
             <child>
               <object class="GtkMenuButton" id="add_chat_btn">
-                <property name="label" translatable="yes">Add channel</property>
+                <property name="label" translatable="yes">Add source</property>
                 <property name="image">add</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>

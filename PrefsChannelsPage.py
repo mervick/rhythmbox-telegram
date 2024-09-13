@@ -23,7 +23,7 @@ from PrefsPage import PrefsPage
 
 
 class PrefsChannelsPage(PrefsPage):
-    name = _('Music Channels')
+    name = _('Music Sources')
     main_box = 'channels_vbox'
     ui_file = 'ui/prefs/channels.ui'
 
