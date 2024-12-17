@@ -70,9 +70,9 @@ conflict_resolve_variants = [
 ]
 
 audio_visibility_variants = [
-    [_('Show Only Visible Audio'), 'visible'],
-    [_('Show Only Hidden Audio'), 'hidden'],
-    [_('Show All Audio'), 'all'],
+    [_('Visible Audio'), 'visible'],
+    [_('Hidden Audio'), 'hidden'],
+    [_('All Audio'), 'all'],
 ]
 
 example_tags = {

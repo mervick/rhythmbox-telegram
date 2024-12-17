@@ -94,7 +94,7 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
         gtk_win = self.main_box.get_toplevel()
         gtk_win.set_default_size(500, 600)
         gtk_win.set_resizable(False)
-        donate_btn = gtk_win.add_button("Donate", Gtk.ResponseType.HELP)
+        donate_btn = gtk_win.add_button("About", Gtk.ResponseType.HELP)
         donate_btn.connect("pressed", self.on_donate_clicked)
         style_context = donate_btn.get_style_context()
         style_context.add_class('suggested-action')
