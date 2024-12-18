@@ -66,7 +66,6 @@ class TelegramAccount(metaclass=SingletonMeta):
                 Secret.SearchFlags.LOAD_SECRETS, None)
             if not items or len(items) == 0 or not items[0].get_secret():
                 print("Couldn't find an existing keyring entry")
-                show_error("Couldn't find an existing keyring entry")
                 return
             self.secret = items[0].get_secret().get().decode("utf-8")
 
