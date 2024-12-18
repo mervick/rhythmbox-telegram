@@ -1,0 +1,4 @@
+data/lib/*                  usr/lib/rhythmbox/plugins/rhythmbox-telegram
+data/share/*                usr/share/rhythmbox/plugins/rhythmbox-telegram
+data/share/*.gschema.xml    usr/share/glib-2.0/schemas
+data/copyright              usr/share/doc/rhythmbox-telegram-plugin

@@ -1,0 +1,15 @@
+Source: rhythmbox-telegram-plugin
+Section: sound
+Priority: optional
+Maintainer: Andrey Izman <izmanw@gmail.com>
+Standards-Version: 4.6.0
+Homepage: https://github.com/mervick/rhythmbox-telegram
+Vcs-Git: https://github.com/mervick/rhythmbox-telegram.git
+Vcs-browser: https://github.com/mervick/rhythmbox-telegram
+
+Package: rhythmbox-telegram-plugin
+Version: {VERSION}
+Depends: rhythmbox, python3, ${misc:Depends}
+Architecture: all
+Description: Telegram plugin for Rhythmbox
+ Listen and download music from Telegram directly within Rhythmbox
