@@ -1,19 +1,17 @@
 #!/bin/bash
 
-SCRIPT_NAME=`basename "$0"`
-SCRIPT_PATH=${0%`basename "$0"`}
+SCRIPT_PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_PATH="${HOME}/.local/share/rhythmbox/plugins/rhythmbox-telegram"
-GLIB_SCHEME="org.gnome.rhythmbox.plugins.rhythmbox-telegram.gschema.xml"
-SCHEMA_FOLDER="schema/"
-GLIB_DIR="/usr/share/glib-2.0/schemas/"
+GLIB_SCHEME="org.gnome.rhythmbox.plugins.telegram.gschema.xml"
+GLIB_DIR="/usr/share/glib-2.0/schemas"
 
 
 function uninstall {
     rm -rf "${PLUGIN_PATH}"
-    sudo rm "${GLIB_DIR}${GLIB_SCHEME}"
-    sudo glib-compile-schemas "${GLIB_DIR}"
-    echo "plugin uninstalled"
-    exit
+    sudo rm "${GLIB_DIR}/${GLIB_SCHEME}"
+    sudo glib-compile-schemas "${GLIB_DIR}/"
+    echo "Plugin uninstalled"
+    exit 0
 }
 
 
@@ -54,28 +52,41 @@ until [[ $1 == -- ]]; do
             exit
             ;;
     esac
-    shift # move the arg list to the next option or '--'
+    shift
 done
 shift # remove the '--', now $1 positioned at first argument if any
 
 
-########################## START INSTALLATION ################################
+########################## INSTALLATION ################################
 
-#build the dirs
-mkdir -p $PLUGIN_PATH
+# build the dirs
+mkdir -p "${PLUGIN_PATH}"
 
-#copy the files
-cp -r "${SCRIPT_PATH}"* "$PLUGIN_PATH"
+# copy the files
+cp -r "${SCRIPT_PATH}/"* "$PLUGIN_PATH"
 
 # install requirements
-pip3 install -r "$PLUGIN_PATH"/requirements.txt
+pip3 install -r "$PLUGIN_PATH/requirements.txt" -t "$PLUGIN_PATH/lib"
 
-#remove the install script from the dir (not needed)
-#rm "${PLUGIN_PATH}${SCRIPT_NAME}"
-
-#install the glib schema
+# install the glib schema
 echo "Installing the glib schema (password needed)"
-sudo cp "${PLUGIN_PATH}${SCHEMA_FOLDER}${GLIB_SCHEME}" "$GLIB_DIR"
-sudo glib-compile-schemas "$GLIB_DIR"
+sudo cp "${PLUGIN_PATH}/${GLIB_SCHEME}" "$GLIB_DIR/"
+sudo glib-compile-schemas "$GLIB_DIR/"
 
-#exit
+arch=$(uname -m)
+
+case "$arch" in
+    x86_64) ;;
+    *)
+      if [[ "$(ldconfig -p | grep tdjson)" == "" ]]; then
+        echo "TDLib library is required to run this application." >&2
+        echo "Installation instructions are available on GitHub: https://github.com/tdlib/td" >&2
+        exit 127
+      fi
+    ;;
+esac
+
+echo "Installation completed."
+echo "Please restart Rhythmbox and enable the plugin in the settings."
+
+exit 0
