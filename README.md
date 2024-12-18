@@ -20,24 +20,64 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegr
 
 ## Installation
 
-To enable plugin, you need first install  `python-telegram` - Telegram library for python backed by the official Telegram client - [TDLib](https://core.telegram.org/tdlib)
+**Note:** In all cases of installation, the plugin depends on TDLib, and for architectures other than x64, you will need to install TDLib manually. Refer to the official [TDLib GitHub repository](https://github.com/tdlib/td) for instructions.
+
+### Method 1: Install from Debian Package
+
+For Debian-like systems with 64-bit architecture, download the latest `.deb` package from the [releases page](https://github.com/mervick/rhythmbox-telegram/releases). Then install it using the following command:
 
 ```sh
-pip3 install python-telegram==0.18.0
+sudo dpkg -i rhythmbox-telegram-plugin_*_amd64.deb
 ```
 
-Next, if Rhythmbox player is open, please close it, then proceed to download the plugin from the repository and move it to the Rhythmbox plugins folder, and compile glib schemas
+**Note:** For other architectures, you can still use the Debian package, but you will need to [install TDLib manually](https://github.com/tdlib/td).
+
+---
+
+### Method 2: Install Using the Installation Script
+
+Run the `install.sh` script from the repository:
 
 ```sh
-git clone https://github.com/mervick/rhythmbox-telegram ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
-glib-compile-schemas ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
+git clone https://github.com/mervick/rhythmbox-telegram
+bash rhythmbox-telegram/install.sh
+   ```
+
+The script will handle the entire installation process, including downloading dependencies, setting up the plugin, and compiling schemas.
+
+**Note:** If the architecture is different from x64, you will need to [install TDLib manually](https://github.com/tdlib/td).
+
+---
+
+### Method 3: Manual Installation
+
+Download the plugin from the repository, install required pip3 libs, copy plugin files to the Rhythmbox plugins folder, then compile GLib schemas:
+
+```sh
+# clone plugin gi
+git clone https://github.com/mervick/rhythmbox-telegram
+# install required python libs
+pip3 install -r "rhythmbox-telegram/requirements.txt" -t "rhythmbox-telegram/lib"
+# create plugin dir
+mkdir -p ~/.local/share/rhythmbox/plugins/rhythmbox-telegram/
+# copy plugin files
+cp -r rhythmbox-telegram/* ~/.local/share/rhythmbox/plugins/rhythmbox-telegram
+# copy plugin glib schema
+sudo cp rhythmbox-telegram/org.gnome.rhythmbox.plugins.telegram.gschema.xml /usr/share/glib-2.0/schemas/
+# update glib schema
+sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
 
+**Note:** As in all cases, if the architecture is different from x64, you will need to [install TDLib manually](https://github.com/tdlib/td).
+
+### Restart Rhythmbox
+
+After installing the plugin, if Rhythmbox is open, restart it.
 
 ## Activation
 
 After installing the plugin, you need to:
-- Activate it in the Rhythmbox settings
+- Activate it in the Rhythmbox settings 
 - Obtain a Telegram API ID 
 - Authenticate the Telegram user
 
