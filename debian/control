@@ -6,10 +6,11 @@ Standards-Version: 4.6.0
 Homepage: https://github.com/mervick/rhythmbox-telegram
 Vcs-Git: https://github.com/mervick/rhythmbox-telegram.git
 Vcs-browser: https://github.com/mervick/rhythmbox-telegram
+Build-Depends: debhelper (>= 13)
 
 Package: rhythmbox-telegram-plugin
 Version: {VERSION}
-Depends: rhythmbox, python3, ${misc:Depends}
+Depends: rhythmbox, python3, ${shlibs:Depends}, ${misc:Depends}
 Architecture: all
 Description: Telegram plugin for Rhythmbox
  Listen and download music from Telegram directly within Rhythmbox

@@ -32,10 +32,13 @@ rsync -a "${DEB_DIR}/debian/copyright"  "${DATA_DIR}/copyright"
 
 # install plugin requirements
 pip3 install -r "${ROOT_DIR}/requirements.txt" -t "${DATA_DIR}/lib/lib"
+# remove darwin tdlib
+find "${DATA_DIR}/lib/lib" -name "libtdjson.dylib" -type f -delete
 
 # build deb
 pushd "${DEB_DIR}"
 find . | grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
 tar -czf "${ROOT_DIR}/build/${PACKAGE_NAME}_${VERSION}".orig.tar.gz "data/"
+export DEB_DH_SHLIBDEPS_ARGS_ALL=--dpkg-shlibdeps-params=--ignore-missing-info
 debuild -us -uc
 popd
