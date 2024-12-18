@@ -99,6 +99,8 @@ After obtaining the API ID, in the plugin settings, input the received `api_id` 
 
 After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram channels, groups and chats to listen to your favorite music.
 
+**Note:** Sometimes, after adding or removing channels and groups, it is necessary to restart Rhythmbox.
+
 ## Telegram API Usage and Operations
 
 The plugin uses the Telegram API strictly for reading purposes. **No write operations are performed**.  
