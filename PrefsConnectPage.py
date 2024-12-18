@@ -16,9 +16,10 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-# import json
 import re
 from gi.repository import Gtk
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from telegram.client import AuthorizationState
 from DialogCode import DialogCode
 from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
@@ -164,6 +165,7 @@ class PrefsConnectPage(PrefsPage):
             self.prefs.account.set_connected(state)
 
             if state:
+                self.prefs.emit('api-connect')
                 print('emit.channels-fetch')
                 self.prefs.emit('channels-fetch')
 #                 self.loading = True
@@ -176,6 +178,8 @@ class PrefsConnectPage(PrefsPage):
 #                     upd_spinner()
 #
 #                 self.api.get_chats_idle(_set_chats)
+            else:
+                self.prefs.emit('api-disconnect')
 
             return state
 
@@ -234,7 +238,6 @@ class PrefsConnectPage(PrefsPage):
                 set_state(False)
 
         def disconnect_api():
-            print('disconnect_api')
             print('emit.channels-clear')
             self.prefs.emit('channels-clear')
 #             search_list_box.reset()

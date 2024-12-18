@@ -37,6 +37,8 @@ class TelegramConfig(GObject.GObject, PeasGtk.Configurable):
     _changes = {}
 
     __gsignals__ = {
+        'api-connect' : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'api-disconnect' : (GObject.SignalFlags.RUN_FIRST, None, ()),
         'channels-clear' : (GObject.SignalFlags.RUN_FIRST, None, ()),
         'channels-reload' : (GObject.SignalFlags.RUN_FIRST, None, ()),
         'channels-fetch' : (GObject.SignalFlags.RUN_FIRST, None, ()),
