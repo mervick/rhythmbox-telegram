@@ -80,6 +80,7 @@ class PrefsTempPage(PrefsPage):
     main_box = 'temp_vbox'
     ui_file = 'ui/prefs/temp.ui'
     _is_calculating = False
+    temp_dir = None
 
     def _create_widget(self):
         self._is_calculating = False
@@ -91,20 +92,34 @@ class PrefsTempPage(PrefsPage):
         self.view_dir_btn = self.ui.get_object('view_dir_btn')
         # self.progress_label = self.ui.get_object('deleting_progress_label')
 
-        self.temp_dir = self.plugin.api.temp_dir
-        self.temp_path_entry.set_text(self.temp_dir)
         # self.progress_label.set_text('')
 
         self.usage_refresh_btn.connect('clicked', self._refresh_btn_clicked)
         self.clear_tmp_btn.connect('clicked', self._clear_tmp_btn_clicked)
         self.view_dir_btn.connect('clicked', self._view_dir_btn_clicked)
 
+        self.upd_temp_dir()
+
+    def register_signals(self):
+        self.prefs.connect('api-connect', self.upd_temp_dir)
+        self.prefs.connect('api-disconnect', self.upd_temp_dir)
+
+    def upd_temp_dir(self):
+        if self.plugin.api and self.plugin.api.temp_dir:
+            self.temp_dir = self.plugin.api.temp_dir
+        else:
+            self.temp_dir = None
+        self.temp_path_entry.set_text(self.temp_dir if self.temp_dir is not None else "")
         self.calculate_size()
 
     def calculate_size(self):
         if self._is_calculating:
             return
         self._is_calculating = True
+
+        if self.temp_dir is None:
+            self.temp_usage_label.set_text(_("0"))
+            return
 
         self.usage_refresh_btn.set_sensitive(False)
         self.temp_usage_label.set_text(_("Calculating..."))
