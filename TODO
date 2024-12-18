@@ -2,8 +2,6 @@
 * show audio quality or audio type in entry view
 * tg_playlist: remove duplicated segments
 * update state for entries after deleting temp files
-* update install.sh
-* add instructions using install.sh
 * sync play_count, rating song entry_type with tg entry_type
 * change is_moved & is_downloaded when user deletes song entry
 * fix reloading sources by saving entry types
