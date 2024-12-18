@@ -18,10 +18,11 @@ import uuid
 import threading
 from gi.repository import RB
 from gi.repository import GObject, Gdk, Gio, GLib
-import os
 import hashlib
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from telegram.client import Telegram
 from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
