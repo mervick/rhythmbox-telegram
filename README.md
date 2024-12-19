@@ -27,7 +27,7 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing and loading your fav
 For Debian-like systems with 64-bit architecture, download the latest `.deb` package from the [releases page](https://github.com/mervick/rhythmbox-telegram/releases). Then install it using the following command:
 
 ```sh
-sudo dpkg -i rhythmbox-telegram-plugin_*_amd64.deb
+sudo dpkg -i rhythmbox-telegram-plugin_*.deb
 ```
 
 **Note:** For other architectures, you can still use the Debian package, but you will need to [install TDLib manually](https://github.com/tdlib/td).
