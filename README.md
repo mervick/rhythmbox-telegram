@@ -20,7 +20,7 @@ With Rhythmbox-Telegram, enjoy the convenience of accessing and loading your fav
 
 ## Installation
 
-**Note:** In all cases of installation, the plugin depends on TDLib, and for architectures other than x64, you will need to install TDLib manually. Refer to the official [TDLib GitHub repository](https://github.com/tdlib/td) for instructions.
+**Note:** Regardless of the installation method, the plugin depends on TDLib. For architectures other than x64, TDLib must be installed manually.  Refer to the official [TDLib GitHub repository](https://github.com/tdlib/td) for instructions.
 
 ### Method 1: Install from Debian Package
 
