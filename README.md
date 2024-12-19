@@ -7,15 +7,15 @@ Rhythmbox-Telegram is a plugin for Rhythmbox that allows you to listen to and do
 
 ## Key Features
 
-- **Telegram Integration**: Easily add Telegram channels and chats to Rhythmbox as playlists, consolidating your digital communication and music browsing in one convenient interface.
+- **Telegram Integration**: Easily add Telegram channels and chats to Rhythmbox as playlists, simplifying your music browsing experience.
 
-- **Browse Audio Files**: Effortlessly browse through audio files shared in Telegram directly from within Rhythmbox, ensuring quick access to your desired tracks.
+- **Browse Audio Files**: Easily browse, search, and organize audio files shared in Telegram directly from Rhythmbox, ensuring quick and convenient access to your favorite tracks.
 
-- **Listen to Music**: Seamlessly stream audio content from Telegram through Rhythmbox, enabling uninterrupted music playback without the need to switch between applications.
+- **Listen to Music**: Enjoy audio content from Telegram directly in Rhythmbox, allowing continuous music playback without switching between applications.
 
 - **Download to Library**: Download audio files from Telegram directly to your Rhythmbox library, expanding your music collection with the content you enjoy.
 
-With Rhythmbox-Telegram, enjoy the convenience of accessing your favorite Telegram audio content alongside your music library, revolutionizing the way you interact with both your digital communication platforms and your music collection.
+With Rhythmbox-Telegram, enjoy the convenience of accessing and loading your favorite Telegram audio content into your music library, transforming how you organize and enjoy your music collection.
 
 
 ## Installation
