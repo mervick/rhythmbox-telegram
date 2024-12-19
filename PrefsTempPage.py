@@ -113,13 +113,14 @@ class PrefsTempPage(PrefsPage):
         self.calculate_size()
 
     def calculate_size(self):
-        if self._is_calculating:
-            return
-        self._is_calculating = True
-
         if self.temp_dir is None:
             self.temp_usage_label.set_text(_("0"))
             return
+
+        if self._is_calculating:
+            return
+
+        self._is_calculating = True
 
         self.usage_refresh_btn.set_sensitive(False)
         self.temp_usage_label.set_text(_("Calculating..."))
@@ -129,6 +130,7 @@ class PrefsTempPage(PrefsPage):
         except Exception as e:
             self.temp_usage_label.set_text(f"Error: {e}")
             self.usage_refresh_btn.set_sensitive(True)
+            self._is_calculating = False
         return False
 
     def convert_size(self, size_bytes):
