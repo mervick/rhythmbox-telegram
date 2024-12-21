@@ -1,5 +1,15 @@
+rhythmbox-telegram-plugin (1.0.1) stable; urgency=medium
+
+  * Add plugin context menu
+  * Hide actions hotkeys on toolbar
+  * Reduce delays between moving already downloaded files
+  * Fix creating artist folder by artist with multiple artists
+  * Minor fixes
+
+ -- Andrey Izman <izmanw@gmail.com>  Sat, 21 Dec 2024 08:26:51 +0200
+
 rhythmbox-telegram-plugin (1.0) stable; urgency=medium
 
   * Initial release.
 
- -- Andrey Izman <izmanw@gmail.com>  Tue, 17 Dec 2024 12:00:00 +0000
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 17 Dec 2024 12:00:00 +0200
