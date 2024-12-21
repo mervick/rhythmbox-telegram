@@ -2,11 +2,14 @@
 
 set -e
 
-PACKAGE_NAME="rhythmbox-telegram-plugin"
-VERSION="1.0"
-DEB_VERSION="${VERSION}-1"
-
 ROOT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGE_NAME="rhythmbox-telegram-plugin"
+pushd "$ROOT_DIR"
+tag="$(git describe --tags)"
+VERSION="${tag#v*}"
+DEB_VERSION="${VERSION}"
+popd
+
 DEB_DIR="${ROOT_DIR}/build/${PACKAGE_NAME}_${DEB_VERSION}_all"
 DATA_DIR="${DEB_DIR}/data"
 
@@ -21,7 +24,7 @@ mkdir -p "${DEB_DIR}/debian"
 
 # copy debian data
 rsync -a "${ROOT_DIR}/debian/"     "${DEB_DIR}/debian/"
-sed -i "s/{VERSION}/DEB_VERSION/g" "${DEB_DIR}/debian/control"
+sed -i "s/{VERSION}/${DEB_VERSION}/g" "${DEB_DIR}/debian/control"
 # copy plugin files
 rsync -a --include="*.py" --include="*.plugin" --include="LICENCE" --include="*gschema*" --exclude="*" "${ROOT_DIR}/" "${DATA_DIR}/lib/"
 rsync -a --include="LICENCE" --include="*gschema*" --exclude="*" "${ROOT_DIR}/" "${DATA_DIR}/share/"
@@ -39,6 +42,5 @@ find "${DATA_DIR}/lib/lib" -name "libtdjson.dylib" -type f -delete
 pushd "${DEB_DIR}"
 find . | grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
 tar -czf "${ROOT_DIR}/build/${PACKAGE_NAME}_${VERSION}".orig.tar.gz "data/"
-export DEB_DH_SHLIBDEPS_ARGS_ALL=--dpkg-shlibdeps-params=--ignore-missing-info
 debuild -us -uc
 popd
