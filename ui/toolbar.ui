@@ -30,31 +30,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <attribute name="label" translatable="yes">Actions</attribute>
         <section>
           <item>
-            <attribute name="label" translatable="yes">Hide selected  			(Ctrl+H)</attribute>
+            <attribute name="label" translatable="yes">Hide selected</attribute>
             <attribute name="action">app.tg-hide</attribute>
             <attribute name="accel">&lt;Ctrl&gt;H</attribute>
           </item>
           <item>
-            <attribute name="label" translatable="yes">Unhide selected  			(Ctrl+Shift+H)</attribute>
+            <attribute name="label" translatable="yes">Unhide selected</attribute>
             <attribute name="action">app.tg-unhide</attribute>
             <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;H</attribute>
           </item>
         </section>
         <section>
           <item>
-            <attribute name="label" translatable="yes">View in Telegram  		(Ctrl+Shift+V)</attribute>
+            <attribute name="label" translatable="yes">View in Telegram</attribute>
             <attribute name="action">app.tg-browse</attribute>
             <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;V</attribute>
           </item>
           <item>
-            <attribute name="label" translatable="yes">View in File Manager  	(Ctrl+Shift+F)</attribute>
+            <attribute name="label" translatable="yes">View in File Manager</attribute>
             <attribute name="action">app.tg-file-manager</attribute>
             <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;F</attribute>
           </item>
         </section>
         <section>
           <item>
-            <attribute name="label" translatable="yes">Download to Library   	(Ctrl+Shift+D)</attribute>
+            <attribute name="label" translatable="yes">Download to Library</attribute>
             <attribute name="action">app.tg-download</attribute>
             <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;D</attribute>
           </item>
