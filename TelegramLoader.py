@@ -70,28 +70,28 @@ class AudioTempLoader(metaclass=SingletonMeta):
         entry = self.entries[self._idx]
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next()
+        self._next(1000)
 
-    def _next(self):
+    def _next(self, delay=1000):
         del self.entries[self._idx]
         self._idx = len(self.entries) - 1
         if self._idx < 0:
             self.stop()
             return
-        GLib.timeout_add(1000, self._load)
+        GLib.timeout_add(delay, self._load)
 
     def _load(self):
         if self._running:
             entry = self.entries[self._idx]
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio:
-                self._next()
+                self._next(20)
                 return
             file_path = audio.get_path()
             if file_path:
                 set_entry_state(self.plugin.db, entry, audio.get_state())
                 self.plugin.db.commit()
-                self._next()
+                self._next(20)
             else:
                 audio.download(success=self._process, fail=self._next)
 
@@ -209,28 +209,28 @@ class AudioDownloader(metaclass=SingletonMeta):
         audio.save({"local_path": filename, "is_moved": True})
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next()
+        self._next(1000)
 
-    def _next(self):
+    def _next(self, delay=1000):
         self.entries[self._idx] = None
         self._idx = self._idx + 1
         if self._idx >= len(self.entries):
             self.stop()
             return
-        GLib.timeout_add(1000, self._load)
+        GLib.timeout_add(delay, self._load)
 
     def _load(self):
         if self._running:
             entry = self.entries[self._idx]
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio:
-                self._next()
+                self._next(20)
                 return
             self._update_progress(audio)
             if audio.is_moved:
                 set_entry_state(self.plugin.db, entry, audio.get_state())
                 self.plugin.db.commit()
-                self._next()
+                self._next(20)
                 return
             file_path = audio.get_path()
             if file_path:
