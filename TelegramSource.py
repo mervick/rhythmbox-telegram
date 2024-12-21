@@ -240,6 +240,7 @@ class TelegramSource(RB.BrowserSource):
         self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
+        self.plugin.remove_plugin_menu()
 
     def do_selected(self):
         self.plugin.source = self
@@ -256,6 +257,8 @@ class TelegramSource(RB.BrowserSource):
             elif visibility == 'hidden':
                 self.suppress_is_hidden = 0
             GLib.idle_add(self.add_entries, visibility)
+
+        self.plugin.add_plugin_menu()
 
         self.loader = PlaylistLoader(self.chat_id, self.add_entry)
         self.loader.start()

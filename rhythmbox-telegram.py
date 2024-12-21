@@ -41,6 +41,7 @@ class Telegram(GObject.GObject, Peas.Activatable):
     def __init__(self):
         super(Telegram, self).__init__()
         self.account = TelegramAccount(self)
+        self.app = Gio.Application.get_default()
         self.shell = None
         self.db = None
         self.icon = None
@@ -58,6 +59,22 @@ class Telegram(GObject.GObject, Peas.Activatable):
         self.sources = {}
         self.deleted_sources = {}
         self._created_group = False
+        self._context_menu = []
+
+    def _add_plugin_menu_item(self, action, label):
+        item = Gio.MenuItem()
+        item.set_label(label)
+        action_name = action.get_name()
+        item.set_detailed_action('app.%s' % action_name)
+        self._context_menu.append([action_name, item])
+
+    def add_plugin_menu(self):
+        for item in self._context_menu:
+            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])
+
+    def remove_plugin_menu(self):
+        for item in self._context_menu:
+            self.app.remove_plugin_menu_item("browser-popup", item[0])
 
     def do_activate(self):
         print('Telegram plugin activating')
@@ -77,25 +94,30 @@ class Telegram(GObject.GObject, Peas.Activatable):
         app = Gio.Application.get_default()
         self.db.connect('entry-deleted', self.on_entry_deleted)
 
-        action = Gio.SimpleAction(name="tg-browse")
-        action.connect("activate", self.browse_action_cb)
-        app.add_action(action)
-
-        action = Gio.SimpleAction(name="tg-file-manager")
-        action.connect("activate", self.file_manager_action_cb)
-        app.add_action(action)
-
-        action = Gio.SimpleAction(name="tg-download")
-        action.connect("activate", self.download_action_cb)
-        app.add_action(action)
-
         action = Gio.SimpleAction(name="tg-hide")
         action.connect("activate", self.hide_action_cb)
         app.add_action(action)
+        self._add_plugin_menu_item(action, _("Hide selected"))
 
         action = Gio.SimpleAction(name="tg-unhide")
         action.connect("activate", self.unhide_action_cb)
         app.add_action(action)
+        self._add_plugin_menu_item(action, _("Unhide selected"))
+
+        action = Gio.SimpleAction(name="tg-browse")
+        action.connect("activate", self.browse_action_cb)
+        app.add_action(action)
+        self._add_plugin_menu_item(action, _("View in Telegram"))
+
+        action = Gio.SimpleAction(name="tg-file-manager")
+        action.connect("activate", self.file_manager_action_cb)
+        app.add_action(action)
+        self._add_plugin_menu_item(action, _("View in File Manager"))
+
+        action = Gio.SimpleAction(name="tg-download")
+        action.connect("activate", self.download_action_cb)
+        app.add_action(action)
+        self._add_plugin_menu_item(action, _("Download to Library"))
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
