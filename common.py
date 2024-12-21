@@ -256,8 +256,9 @@ def filepath_parse_pattern(pattern, tags):
     # Remove the '\x01\x02' characters from the string, for some reason some artist have 2 or
     # maybe even more lines separated by \x01\x02
     _tags['artist'] = _tags.get('artist', 'Unknown').split('\x01')[0]
-    _tags['artist_lower'] = _tags.get('artist', 'Unknown').lower()
-    _tags['album_artist_lower'] = _tags.get('album_artist', 'Unknown').lower()
+    _tags['artist_lower'] = _tags.get('artist').lower()
+    _tags['album_artist'] = _tags.get('album_artist', 'Unknown').split('\x01')[0].split(';')[0]
+    _tags['album_artist_lower'] = _tags.get('album_artist').lower()
     _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
     _tags['track_number_padded'] = "%02i" % int(_tags.get('track_number', 1))
 
