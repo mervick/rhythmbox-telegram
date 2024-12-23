@@ -250,14 +250,17 @@ filepath_pattern_markers = {
     "%tA": "artist_lower",
 }
 
+def get_first_artist(artist):
+    return artist.split('\x01')[0].split(';')[0]
+
 def filepath_parse_pattern(pattern, tags):
     # Parse a filename pattern and replace markers with values from the tags
     _tags = {**tags}
     # Remove the '\x01\x02' characters from the string, for some reason some artist have 2 or
     # maybe even more lines separated by \x01\x02
-    _tags['artist'] = _tags.get('artist', 'Unknown').split('\x01')[0].split(';')[0]
+    _tags['artist'] = get_first_artist(_tags.get('artist', 'Unknown'))
     _tags['artist_lower'] = _tags.get('artist').lower()
-    _tags['album_artist'] = _tags.get('album_artist', 'Unknown').split('\x01')[0].split(';')[0]
+    _tags['album_artist'] = get_first_artist(_tags.get('album_artist', 'Unknown'))
     _tags['album_artist_lower'] = _tags.get('album_artist').lower()
     _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
     _tags['track_number_padded'] = "%02i" % int(_tags.get('track_number', 1))

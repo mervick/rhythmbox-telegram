@@ -17,7 +17,7 @@
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, SingletonMeta
+from common import to_location, get_location_data, empty_cb, SingletonMeta, get_first_artist
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
@@ -290,7 +290,7 @@ class TelegramSource(RB.BrowserSource):
         for idx, tg_entry in enumerate(tg_entries):
             audio = self.plugin.storage.get_entry_audio(tg_entry)
             if audio.is_moved:
-                album = f'{audio.artist}|{audio.album}|{audio.get_year()}'
+                album = f'{get_first_artist(audio.artist)}|{audio.album}|{audio.get_year()}'
                 albums_keys = albums.keys()
                 if album not in albums_keys:
                     albums[album] = len(albums_keys) + 1
@@ -311,7 +311,7 @@ class TelegramSource(RB.BrowserSource):
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
                 audio.update_entry(entry, self.db, commit=False, state=False)
-                self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
+                # self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
                 self.db.commit()
             song_entries.append(entry)
         return song_entries
