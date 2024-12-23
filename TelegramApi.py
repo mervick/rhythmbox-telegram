@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import uuid
+import uuid, re
 import threading
 from gi.repository import RB
 from gi.repository import GObject, Gdk, Gio, GLib
@@ -32,6 +32,7 @@ from TelegramStorage import TelegramStorage, TgCache
 
 logger = logging.getLogger(__name__)
 
+REGEX_TME_LINK = re.compile('^https://t\.me/(c/)?([a-zA-Z0-9_]+)/([0-9]+)(\?.+)?$')
 
 def inst_key(api_hash, phone):
     return '|'.join([phone.strip('+'), api_hash])
@@ -404,6 +405,17 @@ class TelegramApi(GObject.Object):
         })
         r.wait()
         return r.update['link'] if 'link' in r.update else None
+
+    def get_message_direct_link(self, chat_id, message_id):
+        link = self.get_message_link(chat_id, message_id)
+        m = REGEX_TME_LINK.match(link)
+        if not m:
+            return link
+        # private
+        if m.group(1):
+            return "tg://privatepost?channel=%s&post=%s&single" % (m.group(2), m.group(3))
+        # public
+        return "tg://resolve?domain=%s&post=%s&single" % (m.group(2), m.group(3))
 
     def download_audio(self, chat_id, message_id, priority=1):
         r = self.tg.get_message(chat_id, message_id)

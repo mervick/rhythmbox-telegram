@@ -220,7 +220,7 @@ class TgAudio:
         return res
 
     def get_link(self):
-        return TelegramStorage.loaded().api.get_message_link(self.chat_id, self.message_id)
+        return TelegramStorage.loaded().api.get_message_direct_link(self.chat_id, self.message_id)
 
     def get_file_ext(self):
         if self.mime_type in mime_types.keys():
