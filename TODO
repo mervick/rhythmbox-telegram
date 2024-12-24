@@ -13,3 +13,4 @@
 * ability to hide already hidden tracks across channels
 * fix update temp_dir in PrefsTemp after connecting
 * fix update view group after connecting
+* detect existing directories in a case-insensitive manner
