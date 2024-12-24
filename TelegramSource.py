@@ -372,29 +372,23 @@ class TelegramSource(RB.BrowserSource):
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
-        commit = False
         for entry in entries:
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio.is_hidden:
                 audio.save({"is_hidden": True})
-                set_entry_state(self.db, entry, audio.get_state())
-                commit = True
-        if commit:
-            self.db.commit()
+            set_entry_state(self.db, entry, audio.get_state())
+        self.db.commit()
 
     def unhide_action(self):
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
-        commit = False
         for entry in entries:
             audio = self.plugin.storage.get_entry_audio(entry)
             if audio.is_hidden:
                 audio.save({"is_hidden": False})
-                set_entry_state(self.db, entry, audio.get_state())
-                commit = True
-        if commit:
-            self.db.commit()
+            set_entry_state(self.db, entry, audio.get_state())
+        self.db.commit()
 
 
 GObject.type_register(TelegramSource)
