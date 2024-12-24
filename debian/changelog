@@ -1,3 +1,9 @@
+rhythmbox-telegram-plugin (1.0.2) stable; urgency=medium
+
+  * Use direct link to show telegram messages
+
+ -- Andrey Izman <izmanw@gmail.com> Tue, 24 Dec 2024 09:10:29 +0200
+
 rhythmbox-telegram-plugin (1.0.1) stable; urgency=medium
 
   * Add plugin context menu
