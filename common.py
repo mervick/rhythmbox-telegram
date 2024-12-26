@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import enum
+import math
 import base64
 import hashlib
 from datetime import datetime
@@ -123,20 +124,20 @@ def set_entry_state(db, entry, state):
     db.entry_set(entry, RB.RhythmDBPropType.MTIME, state)
 
 def get_entry_location(entry):
-    entry.get_string(RB.RhythmDBPropType.LOCATION)
+    return entry.get_string(RB.RhythmDBPropType.LOCATION)
 
 def is_same_entry(entry1, entry2):
     return get_entry_location(entry1) == get_entry_location(entry2)
 
-def to_location(api_hash, created_at, chat_id, audio_id):
-    return 'tg://%s/%s/%s/%s' % (api_hash, created_at, chat_id, audio_id)
+def to_location(api_hash, created_at, chat_id, message_id, audio_id):
+    return 'tg://%s/%s/%s/%s/%s' % (api_hash, created_at, chat_id, message_id, audio_id)
 
 def get_location_audio_id(location):
     return location.split('/')[-1]
 
 def get_location_data(location):
     d = location.split('/')
-    return [d[-2], d[-1]]
+    return [d[-3], d[-2]]
 
 def file_uri(path):
     return GLib.filename_to_uri(path, None)
@@ -322,3 +323,12 @@ def decrypt(encrypted_text, password):
     iv = encrypted_text[:AES.block_size]
     cipher = AES.new(key, AES.MODE_CBC, iv)
     return unpad(cipher.decrypt(encrypted_text[AES.block_size:])).decode('utf-8')
+
+def pretty_file_size(size_bytes, digits=2):
+    if size_bytes == 0:
+        return "0 bytes"
+    size_name = ("bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1000)))
+    p = math.pow(1000, i)
+    s = round(size_bytes / p, digits)
+    return f"{s} {size_name[i]}"
