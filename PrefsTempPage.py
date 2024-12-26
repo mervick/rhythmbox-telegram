@@ -21,7 +21,7 @@ import math
 import subprocess
 from gi.repository import RB
 from gi.repository import Gtk, Gio, GLib, Gdk
-from common import file_uri
+from common import file_uri, pretty_file_size
 from PrefsPage import PrefsPage
 
 import gettext
@@ -133,20 +133,11 @@ class PrefsTempPage(PrefsPage):
             self._is_calculating = False
         return False
 
-    def convert_size(self, size_bytes):
-        if size_bytes == 0:
-            return "0 bytes"
-        size_name = ("bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-        i = int(math.floor(math.log(size_bytes, 1000)))
-        p = math.pow(1000, i)
-        s = round(size_bytes / p, 2)
-        return f"{s} {size_name[i]}"
-
     def on_subprocess_output(self, source, condition, process):
         if condition == GLib.IO_IN:
             output = source.read()
             size = output.split()[0] if output else "Error"
-            readable_size = self.convert_size(int(size)) if size.isdigit() else size
+            readable_size = pretty_file_size(int(size)) if size.isdigit() else size
             self.temp_usage_label.set_text(readable_size)
             process.stdout.close()
             process.stderr.close()
