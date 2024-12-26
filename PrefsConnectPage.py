@@ -16,12 +16,12 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-import re
 from gi.repository import Gtk
-import sys, os
+import re, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from telegram.client import AuthorizationState
 from DialogCode import DialogCode
+from TelegramAccount import KEY_CONNECTED
 from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
 from PrefsPage import PrefsPage
 from common import show_error
@@ -56,7 +56,7 @@ class PrefsConnectPage(PrefsPage):
 
         def update_connect(connected=None):
             print('update_connect %s ' % connected)
-            self.on_change("connected", connected)
+            self.on_change(KEY_CONNECTED, connected)
             if connected is not None:
                 self.connected = connected
             else:
@@ -98,7 +98,7 @@ class PrefsConnectPage(PrefsPage):
             if connected:
                 print('==emit.channels-reload')
                 self.prefs.emit('channels-reload')
-#                 selected = json.loads(account().settings['channels'])
+#                 selected = json.loads(account().settings[KEY_CHANNELS])
 #                 search_list_box.set_selected(selected)
 
             api_id_entry.set_text(api_id or "")
@@ -242,7 +242,7 @@ class PrefsConnectPage(PrefsPage):
             self.prefs.emit('channels-clear')
 #             search_list_box.reset()
             self.api.reset_chats()
-#             account().settings.set_string('channels', '[]')
+#             account().settings.set_string(KEY_CHANNELS, '[]')
             set_state(False)
 
         self.ui.connect_signals({"connect_btn_clicked_cb": connect_btn_clicked})

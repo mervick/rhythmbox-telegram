@@ -24,7 +24,7 @@ from TelegramLoader import AudioDownloader, AudioTempLoader
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi, TelegramAuthError
 from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
-from TelegramAccount import TelegramAccount
+from TelegramAccount import TelegramAccount, KEY_CHANNELS, KEY_PAGE_GROUP
 from TelegramEntry import TelegramEntryType
 from common import get_location_data, show_error
 
@@ -150,10 +150,10 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
     def do_reload_sources(self):
         print('do_reload_sources()')
-        selected = json.loads(self.settings['channels']) if self.connected else []
+        selected = json.loads(self.settings[KEY_CHANNELS]) if self.connected else []
 
         if self.connected and selected:
-            group_id = self.settings['page-group']
+            group_id = self.settings[KEY_PAGE_GROUP]
 
             if group_id != self.group_id:
                 for idx in self.sources:

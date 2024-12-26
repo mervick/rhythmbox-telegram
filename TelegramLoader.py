@@ -17,6 +17,7 @@
 import os
 import shutil
 from gi.repository import GLib, RB
+from TelegramAccount import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from TelegramStorage import TgPlaylist, TgAudio
 from TelegramApi import TelegramApi
@@ -112,9 +113,9 @@ class AudioDownloader(metaclass=SingletonMeta):
 
     def setup(self):
         self.library_location = self.plugin.account.get_library_path().rstrip('/') # noqa
-        self.folder_hierarchy = self.plugin.settings['folder-hierarchy'] # noqa
-        self.conflict_resolve = self.plugin.settings['conflict-resolve'] # noqa
-        self.filename_template = self.plugin.settings['filename-template'] # noqa
+        self.folder_hierarchy = self.plugin.settings[KEY_FOLDER_HIERARCHY] # noqa
+        self.conflict_resolve = self.plugin.settings[KEY_CONFLICT_RESOLVE] # noqa
+        self.filename_template = self.plugin.settings[KEY_FILENAME_TEMPLATE] # noqa
 
     def add_entries(self, entries):
         for entry in entries:

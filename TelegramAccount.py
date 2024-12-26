@@ -20,6 +20,27 @@ from rb import rbconfig # noqa
 from gi.repository import Gio
 from common import SingletonMeta, show_error
 
+# settings keys
+KEY_API_ID = "api-id"
+KEY_API_HASH = "api-hash"
+KEY_PHONE = "phone"
+KEY_CONNECTED = "connected"
+
+KEY_CHANNELS = "channels"
+KEY_LIBRARY_PATH = "library-path"
+
+KEY_CONFLICT_RESOLVE = "conflict-resolve"
+KEY_FOLDER_HIERARCHY = "folder-hierarchy"
+KEY_FILENAME_TEMPLATE = "filename-template"
+KEY_PAGE_GROUP = "page-group"
+KEY_AUDIO_VISIBILITY = "audio-visibility"
+
+KEY_RATING_COLUMN = "rating-column"
+KEY_DATE_ADDED_COLUMN = "date-added-column"
+KEY_FILE_SIZE_COLUMN = "file-size-column"
+KEY_AUDIO_FORMAT_COLUMN = "audio-format-column"
+
+
 Secret = None
 if rbconfig.libsecret_enabled:
     try:
@@ -72,8 +93,8 @@ class TelegramAccount(metaclass=SingletonMeta):
     def get_secure(self, key=None):
         def _get_all():
             if self.secret is None:
-                connected = self.settings['connected']
-                return self.settings['api-id'], self.settings['api-hash'], self.settings['phone'], \
+                connected = self.settings[KEY_CONNECTED]
+                return self.settings[KEY_API_ID], self.settings[KEY_API_HASH], self.settings[KEY_PHONE], \
                     connected is True or connected == 'True'
             try:
                 (api_id, api_hash, phone, connected) = self.secret.split("\n")
@@ -86,10 +107,10 @@ class TelegramAccount(metaclass=SingletonMeta):
         props = _get_all()
         if key:
             keys = {
-                "api_id": 0,
-                "api_hash": 1,
-                "phone": 2,
-                "connected": 3,
+                KEY_API_ID: 0,
+                KEY_API_HASH: 1,
+                KEY_PHONE: 2,
+                KEY_CONNECTED: 3,
             }
             if key in keys:
                 return props[keys[key]]
@@ -97,8 +118,8 @@ class TelegramAccount(metaclass=SingletonMeta):
 
     def get_library_path(self):
         # from settings
-        if 'library-path' in self.settings and self.settings['library-path']:
-            return self.settings['library-path']
+        if KEY_LIBRARY_PATH in self.settings and self.settings[KEY_LIBRARY_PATH]:
+            return self.settings[KEY_LIBRARY_PATH]
         # from rhythmbox global settings
         locations = self.plugin.rhythmdb_settings.get_strv('locations')
         if locations and len(locations):
@@ -114,10 +135,10 @@ class TelegramAccount(metaclass=SingletonMeta):
         connected = connected is True or connected == 'True'
         if Secret is None:
             print("No secret, use default storage")
-            self.settings.set_string('api-id', api_id)
-            self.settings.set_string('api-hash', api_hash)
-            self.settings.set_string('phone', phone)
-            self.settings.set_boolean('connected', connected)
+            self.settings.set_string(KEY_API_ID, api_id)
+            self.settings.set_string(KEY_API_HASH, api_hash)
+            self.settings.set_string(KEY_PHONE, phone)
+            self.settings.set_boolean(KEY_CONNECTED, connected)
             return
         secret = '\n'.join((api_id, api_hash, phone, str(connected)))
         if secret == self.secret:

@@ -20,6 +20,7 @@ import json
 from gi.repository import GObject, Gtk
 from SearchList import SearchListBox
 from PrefsPage import PrefsPage
+from TelegramAccount import KEY_CHANNELS
 
 
 class PrefsChannelsPage(PrefsPage):
@@ -28,15 +29,15 @@ class PrefsChannelsPage(PrefsPage):
     ui_file = 'ui/prefs/channels.ui'
 
     def on_list_box_change(self, v):
-        self.prefs.settings.set_string('channels', json.dumps(v))
-        self.on_change("channels", [channel["id"] for channel in v])
+        self.prefs.settings.set_string(KEY_CHANNELS, json.dumps(v))
+        self.on_change(KEY_CHANNELS, [channel["id"] for channel in v])
 
     def on_channels_clear(self, obj=None):
         self.search_list_box.reset()
-        self.prefs.account.settings.set_string('channels', '[]')
+        self.prefs.account.settings.set_string(KEY_CHANNELS, '[]')
 
     def on_channels_reload(self, obj=None):
-        selected = json.loads(self.prefs.account.settings['channels'])
+        selected = json.loads(self.prefs.account.settings[KEY_CHANNELS])
         self.search_list_box.set_selected(selected)
 
     def on_channels_fetch(self, obj=None):

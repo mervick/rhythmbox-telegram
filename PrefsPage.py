@@ -18,6 +18,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 import json
 from gi.repository import GObject, Gtk, Gio
+from TelegramAccount import KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP
 
 
 def set_combo_text_column(combo, col):
@@ -80,7 +81,7 @@ class PrefsPage(GObject.GObject):
         reload = False
         if name not in self._changes or self._changes[name] != txt:
             self._changes[name] = txt
-            if name in ['connected', 'channels', 'page-group']:
+            if name in [KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP]:
                 reload = True
         if reload:
             print('===EMIT1.reload_sources')
