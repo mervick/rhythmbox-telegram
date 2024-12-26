@@ -21,6 +21,9 @@ from gi.repository import RB
 from gi.repository import Gtk, GLib
 from PrefsPage import PrefsPage, set_combo_text_column
 from common import filepath_parse_pattern, show_error
+from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from TelegramAccount import KEY_CONFLICT_RESOLVE, KEY_PAGE_GROUP, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
+from TelegramAccount import KEY_LIBRARY_PATH, KEY_AUDIO_VISIBILITY
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -94,7 +97,7 @@ class PrefsSettingsPage(PrefsPage):
 
     def _create_widget(self):
         self._values = {}
-        self._keys_require_restart = ['page-group', 'audio-visibility']
+        self._combos_require_restart = [KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY]
 
         self.library_location_entry = self.ui.get_object('library_location_entry')
         self.library_location_btn = self.ui.get_object('library_location_btn')
@@ -107,22 +110,44 @@ class PrefsSettingsPage(PrefsPage):
         self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
         self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
+        self.rating_check = self.ui.get_object('rating_check')
+        self.date_added_check = self.ui.get_object('date_added_check')
+        self.size_check = self.ui.get_object('size_check')
+        self.format_check = self.ui.get_object('format_check')
+
+        self._init_check(self.rating_check, KEY_RATING_COLUMN)
+        self._init_check(self.date_added_check, KEY_DATE_ADDED_COLUMN)
+        self._init_check(self.size_check, KEY_FILE_SIZE_COLUMN)
+        self._init_check(self.format_check, KEY_AUDIO_FORMAT_COLUMN)
+
         self.library_location_entry.set_text(self.account.get_library_path())
         self.library_location_btn.connect('clicked', self._browse_libpath_cb)
         self.library_location_entry.connect("focus-out-event", self._libpath_entry_cb)
 
-        self._init_combo(self.conflict_resolve_combo, conflict_resolve_variants, 'conflict-resolve')
+        self._init_combo(self.conflict_resolve_combo, conflict_resolve_variants, KEY_CONFLICT_RESOLVE)
         # self._init_combo(self.color_scheme_combo, color_schemas, 'color-scheme')
-        self._init_combo(self.page_group_combo, page_groups, 'page-group')
-        self._init_combo(self.dir_hierarchy_combo, library_layout_paths, 'folder-hierarchy')
-        self._init_combo(self.name_template_combo, library_layout_filenames, 'filename-template')
-        self._init_combo(self.audio_visibility_combo, audio_visibility_variants, 'audio-visibility')
+        self._init_combo(self.page_group_combo, page_groups, KEY_PAGE_GROUP)
+        self._init_combo(self.dir_hierarchy_combo, library_layout_paths, KEY_FOLDER_HIERARCHY)
+        self._init_combo(self.name_template_combo, library_layout_filenames, KEY_FILENAME_TEMPLATE)
+        self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
 
-        self._update('filename-template', self.settings['filename-template'])
+        self._update(KEY_FILENAME_TEMPLATE, self.settings[KEY_FILENAME_TEMPLATE])
         GLib.timeout_add(600, self._update_box)
 
     def _update_box(self):
         self.restart_warning_box.set_visible(self.plugin.require_restart_plugin)
+
+    def _init_check(self, checkbox, name):
+        value = self.settings[name]
+        checkbox.set_active(bool(value))
+        checkbox.connect('toggled', self._on_check_toggled, name)
+
+    def _on_check_toggled(self, checkbox, name):
+        is_checked = checkbox.get_active()
+        self.settings.set_boolean(name, is_checked)
+        self.plugin.require_restart_plugin = True
+        self.restart_warning_box.set_visible(True)
+        self.on_change(name, is_checked)
 
     def _init_combo(self, combo, variants, name):
         idx = 0
@@ -142,7 +167,7 @@ class PrefsSettingsPage(PrefsPage):
         if tree_iter is not None:
             model = combo.get_model()
             value = model[tree_iter][0]
-            if name in self._keys_require_restart:
+            if name in self._combos_require_restart:
                 self.plugin.require_restart_plugin = True
                 self.restart_warning_box.set_visible(True)
             self.settings.set_string(name, value)
@@ -155,21 +180,21 @@ class PrefsSettingsPage(PrefsPage):
             return
         self._values[name] = value
 
-        if name == 'library-path':
+        if name == KEY_LIBRARY_PATH:
             if os.path.isdir(value):
                 self.library_location_entry.set_text(value)
-                self.account.settings.set_string('library-path', value)
+                self.account.settings.set_string(KEY_LIBRARY_PATH, value)
             else:
                 show_error(_('Directory %s does not exists') % value,
                            _('The selected directory path for downloading music does not exist. Please choose an existing directory or create a new one to proceed.'),
                            parent=self.box)
-        elif name in ['folder-hierarchy', 'filename-template']:
+        elif name in [KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE]:
             example = filepath_parse_pattern(
-                "%s/%s.mp3" % (self.settings['folder-hierarchy'], self.settings['filename-template']), example_tags)
+                "%s/%s.mp3" % (self.settings[KEY_FOLDER_HIERARCHY], self.settings[KEY_FILENAME_TEMPLATE]), example_tags)
             self.template_example_label.set_markup('<small><i><b>%s</b> %s</i></small>' % (_("Example Path:"), example))
 
     def _libpath_entry_cb(self, entry, event):
-        self._update('library-path', entry.get_text())
+        self._update(KEY_LIBRARY_PATH, entry.get_text())
 
     def _browse_libpath_cb(self, *obj):
         f = Gtk.FileChooserDialog(
@@ -190,5 +215,5 @@ class PrefsSettingsPage(PrefsPage):
         if status == Gtk.ResponseType.OK:
             val = f.get_filename() # noqa
             if val:
-                self._update('library-path', val)
+                self._update(KEY_LIBRARY_PATH, val)
         f.destroy()
