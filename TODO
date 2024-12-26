@@ -14,3 +14,4 @@
 * fix update view group after connecting
 * detect existing directories in a case-insensitive manner
 * add options in the settings to show/hide custom columns (rating, size, format)
+* add options to preload prev/next songs
