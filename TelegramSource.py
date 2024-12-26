@@ -22,6 +22,8 @@ from common import get_location_audio_id, pretty_file_size
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
+from TelegramAccount import KEY_AUDIO_VISIBILITY, KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, \
+    KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -257,10 +259,14 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = chat_id
         self.chat_title = chat_title
         self.loader = None
-        self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
-        TgSizeColumn(self)
-        TgFormatColumn(self)
-        self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
+        if self.plugin.account.settings[KEY_RATING_COLUMN]:
+            self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
+        if self.plugin.account.settings[KEY_FILE_SIZE_COLUMN]:
+            TgSizeColumn(self)
+        if self.plugin.account.settings[KEY_AUDIO_FORMAT_COLUMN]:
+            TgFormatColumn(self)
+        if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
+            self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
         self.state_column = TgStateColumn(self) # noqa
         # self.loaded_entries = []
         # self.custom_model = {}
@@ -315,7 +321,7 @@ class TelegramSource(RB.BrowserSource):
 
         if not self.initialised:
             self.initialised = True
-            visibility = self.plugin.settings['audio-visibility']
+            visibility = self.plugin.settings[KEY_AUDIO_VISIBILITY]
             if visibility == 'visible':
                 self.suppress_is_hidden = 1
             elif visibility == 'hidden':
