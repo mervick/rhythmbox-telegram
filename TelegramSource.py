@@ -17,13 +17,78 @@
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, SingletonMeta, get_first_artist
+from common import to_location, get_location_data, empty_cb, SingletonMeta, get_first_artist, get_entry_location
+from common import get_location_audio_id, pretty_file_size
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
+
+
+class TgFormatColumn:
+    def __init__(self, source):
+        self.source = source
+
+        entry_view = source.get_entry_view()
+
+        column = Gtk.TreeViewColumn()
+        renderer = Gtk.CellRendererText()
+
+        column.set_title(_("Format"))
+        column.set_cell_data_func(renderer, self.data_func, None) # noqa
+
+        column.pack_start(renderer, expand=False)
+        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        entry_view.set_fixed_column_width(column, renderer, ["mp3", "flac"])
+
+        column.set_expand(False)
+        column.set_resizable(True)
+
+        entry_view.append_column_custom(column, _("Format"), "tg-format", empty_cb, None, None)
+        visible_columns = entry_view.get_property("visible-columns")
+        visible_columns.append('tg-format')
+        entry_view.set_property("visible-columns", visible_columns)
+
+    def data_func(self, column, cell, model, iter, *data): # noqa
+        entry = model.get_value(iter, 0)
+        idx = get_location_audio_id(get_entry_location(entry))
+        cell.set_property("text", "%s" % self.source.get_custom_model(idx)[1])
+        # audio = self.source.plugin.storage.get_entry_audio(entry)
+        # cell.set_property("text", "%s" % audio.get_file_ext())
+
+
+class TgSizeColumn:
+    def __init__(self, source):
+        self.source = source
+
+        entry_view = source.get_entry_view()
+
+        column = Gtk.TreeViewColumn()
+        renderer = Gtk.CellRendererText()
+
+        column.set_title(_("Size"))
+        column.set_cell_data_func(renderer, self.data_func, None) # noqa
+
+        column.pack_start(renderer, expand=False)
+        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        entry_view.set_fixed_column_width(column, renderer, ["4kb", "121.1MB"])
+
+        column.set_expand(False)
+        column.set_resizable(True)
+
+        entry_view.append_column_custom(column, _("Size"), "tg-size", empty_cb, None, None)
+        visible_columns = entry_view.get_property("visible-columns")
+        visible_columns.append('tg-size')
+        entry_view.set_property("visible-columns", visible_columns)
+
+    def data_func(self, column, cell, model, iter, *data): # noqa
+        entry = model.get_value(iter, 0)
+        idx = get_location_audio_id(get_entry_location(entry))
+        cell.set_property("text", "%s" % self.source.get_custom_model(idx)[0])
+        # audio = self.source.plugin.storage.get_entry_audio(entry)
+        # cell.set_property("text",  "%s" % audio.size)
 
 
 state_icons = {
@@ -35,7 +100,7 @@ state_icons = {
 }
 
 
-class StateColumn:
+class TgStateColumn:
     _icon_cache = {}
 
     def __init__(self, source):
@@ -46,9 +111,6 @@ class StateColumn:
         column = Gtk.TreeViewColumn()
         pixbuf_renderer = Gtk.CellRendererPixbuf()
         spinner_renderer = Gtk.CellRendererSpinner()
-
-        column.add_attribute(spinner_renderer, "active", 1)
-        column.add_attribute(spinner_renderer, "pulse", 1)
 
         column.set_title(" ")
         column.set_cell_data_func(pixbuf_renderer, self.model_data_func, "pixbuf") # noqa
@@ -65,6 +127,7 @@ class StateColumn:
 
         entry_view = source.get_entry_view()
         self.entry_view = entry_view
+
         entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
         visible_columns = entry_view.get_property("visible-columns")
         visible_columns.append('tg-state')
@@ -109,12 +172,12 @@ class StateColumn:
                     del self._models[idx]
                 cell.props.active = False
             else:
-                if state in StateColumn._icon_cache:
-                    gicon = StateColumn._icon_cache[state]
+                if state in TgStateColumn._icon_cache:
+                    gicon = TgStateColumn._icon_cache[state]
                 else:
                     icon_name = state_icons[state] if state in state_icons else state_icons[TgAudio.STATE_DEFAULT]
                     gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
-                    StateColumn._icon_cache[state] = gicon
+                    TgStateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
 
 
@@ -185,6 +248,7 @@ class TelegramSource(RB.BrowserSource):
         self.entry_updated_id = None
         self.suppress_is_hidden = None
         self.loaded_entries = []
+        self.custom_model = {}
 
     def setup(self, plugin, chat_id, chat_title):
         self.initialised = False
@@ -198,8 +262,11 @@ class TelegramSource(RB.BrowserSource):
         self.chat_title = chat_title
         self.loader = None
         self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
-        self.state_column = StateColumn(self) # noqa
-        self.loaded_entries = []
+        TgSizeColumn(self)
+        TgFormatColumn(self)
+        self.state_column = TgStateColumn(self) # noqa
+        # self.loaded_entries = []
+        # self.custom_model = {}
         self.activate()
 
         app = self.shell.props.application
@@ -271,11 +338,15 @@ class TelegramSource(RB.BrowserSource):
             if audio.is_hidden == self.suppress_is_hidden:
                 return
             self.loaded_entries.append(audio.id)
-            location = to_location(self.plugin.api.hash, audio.created_at, self.chat_id, audio.message_id)
+            location = to_location(self.plugin.api.hash, audio.created_at, self.chat_id, audio.message_id, audio.id)
+            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
                 audio.update_entry(entry, self.db)
+
+    def get_custom_model(self, idx):
+        return self.custom_model[idx]
 
     def do_copy(self):
         tg_entries = self.get_entry_view().get_selected_entries()
