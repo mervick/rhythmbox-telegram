@@ -1,11 +1,21 @@
-rhythmbox-telegram-plugin (1.0.2) stable; urgency=medium
+rhythmbox-telegram-plugin (1.0.3) unstable; urgency=medium
+
+  * Add custom columns: Size, Format, Date Added
+  * Add options in settings to change additional columns
+  * Update gschema
+  * Define settings KEY_* constants
+  * Minor fixes
+
+ -- Andrey Izman <izmanw@gmail.com>  Thu, 26 Dec 2024 09:20:17 +0200
+
+rhythmbox-telegram-plugin (1.0.2) unstable; urgency=medium
 
   * Use direct link to show telegram messages
   * Minor fixes
 
- -- Andrey Izman <izmanw@gmail.com> Tue, 24 Dec 2024 09:10:29 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 24 Dec 2024 09:10:29 +0200
 
-rhythmbox-telegram-plugin (1.0.1) stable; urgency=medium
+rhythmbox-telegram-plugin (1.0.1) unstable; urgency=medium
 
   * Add plugin context menu
   * Hide actions hotkeys on toolbar
@@ -15,7 +25,7 @@ rhythmbox-telegram-plugin (1.0.1) stable; urgency=medium
 
  -- Andrey Izman <izmanw@gmail.com>  Sat, 21 Dec 2024 08:26:51 +0200
 
-rhythmbox-telegram-plugin (1.0) stable; urgency=medium
+rhythmbox-telegram-plugin (1.0.0) unstable; urgency=medium
 
   * Initial release.
 
