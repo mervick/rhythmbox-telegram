@@ -55,8 +55,6 @@ class TgFormatColumn:
         entry = model.get_value(iter, 0)
         idx = get_location_audio_id(get_entry_location(entry))
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[1])
-        # audio = self.source.plugin.storage.get_entry_audio(entry)
-        # cell.set_property("text", "%s" % audio.get_file_ext())
 
 
 class TgSizeColumn:
@@ -87,8 +85,6 @@ class TgSizeColumn:
         entry = model.get_value(iter, 0)
         idx = get_location_audio_id(get_entry_location(entry))
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[0])
-        # audio = self.source.plugin.storage.get_entry_audio(entry)
-        # cell.set_property("text",  "%s" % audio.size)
 
 
 state_icons = {
@@ -264,6 +260,7 @@ class TelegramSource(RB.BrowserSource):
         self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
         TgSizeColumn(self)
         TgFormatColumn(self)
+        self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
         self.state_column = TgStateColumn(self) # noqa
         # self.loaded_entries = []
         # self.custom_model = {}
@@ -312,7 +309,7 @@ class TelegramSource(RB.BrowserSource):
     def do_selected(self):
         self.plugin.source = self
         self.state_column.activate()
-        self.get_entry_view().set_sorting_order("Location", Gtk.SortType.DESCENDING)
+        self.get_entry_view().set_sorting_order("Date Added", Gtk.SortType.DESCENDING)
         self.bar = DownloadBar(self.plugin)
         self.bar.activate(self)
 
