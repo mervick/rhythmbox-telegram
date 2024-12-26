@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.rhythmbox.source">
+  <schema id="org.gnome.rhythmbox.plugins.telegram.source" path="/org/gnome/rhythmbox/plugins/telegram/source/">
     <key name="sorting" type="(sb)">
       <default>('Artist',true)</default>
       <summary>The sorting column and order</summary>
@@ -119,7 +119,31 @@
       <description>Choose which audio files to display: only visible, previously hidden, or all audio files.</description>
     </key>
 
-    <child name="source" schema="org.gnome.rhythmbox.source"/>
+    <key name="rating-column" type="b">
+      <default>true</default>
+      <summary>Show Rating column</summary>
+      <description>Displays the rating column for tracks in the playlist.</description>
+    </key>
+
+    <key name="date-added-column" type="b">
+      <default>true</default>
+      <summary>Show Date Added column</summary>
+      <description>Shows the date when the track was added to the channel.</description>
+    </key>
+
+    <key name="file-size-column" type="b">
+      <default>true</default>
+      <summary>Show File Size column</summary>
+      <description>Displays the size of the audio file in the playlist.</description>
+    </key>
+
+    <key name="audio-format-column" type="b">
+      <default>true</default>
+      <summary>Show Audio Format column</summary>
+      <description>Shows the audio file format (e.g., MP3, FLAC, etc.).</description>
+    </key>
+
+    <child name="source" schema="org.gnome.rhythmbox.plugins.telegram.source"/>
   </schema>
 </schemalist>
 
