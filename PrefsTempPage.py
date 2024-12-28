@@ -81,6 +81,7 @@ class PrefsTempPage(PrefsPage):
     ui_file = 'ui/prefs/temp.ui'
     _is_calculating = False
     temp_dir = None
+    temp_path_entry = None
 
     def _create_widget(self):
         self._is_calculating = False
@@ -104,13 +105,14 @@ class PrefsTempPage(PrefsPage):
         self.prefs.connect('api-connect', self.upd_temp_dir)
         self.prefs.connect('api-disconnect', self.upd_temp_dir)
 
-    def upd_temp_dir(self):
+    def upd_temp_dir(self, obj=None):
         if self.plugin.api and self.plugin.api.temp_dir:
             self.temp_dir = self.plugin.api.temp_dir
         else:
             self.temp_dir = None
-        self.temp_path_entry.set_text(self.temp_dir if self.temp_dir is not None else "")
-        self.calculate_size()
+        if self.temp_path_entry is not None:
+            self.temp_path_entry.set_text(self.temp_dir if self.temp_dir is not None else "")
+            self.calculate_size()
 
     def calculate_size(self):
         if self.temp_dir is None:
