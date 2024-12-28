@@ -2,7 +2,7 @@
 <schemalist>
   <schema id="org.gnome.rhythmbox.plugins.telegram.source" path="/org/gnome/rhythmbox/plugins/telegram/source/">
     <key name="sorting" type="(sb)">
-      <default>('Artist',true)</default>
+      <default>('Date Added', false)</default>
       <summary>The sorting column and order</summary>
       <description>The title of the column to sort on, and the order to sort in (true for ascending, false for descending)</description>
     </key>
