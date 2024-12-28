@@ -129,8 +129,8 @@ def get_entry_location(entry):
 def is_same_entry(entry1, entry2):
     return get_entry_location(entry1) == get_entry_location(entry2)
 
-def to_location(api_hash, created_at, chat_id, message_id, audio_id):
-    return 'tg://%s/%s/%s/%s/%s' % (api_hash, created_at, chat_id, message_id, audio_id)
+def to_location(api_hash, chat_id, message_id, audio_id):
+    return 'tg://%s/%s/%s/%s' % (api_hash, chat_id, message_id, audio_id)
 
 def get_location_audio_id(location):
     return location.split('/')[-1]

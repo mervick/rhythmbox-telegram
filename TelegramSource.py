@@ -234,6 +234,7 @@ class TelegramSource(RB.BrowserSource):
         RB.BrowserSource.__init__(self)
         self.app = Gio.Application.get_default()
         self.initialised = False
+        self.activated = False
         self.shell = None
         self.db = None
         self.entry_type = None
@@ -259,6 +260,12 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = chat_id
         self.chat_title = chat_title
         self.loader = None
+        self.init_columns()
+        self.activate()
+        # add shared menu (add to playlist)
+        self.set_property("playlist-menu", self.shell.props.application.get_shared_menu("playlist-page-menu"))
+
+    def init_columns(self):
         if self.plugin.account.settings[KEY_RATING_COLUMN]:
             self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
         if self.plugin.account.settings[KEY_FILE_SIZE_COLUMN]:
@@ -268,20 +275,17 @@ class TelegramSource(RB.BrowserSource):
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
             self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
         self.state_column = TgStateColumn(self) # noqa
-        # self.loaded_entries = []
-        # self.custom_model = {}
-        self.activate()
-
-        app = self.shell.props.application
-        self.set_property("playlist-menu", app.get_shared_menu("playlist-page-menu"))
 
     def activate(self):
+        self.activated = True
         self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
         self.props.entry_type.activate()
 
     def deactivate(self):
-        self.db.disconnect(self.entry_updated_id)
-        self.props.entry_type.deactivate()
+        if self.activated:
+            self.activated = False
+            self.db.disconnect(self.entry_updated_id)
+            self.props.entry_type.deactivate()
 
     def on_entry_changed(self, db, entry, changes):
         if self.entry_type != entry.get_entry_type():
@@ -341,7 +345,7 @@ class TelegramSource(RB.BrowserSource):
             if audio.is_hidden == self.suppress_is_hidden:
                 return
             self.loaded_entries.append(audio.id)
-            location = to_location(self.plugin.api.hash, audio.created_at, self.chat_id, audio.message_id, audio.id)
+            location = to_location(self.plugin.api.hash, self.chat_id, audio.message_id, audio.id)
             self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
