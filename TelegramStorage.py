@@ -151,8 +151,8 @@ class TgAudio:
     def is_file_exists(self):
         isfile = self.is_downloaded and self.local_path and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
-            print('file not exists, is_downloaded: %s, len: %s, is_file: %s, path: %s' %
-                  (self.is_downloaded, len(self.local_path) > 1, os.path.isfile(self.local_path), self.local_path))
+            # print('file not exists, is_downloaded: %s, len: %s, is_file: %s, path: %s' %
+            #       (self.is_downloaded, len(self.local_path) > 1, os.path.isfile(self.local_path), self.local_path))
             self.is_downloaded = False
         return isfile
 
