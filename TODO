@@ -3,15 +3,11 @@
 * update state for entries after deleting temp files
 * sync play_count, rating song entry_type with tg entry_type
 * change is_moved & is_downloaded when user deletes song entry
-* fix reloading sources by saving entry types
 * add option "ask" in the resolve variants, create dialog which asks what to do when downloaded file already exists
 * reduce the frequency of writes to the storage (playlists)
-* improve loading playlists
 * fix crash when playing from 1 tg source and downloading at the same time from another tg source
 * loading next/prev song when shuffle is enabled
 * ability to hide already hidden tracks across channels
-* fix update temp_dir in PrefsTemp after connecting
-* fix update view group after connecting
 * detect existing directories in a case-insensitive manner
 * add options to preload prev/next songs
 * improve loading channels, fix hang on show settings
