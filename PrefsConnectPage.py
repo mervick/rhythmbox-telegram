@@ -158,13 +158,15 @@ class PrefsConnectPage(PrefsPage):
             else:
                 disconnect_api()
 
-        def set_state(state):
+        def set_state(state, init_connection=False):
             print('set_state %s' % state)
             self.loading = False
             update_connect(state)
             self.prefs.account.set_connected(state)
 
             if state:
+                if init_connection:
+                    self.prefs.plugin.connect_api()
                 self.prefs.emit('api-connect')
                 print('emit.channels-fetch')
                 self.prefs.emit('channels-fetch')
@@ -233,7 +235,7 @@ class PrefsConnectPage(PrefsPage):
                 except RuntimeError as e:
                     show_error(_("Unable to login Telegram"), e, parent=self.box)
 
-                set_state(self.api.state == AuthorizationState.READY)
+                set_state(self.api.state == AuthorizationState.READY, True)
             else:
                 set_state(False)
 
