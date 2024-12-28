@@ -17,7 +17,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import json
-from gi.repository import GObject, Gtk, Gio
+from gi.repository import GObject, Gtk, Gio, GLib
 from TelegramAccount import KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP
 
 
@@ -33,8 +33,8 @@ def set_combo_text_column(combo, col):
 class PrefsPage(GObject.GObject):
     def __init__(self, prefs, name=None, ui_file=None, main_box=None):
         self.box = Gtk.Box(hexpand=True)
-        # init vars
-        self._changes = {}
+        # init changes with current data
+        self._changes = {KEY_CONNECTED: json.dumps(prefs.plugin.connected)}
         self.has_errors = []
         # set custom values
         self.prefs = prefs
@@ -76,16 +76,14 @@ class PrefsPage(GObject.GObject):
             self.has_errors.clear()
 
     def on_change(self, name, value):
-        print('==ON_CHANGE %s %s' % (name, value))
-        txt = json.dumps(value)
-        reload = False
-        if name not in self._changes or self._changes[name] != txt:
-            self._changes[name] = txt
-            if name in [KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP]:
+        if name in [KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP]:
+            dump = json.dumps(value)
+            reload = False
+            if name not in self._changes or self._changes[name] != dump:
+                self._changes[name] = dump
                 reload = True
-        if reload:
-            print('===EMIT1.reload_sources')
-            self.prefs.plugin.emit('reload_sources')
+            if reload:
+                GLib.idle_add(self.prefs.plugin.emit, 'reload_display_pages')
 
     def get_window(self):
         return self.ui.get_object('window')
