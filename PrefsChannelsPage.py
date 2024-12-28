@@ -34,6 +34,8 @@ class PrefsChannelsPage(PrefsPage):
         self.on_change(KEY_CHANNELS, [channel["id"] for channel in v])
 
     def on_channels_clear(self, obj=None):
+        self.search_list_box.clear_selected(False)
+        self.search_list_box.clear_list()
         self.search_list_box.reset()
         self.prefs.account.settings.set_string(KEY_CHANNELS, '[]')
 
