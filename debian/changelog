@@ -1,3 +1,18 @@
+rhythmbox-telegram-plugin (1.0.4) unstable; urgency=medium
+
+  * Some improves in source, update to_location()
+  * Fix upd_temp_dir() on signal
+  * Update default gschema value
+  * Prefs: emit reload_display_pages only after changes
+  * Prefs set init value to compare changes
+  * Improve reload_display_pages()
+  * Add delete_display_pages(), get_display_group(), connect_api()
+  * Fix plugin api connection
+  * Fix clear search list on disconnect api
+  * Minor fixes
+
+ -- Andrey Izman <izmanw@gmail.com>  Sat, 28 Dec 2024 22:06:28 +0200
+
 rhythmbox-telegram-plugin (1.0.3) unstable; urgency=medium
 
   * Add custom columns: Size, Format, Date Added
