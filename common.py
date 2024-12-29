@@ -306,24 +306,6 @@ def show_error(title, description=None, parent=None): # noqa
 #
 #     return 'dark' if theme != -1 or dark else 'light'
 
-def encrypt(original_text, password):
-    def pad(s):
-        return s + (AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size)
-    key = hashlib.sha256(password.encode('utf-8')).digest()
-    raw = pad(original_text)
-    iv = get_random_bytes(AES.block_size)
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    return base64.b64encode(iv + cipher.encrypt(raw.encode())).decode('utf-8')
-
-def decrypt(encrypted_text, password):
-    def unpad(s):
-        return s[:-ord(s[len(s) - 1:])]
-    encrypted_text = base64.b64decode(encrypted_text)
-    key = hashlib.sha256(password.encode('utf-8')).digest()
-    iv = encrypted_text[:AES.block_size]
-    cipher = AES.new(key, AES.MODE_CBC, iv)
-    return unpad(cipher.decrypt(encrypted_text[AES.block_size:])).decode('utf-8')
-
 def pretty_file_size(size_bytes, digits=2):
     if size_bytes == 0:
         return "0 bytes"
