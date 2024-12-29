@@ -183,9 +183,13 @@ class TelegramApi(GObject.Object):
             raise TelegramAuthStateError(self.state)
 
         self.storage = TelegramStorage(self, self.files_dir)
+        if self.state:
+            self.start_update_chats()
+        else:
+            self.stop_update_chats()
         return self.state
 
-    def _update_new_chat(self, update):
+    def _update_new_chat_cb(self, update):
         if 'chat' in update and 'id' in update['chat']:
             chat_id = update['chat']['id']
             self.chats.append(chat_id)
@@ -193,101 +197,94 @@ class TelegramApi(GObject.Object):
             # if self._update and self._updater:
             #     self._updater(self.chats_info)
 
-    def _load_chats_async(self):
-        r = self.tg.call_method('loadChats', {
-            'limit': 100,
-        })
-        r.wait()
-
-    def _listen_chats(self):
+    def start_update_chats(self):
         if not self._is_listen_chats:
             self._is_listen_chats = True
-            self.tg.add_update_handler('updateNewChat', self._update_new_chat)
+            self.tg.add_update_handler('updateNewChat', self._update_new_chat_cb)
 
-    def _stop_chats(self):
-        self.tg.remove_update_handler('updateNewChat', self._update_new_chat)
-
-    def _get_chats_async(self):
-        r = self.tg.get_chats(
-            limit=100
-        )
-        r.wait()
-
-        if not r.update or not r.update['total_count']:
-            return 0
-
-        for id in r.update['chat_ids']:
-            if id not in self.chats:
-                self.chats.append(id)
-
-        # self.chats = r.update['chat_ids']
-        return r.update['total_count']
-
-    def _load_chats_info_async(self):
-        # self.chats_info = {}
-        for chat_id in self.chats:
-            r = self.tg.get_chat(chat_id)
-            r.wait()
-            if not r.update or not r.update['@type']:
-                raise Exception('Cannot load chat info')
-            if r.update['id'] != chat_id:
-                raise Exception('Invalid chat id')
-
-            self.chats_info[chat_id] = get_chat_info(r.update)
+    def stop_update_chats(self):
+        self.tg.remove_update_handler('updateNewChat', self._update_new_chat_cb)
 
     def _get_joined_chats(self):
         chats = dict()
-        cache = TgCache(TgCache.KEY_CHANNELS)
-        if cache.get() is not None:
-            chats = cache.get()
+        # cache = TgCache(TgCache.KEY_CHANNELS)
+        # if cache.get() is not None:
+        #     chats = cache.get()
         for k in self.chats_info.keys():
             if k in self.chats:
                 chats[k] = self.chats_info[k]
-        cache.set(chats)
+        # cache.set(chats)
         return chats
 
     def _chats_idle_cb(self, data):
         step = data.get("step", 0)
+        r = data.get("result", None)
 
-        # start, reset chats, listen, get chats
+        # Step 0. Get first 100 chat ids
         if step == 0:
-            # self._stop_chats()
-            # self.chats = []
-            # self.chats_info = {}
-            self._listen_chats()
-            self._get_chats_async()
+            # no result, call tg.get_chats
+            if not r:
+                # max limit is 100
+                data['result']  = self.tg.get_chats(limit=100)
+                return True
+            # wait to load
+            if not r._ready.is_set():
+                return True
+            data['result'] = None
+            # save chats ids
+            for chat_id in r.update['chat_ids']:
+                if chat_id not in self.chats:
+                    self.chats.append(chat_id)
+            # next step
             data["step"] = 1
 
-        # load chats info
+        # Step 1. Loading chats info by ids
         elif step == 1:
             idx = data.get("idx", 0)
-            while idx < len(self.chats) and self.chats[idx] in self.chats_info:
-                # logger.debug('== skip chat_id %s' % self.chats[idx])
-                idx += 1
-            if idx < len(self.chats):
-                # logger.debug('== load chat_id %s' % self.chats[idx])
-                chat_id = self.chats[idx]
-                r = self.tg.get_chat(chat_id)
-                r.wait()
-                self.chats_info[chat_id] = get_chat_info(r.update)
-                data["idx"] = idx + 1
-            else:
-                data["step"] = 2
+            # no result, call get_chat by id
+            if not r:
+                # get idx of not loaded chat
+                while idx < len(self.chats) and self.chats[idx] in self.chats_info:
+                    idx += 1
+                if idx < len(self.chats):
+                    chat_id = self.chats[idx]
+                    print('get_chat %s' % chat_id)
+                    data['result'] = self.tg.get_chat(chat_id)
+                else:
+                    # all chats loaded, move to next step
+                    data['result'] = None
+                    data["step"] = 2
+                return True
+            # wait to load
+            if not r._ready.is_set():
+                return True
+            data['result'] = None
+            # save chat info, increment idx
+            chat_id = self.chats[idx]
+            self.chats_info[chat_id] = get_chat_info(r.update)
+            data["idx"] = idx + 1
 
-        # load chats
+        # Step 2. Load chats
         elif step == 2:
-            total_count = len(self.chats)
-            self._load_chats_async()
-            logger.debug('%d %d %d' % (total_count, len(self.chats), len(self.chats_info.keys())))
-            if total_count >= len(self.chats):
-                data["idx"] = data.get('idx', 0) + 1
-                if data["idx"] > 3:
-                    data["step"] = 3
-                    self.total_count = total_count
+            # no result, call loadChats
+            if not r:
+                # max limit is 100
+                data['result'] = self.tg.call_method('loadChats', {'limit': 100})
+                return True
+            # wait to load
+            if not r._ready.is_set():
+                return True
+            data['result'] = None
+            data["idc"] = data.get('idc', 0) + 1
+            # call loadChats 4 times (> 400 chats?)
+            if data["idc"] >= 4:
+                # save total_count
+                self.total_count = len(self.chats)
+                # next step
+                data["step"] = 3
 
-        # callback, stop
+        # All chats loaded, callback
         else:
-            # self._stop_chats()
             data["update"](self._get_joined_chats())
             return False
         return True
@@ -300,10 +297,7 @@ class TelegramApi(GObject.Object):
         self.chats_info = {}
 
     def get_chats_idle(self, update):
-        if not self.chats:
-            Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
-            return
-        update(self._get_joined_chats())
+        Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
 
     def load_message_idle(self, chat_id, message_id, done=empty_cb, cancel=empty_cb):
         logger.debug('%s %s %s %s' % (chat_id, message_id, done, cancel))
@@ -440,11 +434,11 @@ class TelegramApi(GObject.Object):
                 cancel()
                 return
             update['data'] = data
-            self._download_audio_idle(data, priority=priority, done=set_file, cancel=cancel)
+            self._download_audio_idle_cb(data, priority=priority, done=set_file, cancel=cancel)
 
         self.load_message_idle(chat_id, message_id, done=download, cancel=cancel)
 
-    def _download_audio_idle(self, data, priority=1, done=empty_cb, cancel=empty_cb):
+    def _download_audio_idle_cb(self, data, priority=1, done=empty_cb, cancel=empty_cb):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
             logger.debug(data.get('content'))
