@@ -15,13 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-TABLE_CACHE = '''
-CREATE TABLE cache (
-   `key` INTEGER PRIMARY KEY,
-   `data` TEXT DEFAULT NULL
-);
-'''
-
 TABLE_PLAYLIST = '''
 CREATE TABLE playlist (
    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,17 +49,5 @@ CREATE TABLE audio (
    `play_count` INTEGER DEFAULT '0',
    `rating` INT(1) DEFAULT '0',
     UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
-);
-'''
-
-TABLE_INFO = '''
-CREATE TABLE info (
-   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-   `chat_id` INTEGER NOT NULL,
-   `message_id` INTEGER NOT NULL,
-   `caption` TEXT NOT NULL,
-   `date` INTEGER NOT NULL,
-   `info` TEXT NOT NULL,
-    UNIQUE (`message_id`) ON CONFLICT REPLACE
 );
 '''

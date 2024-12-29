@@ -22,7 +22,7 @@ import logging
 import schema as SQL
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
-from common import get_location_data, encrypt, decrypt, set_entry_state, show_error
+from common import get_location_data, set_entry_state, show_error
 
 logger = logging.getLogger(__name__)
 
@@ -249,41 +249,6 @@ class TgAudio:
             db.commit()
 
 
-class TgCache:
-    KEY_CHANNELS = 1
-
-    def __init__(self, key, default=None):
-        self.storage = TelegramStorage.loaded()
-        self.key = key
-        self.data = None
-        if not self.read(default):
-            self.storage.insert('cache', {'key': self.key})
-
-    def read(self, default=None):
-        data = self.storage.select('cache', {'key': self.key})
-        if data is not None and len(data) >= 2:
-            try:
-                decrypted = decrypt(data[1], self.storage.api.api_hash)
-                self.data = json.loads(decrypted)
-                return True
-            except:
-                pass
-        self.data = default
-        return False
-
-    def set(self, data):
-        try:
-            encrypted = encrypt(json.dumps(data), self.storage.api.api_hash)
-            self.data = data
-        except:
-            encrypted = None
-            self.data = None
-        return self.storage.update('cache', {'data': encrypted}, {'key': self.key}, 1)
-
-    def get(self):
-        return self.data
-
-
 class TelegramStorage:
     _instance = None
 
@@ -300,7 +265,6 @@ class TelegramStorage:
 
         if create_db:
             try:
-                self.db.execute(SQL.TABLE_CACHE)
                 self.db.execute(SQL.TABLE_PLAYLIST)
                 self.db.execute(SQL.TABLE_AUDIO)
                 self.db.commit()

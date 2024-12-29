@@ -28,7 +28,7 @@ from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
 from common import MessageType, audio_content_set, API_ERRORS, get_content_type, is_msg_valid
 from common import get_chat_info, empty_cb, cb, show_error
-from TelegramStorage import TelegramStorage, TgCache
+from TelegramStorage import TelegramStorage
 
 logger = logging.getLogger(__name__)
 
@@ -207,13 +207,9 @@ class TelegramApi(GObject.Object):
 
     def _get_joined_chats(self):
         chats = dict()
-        # cache = TgCache(TgCache.KEY_CHANNELS)
-        # if cache.get() is not None:
-        #     chats = cache.get()
         for k in self.chats_info.keys():
             if k in self.chats:
                 chats[k] = self.chats_info[k]
-        # cache.set(chats)
         return chats
 
     def _chats_idle_cb(self, data):
@@ -290,8 +286,6 @@ class TelegramApi(GObject.Object):
         return True
 
     def reset_chats(self):
-        cache = TgCache(TgCache.KEY_CHANNELS)
-        cache.set({})
         self.total_count = 0
         self.chats = []
         self.chats_info = {}
