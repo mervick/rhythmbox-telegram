@@ -15,14 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import concurrent.futures
 import sqlite3
 import json
 import logging
 import schema as SQL
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
-from common import get_location_data, set_entry_state, show_error
+from common import get_location_data, set_entry_state
 
 logger = logging.getLogger(__name__)
 
@@ -67,15 +66,6 @@ class TgPlaylist:
         if self.id != 0:
             return TelegramStorage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
         return TelegramStorage.loaded().insert('playlist', playlist)
-
-
-def run_with_timeout(func, timeout):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(func)
-        try:
-            return future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
-            return None
 
 
 class TgAudio:
