@@ -99,7 +99,7 @@ After obtaining the API ID, in the plugin settings, input the received `api_id` 
 
 After successfully connecting Telegram to Rhythmbox, in the plugin settings, you'll be able to add Telegram chats to listen to your favorite music.
 
-## Telegram API Usage and Operations
+## Telegram API Usage
 
 The plugin uses the Telegram API strictly for reading purposes.  
 **No write operations are performed**.  
