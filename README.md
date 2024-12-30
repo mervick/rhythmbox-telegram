@@ -103,7 +103,8 @@ After successfully connecting Telegram to Rhythmbox, in the plugin settings, you
 
 ## Telegram API Usage and Operations
 
-The plugin uses the Telegram API strictly for reading purposes. **No write operations are performed**.  
+The plugin uses the Telegram API strictly for reading purposes.  
+**No write operations are performed**.  
 
 The following actions are carried out:
 
@@ -139,39 +140,43 @@ The plugin uses only the following methods and handlers:
 
 The plugin caches information about retrieved audio files. The audio file list is initially fetched in small batches to stay within API quota limits. If the initial retrieval is incomplete, remaining tracks will be loaded later. The plugin automatically fetches new files and continues to load any remaining tracks with intervals of 5-10 minutes, both during initialization and while retrieving new content. This approach ensures efficient, quota-compliant, and timely updates of new content.
 
-## Data Encryption and Storage
+## Data Storage
 
-We strive to protect your data by implementing various security measures:
+We strive to protect your data by implementing various security measures.
 
 ### Authentication Data
 
-Authentication data is encrypted and stored within the GNOME Keyring. This ensures that sensitive information is securely protected within the GNOME environment, providing an additional layer of security against unauthorized access.
+Authentication data is encrypted and stored within the GNOME Keyring. This ensures that it is securely protected within the GNOME environment.
 
-### Data from Telegram
+### Telegram Data
 
-Data obtained from Telegram is encrypted using a user-provided encryption key and managed by the official Telegram client, [TDLib](https://core.telegram.org/tdlib).  
-The encrypted databases are stored at: `~/.local/share/rhythmbox/telegram/*/database`
+Data obtained from Telegram is encrypted using a user-provided encryption key and managed by the official Telegram client [TDLib](https://core.telegram.org/tdlib).  
+The encrypted databases are stored at `~/.local/share/rhythmbox/telegram/*/database`  
+This database is required for TDLib to work.
 
 ### Temporary Audio Files
 
 Temporary audio files are stored at `~/.local/share/rhythmbox/telegram/*/files/music`  
-You can delete these files at any time. However, please note that deleting these files manually will not remove their entries from the database. For safe removal, you can delete audio files through the plugin settings, ensuring the database integrity is maintained.
+You can delete these files at any time.  
+You can also delete these files through the plugin settings.
 
-### Additional Data Storage
+### Audio Metadata
 
-**Audio Metadata:** We store metadata of audio files in an unencrypted format. This includes data obtained from Telegram, such as the chat identifier, message identifier within the chat, publication date and time, file size, file name, audio tags and the file's location in the file system.
-
-**Chat Information:** We store information about your chats, including chat names and identifiers, in an encrypted format to ensure privacy and security.
+We store metadata of audio files in an unencrypted format.  
+This includes: chat identifier, message identifier of audio file within the chat, publication date and time, file size, file name, audio meta tags and the file's location in the file system.
 
 This data is stored within the database at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`
+
+This is a general database of all metadata about audio files.
+Data is loaded only once, and later data is loaded if new audio appear. Information about hidden and downloaded audio is also stored here. If you delete this database, the information will have to be fetched again.
 
 
 ## License
 
-[Rhythmbox-Telegram](https://github.com/mervick/rhythmbox-telegram) is an open-source plugin distributed under the [GPL-3 license](https://github.com/mervick/rhythmbox-telegram/blob/master/LICENCE), ensuring that it remains freely accessible to all users and encouraging community collaboration and contribution.
+[Rhythmbox-Telegram](https://github.com/mervick/rhythmbox-telegram) is an open-source plugin distributed under the [GPL-3 license](https://github.com/mervick/rhythmbox-telegram/blob/master/LICENCE).
 
 
 ## Contribute
 
-If you like our plugin you can support the ongoing development and maintenance of Rhythmbox-Telegram by spreading the word about the plugin or making contributions via PayPal or cryptocurrency donations, ensuring its continued improvement and availability for the community.
+If you like our plugin, you can support Rhythmbox-Telegram by spreading the word about the plugin and don’t forget to give a star to the repository on GitHub.
 
