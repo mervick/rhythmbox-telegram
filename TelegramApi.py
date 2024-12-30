@@ -203,6 +203,7 @@ class TelegramApi(GObject.Object):
             self.tg.add_update_handler('updateNewChat', self._update_new_chat_cb)
 
     def stop_update_chats(self):
+        self._is_listen_chats = False
         self.tg.remove_update_handler('updateNewChat', self._update_new_chat_cb)
 
     def _get_joined_chats(self):
