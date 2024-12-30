@@ -1,3 +1,11 @@
+rhythmbox-telegram-plugin (1.0.5) unstable; urgency=medium
+
+  * Improved loading chats
+  * Remove TgCache, cache not used anymore
+  * Minor fixes
+
+ -- Andrey Izman <izmanw@gmail.com>  Mon, 30 Dec 2024 02:14:09 +0200
+
 rhythmbox-telegram-plugin (1.0.4) unstable; urgency=medium
 
   * Some improves in source, update to_location()
