@@ -22,8 +22,7 @@ from common import get_location_audio_id, pretty_file_size
 from common import file_uri, get_entry_state, set_entry_state
 from TelegramLoader import PlaylistLoader
 from TelegramStorage import TgAudio
-from TelegramAccount import KEY_AUDIO_VISIBILITY, KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, \
-    KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -242,14 +241,14 @@ class TelegramSource(RB.BrowserSource):
         self.plugin = None
         self.chat_id = None
         self.chat_title = None
+        self.visibility = None
         self.bar = None
         self.bar_ui = None
         self.entry_updated_id = None
-        self.suppress_is_hidden = None
         self.loaded_entries = []
         self.custom_model = {}
 
-    def setup(self, plugin, chat_id, chat_title):
+    def setup(self, plugin, chat_id, chat_title, visibility):
         self.initialised = False
         shell = self.props.shell
         self.shell = shell
@@ -259,6 +258,7 @@ class TelegramSource(RB.BrowserSource):
         self.plugin = plugin
         self.chat_id = chat_id
         self.chat_title = chat_title
+        self.visibility = visibility
         self.loader = None
         self.init_columns()
         self.activate()
@@ -325,25 +325,19 @@ class TelegramSource(RB.BrowserSource):
 
         if not self.initialised:
             self.initialised = True
-            visibility = self.plugin.settings[KEY_AUDIO_VISIBILITY]
-            if visibility == 'visible':
-                self.suppress_is_hidden = 1
-            elif visibility == 'hidden':
-                self.suppress_is_hidden = 0
-            GLib.idle_add(self.add_entries, visibility)
+            GLib.idle_add(self.add_entries)
 
         self.plugin.add_plugin_menu()
 
-        self.loader = PlaylistLoader(self.chat_id, self.add_entry)
-        self.loader.start()
+        if self.visibility in (1, None):
+            self.loader = PlaylistLoader(self.chat_id, self.add_entry)
+            self.loader.start()
 
-    def add_entries(self, visibility):
-        self.plugin.storage.load_entries(self.chat_id, self.add_entry, visibility)
+    def add_entries(self):
+        self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.visibility)
 
     def add_entry(self, audio):
         if audio.id not in self.loaded_entries:
-            if audio.is_hidden == self.suppress_is_hidden:
-                return
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, self.chat_id, audio.message_id, audio.id)
             self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
