@@ -34,6 +34,7 @@ class AudioTempLoader(metaclass=SingletonMeta):
         self.entries = []
         self._running = False
         self._idx = 0
+        self._is_hidden = False
 
     def is_downloading(self, entry):
         if self._running:
@@ -69,11 +70,15 @@ class AudioTempLoader(metaclass=SingletonMeta):
 
     def _process(self, audio):
         entry = self.entries[self._idx]
+        if self._is_hidden:
+            self._is_hidden = False
+            audio.save({"is_hidden": True})
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next(1000)
 
     def _next(self, delay=1000):
+        self._is_hidden = False
         del self.entries[self._idx]
         self._idx = len(self.entries) - 1
         if self._idx < 0:
@@ -94,6 +99,7 @@ class AudioTempLoader(metaclass=SingletonMeta):
                 self.plugin.db.commit()
                 self._next(20)
             else:
+                self._is_hidden = audio.is_hidden
                 audio.download(success=self._process, fail=self._next)
 
 
