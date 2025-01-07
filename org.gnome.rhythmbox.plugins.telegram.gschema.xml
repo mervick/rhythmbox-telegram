@@ -97,17 +97,6 @@
       <description>Group where your playlists will be organized</description>
     </key>
 
-    <key name="color-scheme" type="s">
-      <default>'auto'</default>
-      <choices>
-        <choice value='auto'/>
-        <choice value='dark'/>
-        <choice value='light'/>
-      </choices>
-      <summary>Color scheme</summary>
-      <description>Choose the color scheme for the application's interface.</description>
-    </key>
-
     <key name="audio-visibility" type="s">
       <default>'visible'</default>
       <choices>
@@ -141,6 +130,24 @@
       <default>true</default>
       <summary>Show Audio Format column</summary>
       <description>Shows the audio file format (e.g., MP3, FLAC, etc.).</description>
+    </key>
+
+    <key name="preload-next-track" type="b">
+      <default>true</default>
+      <summary>Preload next audio</summary>
+      <description>Preload next audio in the playlist.</description>
+    </key>
+
+    <key name="preload-prev-track" type="b">
+      <default>true</default>
+      <summary>Preload previous audio</summary>
+      <description>Preload previous audio in the playlist.</description>
+    </key>
+
+    <key name="preload-hidden-track" type="b">
+      <default>false</default>
+      <summary>Preload hidden tracks</summary>
+      <description>Preload tracks even if it was hidden in the playlist.</description>
     </key>
 
     <child name="source" schema="org.gnome.rhythmbox.plugins.telegram.source"/>
