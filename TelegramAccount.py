@@ -40,6 +40,10 @@ KEY_DATE_ADDED_COLUMN = "date-added-column"
 KEY_FILE_SIZE_COLUMN = "file-size-column"
 KEY_AUDIO_FORMAT_COLUMN = "audio-format-column"
 
+KEY_PRELOAD_NEXT_TRACK = "preload-next-track"
+KEY_PRELOAD_PREV_TRACK = "preload-prev-track"
+KEY_PRELOAD_HIDDEN_TRACK = "preload-hidden-track"
+
 
 Secret = None
 if rbconfig.libsecret_enabled:
@@ -68,8 +72,7 @@ class TelegramAccount(metaclass=SingletonMeta):
             return
         self.activated = True
 
-        schema_source = Gio.SettingsSchemaSource.new_from_directory(
-            self.plugin.plugin_info.get_data_dir(), Gio.SettingsSchemaSource.get_default(), False)
+        schema_source = Gio.SettingsSchemaSource.get_default()
         schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
 
