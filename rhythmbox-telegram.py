@@ -23,10 +23,24 @@ from gi.repository import Peas, PeasGtk # noqa
 from TelegramLoader import AudioDownloader, AudioTempLoader
 from TelegramSource import TelegramSource
 from TelegramApi import TelegramApi, TelegramAuthError
-from TelegramConfig import TelegramConfig  # TelegramConfig is REQUIRED for showing config page
+from TelegramConfig import TelegramConfig  # import TelegramConfig is REQUIRED for showing settings page
 from TelegramAccount import TelegramAccount, KEY_CHANNELS, KEY_PAGE_GROUP
+from TelegramAccount import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from TelegramEntry import TelegramEntryType
 from common import get_location_data, show_error
+
+
+def show_source(source_list):
+    for source in source_list:
+        source.show_thyself()
+
+def hide_source(source_list):
+    for source in source_list:
+        source.hide_thyself()
+
+def delete_source(source_list):
+    for source in source_list:
+        source.delete_thyself()
 
 
 class Telegram(GObject.GObject, Peas.Activatable):
@@ -176,9 +190,9 @@ class Telegram(GObject.GObject, Peas.Activatable):
     def delete_display_pages(self, permanent=False):
         for idx in self.sources:
             if permanent:
-                self.sources[idx].delete_thyself()
+                delete_source(self.sources[idx])
             else:
-                self.sources[idx].hide_thyself()
+                hide_source(self.sources[idx])
         if permanent:
             self.sources = {}
 
@@ -193,27 +207,44 @@ class Telegram(GObject.GObject, Peas.Activatable):
                 chat_id = chat['id']
                 ids.append(chat_id)
                 if chat_id in self.sources:
-                    self.sources[chat_id].show_thyself()
+                    show_source(self.sources[chat_id])
                 else:
-                    # GLib.idle_add(self.add_page, chat, group)
-                    self.add_page(chat, group)
+                    self.add_page(chat['id'], chat['title'], group)
             for idx in self.sources:
                 if idx not in ids:
-                    self.sources[idx].hide_thyself()
+                    hide_source(self.sources[idx])
         else:
             for idx in self.sources:
-                self.sources[idx].hide_thyself()
+                hide_source(self.sources[idx])
 
-    def add_page(self, chat, group):
-        source = self.register_source_for_chat(chat['id'], chat['title'])
-        self.shell.append_display_page(source, group)
+    def add_page(self, chat_id, name, group):
+        av = self.settings[KEY_AUDIO_VISIBILITY]
+        sources = []
 
-    def register_source_for_chat(self, chat_id, name):
+        if av == VAL_AV_ALL:
+            source = self.register_source(chat_id, name, None)
+            self.shell.append_display_page(source, group)
+            self.sources[chat_id] = (source,)
+            return
+
+        if av in (VAL_AV_VISIBLE, VAL_AV_DUAL):
+            source = self.register_source(chat_id, name, 1)
+            self.shell.append_display_page(source, group)
+            sources.append(source)
+
+        if av in (VAL_AV_HIDDEN, VAL_AV_DUAL):
+            hidden_name = "%s [%s]" % (name, _('Hidden'))
+            source = self.register_source(chat_id, hidden_name, 0)
+            self.shell.append_display_page(source, group)
+            sources.append(source)
+
+        self.sources[chat_id] = tuple(sources)
+
+    def register_source(self, chat_id, name, visibility):
         entry_type = TelegramEntryType(self)
         source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=self.display_icon,
             plugin=self, settings=self.settings.get_child("source"), name=name, toolbar_menu=self.toolbar)
-        self.sources[chat_id] = source
-        source.setup(self, chat_id, name)
+        source.setup(self, chat_id, name, visibility)
         entry_type.setup(source)
         self.shell.register_entry_type_for_source(source, entry_type)
         return source
