@@ -1,3 +1,21 @@
+rhythmbox-telegram-plugin (1.0.6) unstable; urgency=medium
+
+  * Fix stop_update_chats()
+  * Update settings page, add preload settings, remove view settings
+  * Move view settings to view page
+  * Preload tracks according to the settings
+  * Add preload keys, fix schema source to use default directory
+  * Remove gschemas.compiled
+  * Add audio visibility constants
+  * Fix storage load_entries visibility
+  * Source: set visibility in the setup
+  * Load sources depending on the audio visibility setting
+  * Fix hidden audio after preload
+  * Update README
+  * Update schema
+
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 07 Jan 2025 19:29:27 +0200
+
 rhythmbox-telegram-plugin (1.0.5) unstable; urgency=medium
 
   * Improved loading chats
