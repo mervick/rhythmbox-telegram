@@ -18,12 +18,11 @@ import os
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import RB
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 from PrefsPage import PrefsPage, set_combo_text_column
 from common import filepath_parse_pattern, show_error
-from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
-from TelegramAccount import KEY_CONFLICT_RESOLVE, KEY_PAGE_GROUP, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
-from TelegramAccount import KEY_LIBRARY_PATH, KEY_AUDIO_VISIBILITY
+from TelegramAccount import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
+from TelegramAccount import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -51,31 +50,10 @@ library_layout_filenames = [
     [_('Number. Title'), '%tN. %tt'],
 ]
 
-page_groups = [
-    [_('Telegram'), 'telegram'],
-    [_('Library'), 'library'],
-    [_('Shared'), 'shared'],
-    [_('Stores'), 'stores'],
-    [_('Devices'), 'devices'],
-    [_('Playlists'), 'playlists'],
-]
-
-color_schemas = [
-    [_('Auto'), 'auto'],
-    [_('Dark'), 'dark'],
-    [_('Light'), 'light'],
-]
-
 conflict_resolve_variants = [
     [_('Rename'), 'rename'],
     [_('Overwrite'), 'overwrite'],
     [_('Skip'), 'skip'],
-]
-
-audio_visibility_variants = [
-    [_('Visible Audio'), 'visible'],
-    [_('Hidden Audio'), 'hidden'],
-    [_('All Audio'), 'all'],
 ]
 
 example_tags = {
@@ -97,7 +75,6 @@ class PrefsSettingsPage(PrefsPage):
 
     def _create_widget(self):
         self._values = {}
-        self._combos_require_restart = [KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY]
 
         self.library_location_entry = self.ui.get_object('library_location_entry')
         self.library_location_btn = self.ui.get_object('library_location_btn')
@@ -105,37 +82,29 @@ class PrefsSettingsPage(PrefsPage):
         self.dir_hierarchy_combo = self.ui.get_object('dir_hierarchy_combo')
         self.name_template_combo = self.ui.get_object('name_template_combo')
         self.template_example_label = self.ui.get_object('template_example_label')
-        self.page_group_combo = self.ui.get_object('page_group_combo')
-        # self.color_scheme_combo = self.ui.get_object('color_scheme_combo')
-        self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
-        self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
-        self.rating_check = self.ui.get_object('rating_check')
-        self.date_added_check = self.ui.get_object('date_added_check')
-        self.size_check = self.ui.get_object('size_check')
-        self.format_check = self.ui.get_object('format_check')
+        self.preload_prev_check = self.ui.get_object('preload_prev_check')
+        self.preload_next_check = self.ui.get_object('preload_next_check')
+        self.preload_hidden_check = self.ui.get_object('preload_hidden_check')
 
-        self._init_check(self.rating_check, KEY_RATING_COLUMN)
-        self._init_check(self.date_added_check, KEY_DATE_ADDED_COLUMN)
-        self._init_check(self.size_check, KEY_FILE_SIZE_COLUMN)
-        self._init_check(self.format_check, KEY_AUDIO_FORMAT_COLUMN)
+        self._init_check(self.preload_prev_check, KEY_PRELOAD_PREV_TRACK)
+        self._init_check(self.preload_next_check, KEY_PRELOAD_NEXT_TRACK)
+        self._init_check(self.preload_hidden_check, KEY_PRELOAD_HIDDEN_TRACK)
 
         self.library_location_entry.set_text(self.account.get_library_path())
         self.library_location_btn.connect('clicked', self._browse_libpath_cb)
         self.library_location_entry.connect("focus-out-event", self._libpath_entry_cb)
 
         self._init_combo(self.conflict_resolve_combo, conflict_resolve_variants, KEY_CONFLICT_RESOLVE)
-        # self._init_combo(self.color_scheme_combo, color_schemas, 'color-scheme')
-        self._init_combo(self.page_group_combo, page_groups, KEY_PAGE_GROUP)
         self._init_combo(self.dir_hierarchy_combo, library_layout_paths, KEY_FOLDER_HIERARCHY)
         self._init_combo(self.name_template_combo, library_layout_filenames, KEY_FILENAME_TEMPLATE)
-        self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
 
         self._update(KEY_FILENAME_TEMPLATE, self.settings[KEY_FILENAME_TEMPLATE])
-        GLib.timeout_add(600, self._update_box)
+        self._update_check_sensitive()
 
-    def _update_box(self):
-        self.restart_warning_box.set_visible(self.plugin.require_restart_plugin)
+    def _update_check_sensitive(self):
+        sensitive = self.settings[KEY_PRELOAD_NEXT_TRACK] or self.settings[KEY_PRELOAD_PREV_TRACK]
+        self.preload_hidden_check.set_sensitive(sensitive)
 
     def _init_check(self, checkbox, name):
         value = self.settings[name]
@@ -145,9 +114,8 @@ class PrefsSettingsPage(PrefsPage):
     def _on_check_toggled(self, checkbox, name):
         is_checked = checkbox.get_active()
         self.settings.set_boolean(name, is_checked)
-        self.plugin.require_restart_plugin = True
-        self.restart_warning_box.set_visible(True)
         self.on_change(name, is_checked)
+        self._update_check_sensitive()
 
     def _init_combo(self, combo, variants, name):
         idx = 0
@@ -167,9 +135,6 @@ class PrefsSettingsPage(PrefsPage):
         if tree_iter is not None:
             model = combo.get_model()
             value = model[tree_iter][0]
-            if name in self._combos_require_restart:
-                self.plugin.require_restart_plugin = True
-                self.restart_warning_box.set_visible(True)
             self.settings.set_string(name, value)
             self._update(name, value)
             self.on_change(name, value)
