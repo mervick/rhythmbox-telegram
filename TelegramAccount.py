@@ -35,6 +35,11 @@ KEY_FILENAME_TEMPLATE = "filename-template"
 KEY_PAGE_GROUP = "page-group"
 KEY_AUDIO_VISIBILITY = "audio-visibility"
 
+VAL_AV_VISIBLE = "visible"
+VAL_AV_HIDDEN = "hidden"
+VAL_AV_ALL = "all"
+VAL_AV_DUAL = "dual"
+
 KEY_RATING_COLUMN = "rating-column"
 KEY_DATE_ADDED_COLUMN = "date-added-column"
 KEY_FILE_SIZE_COLUMN = "file-size-column"

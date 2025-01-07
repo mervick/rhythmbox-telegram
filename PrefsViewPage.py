@@ -20,10 +20,9 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk, GLib
 from PrefsPage import PrefsPage, set_combo_text_column
-from common import filepath_parse_pattern, show_error
 from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
-from TelegramAccount import KEY_PAGE_GROUP, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
-from TelegramAccount import KEY_LIBRARY_PATH, KEY_AUDIO_VISIBILITY
+from TelegramAccount import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
+from TelegramAccount import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -38,9 +37,10 @@ page_groups = [
 ]
 
 audio_visibility_variants = [
-    [_('Visible Audio'), 'visible'],
-    [_('Hidden Audio'), 'hidden'],
-    [_('All Audio'), 'all'],
+    [_('Show Visible Only'), VAL_AV_VISIBLE],
+    [_('Show Hidden Only'), VAL_AV_HIDDEN],
+    [_('Show All Tracks'), VAL_AV_ALL],
+    [_('Split Playlists by Visibility'), VAL_AV_DUAL],
 ]
 
 class PrefsViewPage(PrefsPage):

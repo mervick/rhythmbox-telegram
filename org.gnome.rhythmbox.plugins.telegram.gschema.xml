@@ -103,6 +103,7 @@
         <choice value='visible'/>
         <choice value='hidden'/>
         <choice value='all'/>
+        <choice value='dual'/>
       </choices>
       <summary>Audio visibility</summary>
       <description>Choose which audio files to display: only visible, previously hidden, or all audio files.</description>
