@@ -16,6 +16,7 @@
 
 from gi.repository import RB, GLib, GObject
 from TelegramStorage import TgAudio
+from TelegramAccount import KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 
@@ -105,16 +106,24 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         if not audio:
             return None
 
-        prev_entry = self.get_prev_entry(entry)
-        next_entry = self.get_next_entry(entry)
-        prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
-        next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
+        preload_hidden = self.plugin.account.settings[KEY_PRELOAD_HIDDEN_TRACK]
 
-        if prev_audio and not prev_audio.is_file_exists():
-            GLib.idle_add(self._load_entry_audio, prev_entry)
+        if self.plugin.account.settings[KEY_PRELOAD_PREV_TRACK]:
+            prev_entry = self.get_prev_entry(entry)
+            if preload_hidden or get_entry_state(prev_entry) != TgAudio.STATE_HIDDEN:
+                prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
 
-        if next_audio and not next_audio.is_file_exists():
-            GLib.idle_add(self._load_entry_audio, next_entry)
+                if prev_audio and not prev_audio.is_file_exists():
+                    GLib.idle_add(self._load_entry_audio, prev_entry)
+
+        # The preloader loads first what was sent last
+        if self.plugin.account.settings[KEY_PRELOAD_NEXT_TRACK]:
+            next_entry = self.get_next_entry(entry)
+            if preload_hidden or get_entry_state(next_entry) != TgAudio.STATE_HIDDEN:
+                next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
+
+                if next_audio and not next_audio.is_file_exists():
+                    GLib.idle_add(self._load_entry_audio, next_entry)
 
         if audio.is_file_exists():
             self._pending_playback_entry = None

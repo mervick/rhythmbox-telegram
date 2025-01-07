@@ -8,3 +8,5 @@
 * ability to hide already hidden tracks across channels
 * detect existing directories in a case-insensitive manner
 * add options to preload prev/next songs
+* allow re-download downloaded songs
+* add best artists
