@@ -67,6 +67,7 @@ class PrefsConnectPage(PrefsPage):
             self.prefs.page2.box.set_sensitive(connected)
             self.prefs.page3.box.set_sensitive(connected)
             self.prefs.page4.box.set_sensitive(connected)
+            self.prefs.page5.box.set_sensitive(connected)
 
             details_box.set_sensitive(enabled)
             helpbox.set_sensitive(enabled)
