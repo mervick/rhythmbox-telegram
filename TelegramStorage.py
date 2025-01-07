@@ -336,13 +336,13 @@ class TelegramStorage:
             return TgAudio(result)
         return result
 
-    def load_entries(self, chat_id, each, visibility='visible'):
+    def load_entries(self, chat_id, each, visibility=None):
         sql = 'SELECT * FROM `audio` WHERE chat_id = ?' # noqa
         data = (chat_id,)
-        if visibility == 'visible':
+        if visibility == 1:
             sql += ' AND is_hidden = ?'
             data = (chat_id, 0)
-        elif visibility == 'hidden':
+        elif visibility == 0:
             sql += ' AND is_hidden = ?'
             data = (chat_id, 1)
         cursor = self.db.cursor()
