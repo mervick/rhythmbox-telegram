@@ -1,3 +1,11 @@
+rhythmbox-telegram-plugin (1.0.7) unstable; urgency=medium
+
+  * Avoiding duplicate custom columns
+  * Add show-browser and reset-filters to toolbar
+  * Hide extra download button from toolbar
+
+ -- Andrey Izman <izmanw@gmail.com>  Wed, 08 Jan 2025 03:43:51 +0200
+
 rhythmbox-telegram-plugin (1.0.6) unstable; urgency=medium
 
   * Fix stop_update_chats()
