@@ -26,6 +26,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <attribute name="rb-menu-link">edit-menu</attribute>
         <attribute name="accel">&lt;Alt&gt;e</attribute>
       </submenu>
+      <item>
+        <attribute name="label" translatable="yes">Browse</attribute>
+        <attribute name="rb-property-bind">show-browser</attribute>
+        <attribute name="accel">&lt;Primary&gt;b</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">View All</attribute>
+        <attribute name="rb-signal-bind">reset-filters</attribute>
+      </item>
       <submenu>
         <attribute name="label" translatable="yes">Actions</attribute>
         <section>
@@ -60,10 +69,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </item>
         </section>
       </submenu>
-      <item>
-        <attribute name="label" translatable="yes">Download</attribute>
-        <attribute name="action">app.tg-download</attribute>
-      </item>
+<!--      <item>-->
+<!--        <attribute name="label" translatable="yes">Download</attribute>-->
+<!--        <attribute name="action">app.tg-download</attribute>-->
+<!--      </item>-->
     </section>
   </menu>
 </interface>
