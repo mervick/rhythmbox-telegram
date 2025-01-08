@@ -49,8 +49,10 @@ class TgFormatColumn:
 
         entry_view.append_column_custom(column, _("Format"), "tg-format", empty_cb, None, None)
         visible_columns = entry_view.get_property("visible-columns")
-        visible_columns.append('tg-format')
-        entry_view.set_property("visible-columns", visible_columns)
+
+        if 'tg-format' not in visible_columns:
+            visible_columns.append('tg-format')
+            entry_view.set_property("visible-columns", visible_columns)
 
     def data_func(self, column, cell, model, iter, *data): # noqa
         entry = model.get_value(iter, 0)
@@ -79,8 +81,10 @@ class TgSizeColumn:
 
         entry_view.append_column_custom(column, _("Size"), "tg-size", empty_cb, None, None)
         visible_columns = entry_view.get_property("visible-columns")
-        visible_columns.append('tg-size')
-        entry_view.set_property("visible-columns", visible_columns)
+
+        if 'tg-size' not in visible_columns:
+            visible_columns.append('tg-size')
+            entry_view.set_property("visible-columns", visible_columns)
 
     def data_func(self, column, cell, model, iter, *data): # noqa
         entry = model.get_value(iter, 0)
@@ -127,8 +131,10 @@ class TgStateColumn:
 
         entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
         visible_columns = entry_view.get_property("visible-columns")
-        visible_columns.append('tg-state')
-        entry_view.set_property("visible-columns", visible_columns)
+
+        if 'tg-state' not in visible_columns:
+            visible_columns.append('tg-state')
+            entry_view.set_property("visible-columns", visible_columns)
 
     def activate(self):
         if not self.timeout_id:

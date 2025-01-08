@@ -26,7 +26,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     }
 
     def __init__(self, plugin):
-        RB.RhythmDBEntryType.__init__(self, name='TelegramEntryType')
+        RB.RhythmDBEntryType.__init__(self, name='telegram', save_to_disk=False)
         self.source = None
         self.plugin = plugin
         self.shell = plugin.shell

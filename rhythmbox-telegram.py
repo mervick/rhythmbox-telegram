@@ -197,7 +197,6 @@ class Telegram(GObject.GObject, Peas.Activatable):
             self.sources = {}
 
     def do_reload_display_pages(self):
-        print('reload_display_pages()')
         selected = json.loads(self.settings[KEY_CHANNELS]) if self.connected else []
 
         if self.connected and selected:
@@ -251,15 +250,10 @@ class Telegram(GObject.GObject, Peas.Activatable):
 
     def do_deactivate(self):
         print('Telegram plugin deactivating')
-        # shell = self.object
-        # shell.props.shell_player.disconnect(self.pec_id)
-        # self.db.entry_delete_by_type(self.entry_type)
-        # self.db.commit()
         self.delete_display_pages(True)
         self.db = None
 
     def playing_entry_changed(self, sp, entry):
-        print(entry)
         self.source.playing_entry_changed(entry)
 
     def file_manager_action_cb(self, action, parameter):
