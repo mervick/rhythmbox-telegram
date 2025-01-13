@@ -17,8 +17,8 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import json
-from gi.repository import GObject, Gtk, Gio, GLib
-from TelegramAccount import KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP
+from gi.repository import GObject, Gtk, GLib
+from account import KEY_CONNECTED, KEY_CHANNELS, KEY_PAGE_GROUP
 
 
 def set_combo_text_column(combo, col):
@@ -30,7 +30,7 @@ def set_combo_text_column(combo, col):
         combo.add_attribute(text, 'text', col)
 
 
-class PrefsPage(GObject.GObject):
+class PrefsPageBase(GObject.GObject):
     def __init__(self, prefs, name=None, ui_file=None, main_box=None):
         self.box = Gtk.Box(hexpand=True)
         # init changes with current data

@@ -17,13 +17,12 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import json
-from gi.repository import GObject, Gtk
-from SearchList import SearchListBox
-from PrefsPage import PrefsPage
-from TelegramAccount import KEY_CHANNELS
+from search_list import SearchListBox
+from prefs_base import PrefsPageBase
+from account import KEY_CHANNELS
 
 
-class PrefsChannelsPage(PrefsPage):
+class PrefsChannelsPage(PrefsPageBase):
     name = _('Music Sources')
     main_box = 'channels_vbox'
     ui_file = 'ui/prefs/channels.ui'

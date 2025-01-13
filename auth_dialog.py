@@ -18,7 +18,7 @@ import rb
 from gi.repository import Gtk, GLib
 
 
-class DialogCode:
+class AuthDialog:
     def __init__(self, config, on_ok, on_cancel):
         self.ok_received = False
         self.code = None

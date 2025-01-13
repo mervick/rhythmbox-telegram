@@ -19,10 +19,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk
-from PrefsPage import PrefsPage, set_combo_text_column
+from prefs_base import PrefsPageBase, set_combo_text_column
 from common import filepath_parse_pattern, show_error
-from TelegramAccount import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
-from TelegramAccount import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
+from account import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
+from account import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -67,7 +67,7 @@ example_tags = {
     "genre": "Nu-Metal",
 }
 
-class PrefsSettingsPage(PrefsPage):
+class PrefsSettingsPage(PrefsPageBase):
     name = _('Settings')
     main_box = 'settings_vbox'
     ui_file = 'ui/prefs/settings.ui'

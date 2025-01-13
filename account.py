@@ -60,7 +60,7 @@ if rbconfig.libsecret_enabled:
         pass
 
 
-class TelegramAccount(metaclass=SingletonMeta):
+class Account(metaclass=SingletonMeta):
     def __init__(self, plugin=None):
         self.plugin = plugin
         self.activated = False

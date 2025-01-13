@@ -14,15 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk, GLib
-from PrefsPage import PrefsPage, set_combo_text_column
-from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
-from TelegramAccount import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
-from TelegramAccount import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
+from prefs_base import PrefsPageBase, set_combo_text_column
+from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
+from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -43,7 +42,7 @@ audio_visibility_variants = [
     [_('Split Playlists by Visibility'), VAL_AV_DUAL],
 ]
 
-class PrefsViewPage(PrefsPage):
+class PrefsViewPage(PrefsPageBase):
     name = _('View')
     main_box = 'view_vbox'
     ui_file = 'ui/prefs/view.ui'

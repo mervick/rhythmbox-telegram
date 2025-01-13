@@ -20,15 +20,15 @@ from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from common import to_location, get_location_data, empty_cb, SingletonMeta, get_first_artist, get_entry_location
 from common import get_location_audio_id, pretty_file_size
 from common import file_uri, get_entry_state, set_entry_state
-from TelegramLoader import PlaylistLoader
-from TelegramStorage import TgAudio
-from TelegramAccount import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from loader import PlaylistLoader
+from storage import Audio
+from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
 
-class TgFormatColumn:
+class FormatColumn:
     def __init__(self, source):
         self.source = source
 
@@ -60,7 +60,7 @@ class TgFormatColumn:
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[1])
 
 
-class TgSizeColumn:
+class SizeColumn:
     def __init__(self, source):
         self.source = source
 
@@ -93,15 +93,15 @@ class TgSizeColumn:
 
 
 state_icons = {
-    TgAudio.STATE_DEFAULT : 'tg-state-download-symbolic',
-    TgAudio.STATE_ERROR : 'tg-state-error',
-    TgAudio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
-    TgAudio.STATE_HIDDEN : 'tg-state-visibility-off-symbolic',
-    TgAudio.STATE_DOWNLOADED : None,
+    Audio.STATE_DEFAULT : 'tg-state-download-symbolic',
+    Audio.STATE_ERROR : 'tg-state-error',
+    Audio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
+    Audio.STATE_HIDDEN : 'tg-state-visibility-off-symbolic',
+    Audio.STATE_DOWNLOADED : None,
 }
 
 
-class TgStateColumn:
+class StateColumn:
     _icon_cache = {}
 
     def __init__(self, source):
@@ -162,7 +162,7 @@ class TgStateColumn:
         state = get_entry_state(entry)
         is_spinner = cell_type == 'spinner'
 
-        if state == TgAudio.STATE_LOADING:
+        if state == Audio.STATE_LOADING:
             cell.props.visible = is_spinner
             if is_spinner:
                 self._models[idx] = [model, iter]
@@ -175,12 +175,12 @@ class TgStateColumn:
                     del self._models[idx]
                 cell.props.active = False
             else:
-                if state in TgStateColumn._icon_cache:
-                    gicon = TgStateColumn._icon_cache[state]
+                if state in StateColumn._icon_cache:
+                    gicon = StateColumn._icon_cache[state]
                 else:
-                    icon_name = state_icons[state] if state in state_icons else state_icons[TgAudio.STATE_DEFAULT]
+                    icon_name = state_icons[state] if state in state_icons else state_icons[Audio.STATE_DEFAULT]
                     gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
-                    TgStateColumn._icon_cache[state] = gicon
+                    StateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
 
 
@@ -275,12 +275,12 @@ class TelegramSource(RB.BrowserSource):
         if self.plugin.account.settings[KEY_RATING_COLUMN]:
             self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
         if self.plugin.account.settings[KEY_FILE_SIZE_COLUMN]:
-            TgSizeColumn(self)
+            SizeColumn(self)
         if self.plugin.account.settings[KEY_AUDIO_FORMAT_COLUMN]:
-            TgFormatColumn(self)
+            FormatColumn(self)
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
             self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
-        self.state_column = TgStateColumn(self) # noqa
+        self.state_column = StateColumn(self) # noqa
 
     def activate(self):
         self.activated = True
@@ -420,7 +420,7 @@ class TelegramSource(RB.BrowserSource):
         entry = entries[0]
         location = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(location)
-        audio = TgAudio({"chat_id": chat_id, "message_id": message_id})
+        audio = Audio({"chat_id": chat_id, "message_id": message_id})
         url = audio.get_link()
         Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
 

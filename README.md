@@ -160,7 +160,7 @@ You can also delete these files through the plugin settings.
 
 ### Audio Metadata
 
-We store metadata of audio files in an unencrypted format.  
+We store metadata of audio files in an plain format.  
 This includes: chat identifier, message identifier of audio file within the chat, publication date and time, file size, file name, audio meta tags and the file's location in the file system.
 
 This data is stored within the database at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`

@@ -28,7 +28,7 @@ from telegram.utils import AsyncResult
 from telegram.client import AuthorizationState
 from common import MessageType, audio_content_set, API_ERRORS, get_content_type, is_msg_valid
 from common import get_chat_info, empty_cb, cb, show_error
-from TelegramStorage import TelegramStorage
+from storage import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class TelegramApi(GObject.Object):
         if self.state != self.tg.authorization_state.READY:
             raise TelegramAuthStateError(self.state)
 
-        self.storage = TelegramStorage(self, self.files_dir)
+        self.storage = Storage(self, self.files_dir)
         if self.state:
             self.start_update_chats()
         else:

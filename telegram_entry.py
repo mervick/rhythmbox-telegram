@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gi.repository import RB, GLib, GObject
-from TelegramStorage import TgAudio
-from TelegramAccount import KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_HIDDEN_TRACK
+from storage import Audio
+from account import KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 
@@ -26,7 +26,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
     }
 
     def __init__(self, plugin):
-        RB.RhythmDBEntryType.__init__(self, name='telegram', save_to_disk=False)
+        RB.RhythmDBEntryType.__init__(self, name='TelegramEntry', save_to_disk=False)
         self.source = None
         self.plugin = plugin
         self.shell = plugin.shell
@@ -110,7 +110,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
 
         if self.plugin.account.settings[KEY_PRELOAD_PREV_TRACK]:
             prev_entry = self.get_prev_entry(entry)
-            if preload_hidden or get_entry_state(prev_entry) != TgAudio.STATE_HIDDEN:
+            if preload_hidden or get_entry_state(prev_entry) != Audio.STATE_HIDDEN:
                 prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
 
                 if prev_audio and not prev_audio.is_file_exists():
@@ -119,7 +119,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         # The preloader loads first what was sent last
         if self.plugin.account.settings[KEY_PRELOAD_NEXT_TRACK]:
             next_entry = self.get_next_entry(entry)
-            if preload_hidden or get_entry_state(next_entry) != TgAudio.STATE_HIDDEN:
+            if preload_hidden or get_entry_state(next_entry) != Audio.STATE_HIDDEN:
                 next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
 
                 if next_audio and not next_audio.is_file_exists():
@@ -139,7 +139,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 return_uri = 'invalid'
 
         state = get_entry_state(entry)
-        if state == TgAudio.STATE_LOADING:
+        if state == Audio.STATE_LOADING:
             return return_uri
 
         self._pending_playback_entry = entry
@@ -148,3 +148,6 @@ class TelegramEntryType(RB.RhythmDBEntryType):
 
     def do_can_sync_metadata(self, entry): # noqa
         return True
+
+
+GObject.type_register(TelegramEntryType)

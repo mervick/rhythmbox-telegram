@@ -20,13 +20,13 @@ from gi.overrides import GLib # noqa
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio
 from gi.repository import Peas, PeasGtk # noqa
-from TelegramLoader import AudioDownloader, AudioTempLoader
-from TelegramSource import TelegramSource
-from TelegramApi import TelegramApi, TelegramAuthError
-from TelegramConfig import TelegramConfig  # import TelegramConfig is REQUIRED for showing settings page
-from TelegramAccount import TelegramAccount, KEY_CHANNELS, KEY_PAGE_GROUP
-from TelegramAccount import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
-from TelegramEntry import TelegramEntryType
+from loader import AudioDownloader, AudioTempLoader
+from telegram_source import TelegramSource
+from telegram_client import TelegramApi, TelegramAuthError
+from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page
+from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP
+from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
+from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
 
 
@@ -43,7 +43,7 @@ def delete_source(source_list):
         source.delete_thyself()
 
 
-class Telegram(GObject.GObject, Peas.Activatable):
+class TelegramPlugin(GObject.GObject, Peas.Activatable):
     __gtype_name__ = 'Telegram'
     object = GObject.property(type=GObject.GObject)
 
@@ -53,8 +53,8 @@ class Telegram(GObject.GObject, Peas.Activatable):
     }
 
     def __init__(self):
-        super(Telegram, self).__init__()
-        self.account = TelegramAccount(self)
+        super(TelegramPlugin, self).__init__()
+        self.account = Account(self)
         self.app = Gio.Application.get_default()
         self.shell = None
         self.db = None

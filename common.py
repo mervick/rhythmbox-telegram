@@ -16,11 +16,7 @@
 
 import enum
 import math
-import base64
-import hashlib
 from datetime import datetime
-from Cryptodome.Cipher import AES
-from Cryptodome.Random import get_random_bytes
 from gi.repository import RB, GLib, Gio, Gtk
 
 import gettext
@@ -154,16 +150,9 @@ def is_msg_valid(data):
     return message_set <= set(data)
 
 def get_chat_info(chat):
-    # photo = chat['photo'] if 'photo' in chat else {"minithumbnail": None}
-    # last_message = chat['last_message'] if 'last_message' in chat else {"content": None}
-
     return {
         'id': chat['id'],
         'title': chat['title'],
-        # 'photo': photo['minithumbnail'],
-        # 'photo': None,
-        # 'content': last_message['content'],
-        # 'content': None,
     }
 
 def timestamp():
@@ -293,18 +282,11 @@ def show_error(title, description=None, parent=None): # noqa
         type=Gtk.MessageType.ERROR,
         buttons=Gtk.ButtonsType.CLOSE,
         message_format=title)
-    # err_dialog = Gtk.MessageDialog(None, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CLOSE, title) # noqa
     if description is not None:
         err_dialog.format_secondary_text(str(description)) # noqa
     err_dialog.set_application(Gio.Application.get_default())
     err_dialog.run() # noqa
     err_dialog.destroy()
-
-# def detect_theme_scheme():
-#     theme = str(Gtk.Settings.get_default().get_property('gtk-theme-name')).lower().find('dark')
-#     dark = Gtk.Settings.get_default().get_property('gtk-application-prefer-dark-theme')
-#
-#     return 'dark' if theme != -1 or dark else 'light'
 
 def pretty_file_size(size_bytes, digits=2):
     if size_bytes == 0:

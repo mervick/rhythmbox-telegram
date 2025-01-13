@@ -17,12 +17,11 @@
 import gi
 gi.require_version('Gtk', '3.0')
 import os
-import math
 import subprocess
 from gi.repository import RB
 from gi.repository import Gtk, Gio, GLib, Gdk
 from common import file_uri, pretty_file_size
-from PrefsPage import PrefsPage
+from prefs_base import PrefsPageBase
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -75,7 +74,7 @@ def start_deletion(directory, progress_callback=None, completion_callback=None):
     GLib.idle_add(idle_deletion_task)
 
 
-class PrefsTempPage(PrefsPage):
+class PrefsTempPage(PrefsPageBase):
     name = _('Temporary Files')
     main_box = 'temp_vbox'
     ui_file = 'ui/prefs/temp.ui'

@@ -17,10 +17,10 @@
 import os
 import shutil
 from gi.repository import GLib, RB
-from TelegramAccount import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
+from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
-from TelegramStorage import TgPlaylist, TgAudio
-from TelegramApi import TelegramApi
+from storage import Playlist, Audio
+from telegram_client import TelegramApi
 
 
 class AudioTempLoader(metaclass=SingletonMeta):
@@ -48,9 +48,9 @@ class AudioTempLoader(metaclass=SingletonMeta):
 
     def add_entry(self, entry):
         state = get_entry_state(entry)
-        if state != TgAudio.STATE_IN_LIBRARY and state != TgAudio.STATE_LOADING:
+        if state != Audio.STATE_IN_LIBRARY and state != Audio.STATE_LOADING:
             self.entries.append(entry)
-            set_entry_state(self.plugin.db, entry, TgAudio.STATE_LOADING)
+            set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
             self.plugin.db.commit()
         return self
 
@@ -126,9 +126,9 @@ class AudioDownloader(metaclass=SingletonMeta):
     def add_entries(self, entries):
         for entry in entries:
             state = get_entry_state(entry)
-            if state != TgAudio.STATE_IN_LIBRARY:
+            if state != Audio.STATE_IN_LIBRARY:
                 self.entries.append(entry)
-                set_entry_state(self.plugin.db, entry, TgAudio.STATE_LOADING)
+                set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
                 self.plugin.db.commit()
 
     def stop(self):
@@ -252,7 +252,7 @@ class PlaylistLoader:
 
     def __init__(self, chat_id, add_entry):
         self.api = TelegramApi.loaded()
-        self.playlist = TgPlaylist.read(chat_id)
+        self.playlist = Playlist.read(chat_id)
         self.chat_id = chat_id
         self.add_entry = add_entry
         self.segment = [0,0]
@@ -263,7 +263,7 @@ class PlaylistLoader:
         self._loaded = False
 
     def start(self):
-        self.playlist = TgPlaylist.read(self.chat_id )
+        self.playlist = Playlist.read(self.chat_id )
         self.playlist.segments.insert(0, [0, 0])
         self.segment = self.playlist.segment(1)
         blob = {}

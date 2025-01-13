@@ -26,9 +26,9 @@ from common import get_location_data, set_entry_state
 logger = logging.getLogger(__name__)
 
 
-class TgPlaylist:
+class Playlist:
     def __str__(self) -> str:
-        return f'TgPlaylist <{self.chat_id}>'
+        return f'Playlist <{self.chat_id}>'
 
     def __init__(self, data):
         self._data = data
@@ -49,12 +49,12 @@ class TgPlaylist:
 
     @staticmethod
     def read(chat_id):
-        playlist = TelegramStorage.loaded().select('playlist', {"chat_id": chat_id})
+        playlist = Storage.loaded().select('playlist', {"chat_id": chat_id})
         data = playlist if playlist else tuple([0, chat_id, '', '', '[]'])
-        return TgPlaylist(data)
+        return Playlist(data)
 
     def reload(self):
-        self._data = TgPlaylist.read(self.chat_id)._data
+        self._data = Playlist.read(self.chat_id)._data
 
     def save(self):
         playlist = {
@@ -64,11 +64,11 @@ class TgPlaylist:
             "segments": json.dumps(self.segments)
         }
         if self.id != 0:
-            return TelegramStorage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
-        return TelegramStorage.loaded().insert('playlist', playlist)
+            return Storage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
+        return Storage.loaded().insert('playlist', playlist)
 
 
-class TgAudio:
+class Audio:
     STATE_DEFAULT = 0
     STATE_DOWNLOADED = 1
     STATE_IN_LIBRARY = 2
@@ -79,7 +79,7 @@ class TgAudio:
     is_error = False
 
     def __str__(self) -> str:
-        return f'TgAudio <{self.chat_id},{self.message_id}>'
+        return f'Audio <{self.chat_id},{self.message_id}>'
 
     def __init__(self, data):
         self.update(data)
@@ -148,14 +148,14 @@ class TgAudio:
 
     def get_state(self):
         if self.is_error:
-            return TgAudio.STATE_ERROR
+            return Audio.STATE_ERROR
         if self.is_hidden:
-            return TgAudio.STATE_HIDDEN
+            return Audio.STATE_HIDDEN
         if self.is_moved:
-            return TgAudio.STATE_IN_LIBRARY
+            return Audio.STATE_IN_LIBRARY
         if self.is_downloaded:
-            return TgAudio.STATE_DOWNLOADED
-        return TgAudio.STATE_DEFAULT
+            return Audio.STATE_DOWNLOADED
+        return Audio.STATE_DEFAULT
 
     def _upd_and_move(self):
         if len(self.local_path or ''):
@@ -173,7 +173,7 @@ class TgAudio:
             os.makedirs(dst_dir, exist_ok=True)
             new_path = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
             os.rename(self.local_path, new_path)
-            # remove tags which not used by TgAudio
+            # remove tags which not used by Audio
             if tags.get('album_artist'):
                 del tags['album_artist']
             if tags.get('year'):
@@ -182,7 +182,7 @@ class TgAudio:
             self.save({**tags, "local_path": new_path})
 
     def download(self, success=empty_cb, fail=empty_cb):
-        storage = TelegramStorage.loaded()
+        storage = Storage.loaded()
         api = storage.api
 
         def on_success(data):
@@ -203,14 +203,14 @@ class TgAudio:
         return self.local_path
 
     def save(self, data):
-        res = TelegramStorage.loaded().update('audio', data, {"id": self.id}, limit=1)
+        res = Storage.loaded().update('audio', data, {"id": self.id}, limit=1)
         if res:
             for k in data.keys():
                 setattr(self, k, data[k])
         return res
 
     def get_link(self):
-        return TelegramStorage.loaded().api.get_message_direct_link(self.chat_id, self.message_id)
+        return Storage.loaded().api.get_message_direct_link(self.chat_id, self.message_id)
 
     def get_file_ext(self):
         if self.mime_type in mime_types.keys():
@@ -239,11 +239,11 @@ class TgAudio:
             db.commit()
 
 
-class TelegramStorage:
+class Storage:
     _instance = None
 
     def __str__(self) -> str:
-        return f'TelegramStorage <{self.api.hash}>'
+        return f'Storage <{self.api.hash}>'
 
     def __init__(self, api, files_dir):
         self.api = api
@@ -251,7 +251,7 @@ class TelegramStorage:
         self.db_file = os.path.join(self.files_dir, 'data.sqlite')
         create_db = not os.path.exists(self.db_file)
         self.db = sqlite3.connect(self.db_file)
-        TelegramStorage._instance = self
+        Storage._instance = self
 
         if create_db:
             try:
@@ -264,7 +264,7 @@ class TelegramStorage:
 
     @staticmethod
     def loaded():
-        return TelegramStorage._instance
+        return Storage._instance
 
     def select(self, table, where, limit=1):
         set_where = []
@@ -333,7 +333,7 @@ class TelegramStorage:
             "SELECT * FROM `audio` WHERE chat_id = '%s' and message_id = '%s' LIMIT 1" % (chat_id, message_id))
         result = audio.fetchone()
         if result and convert:
-            return TgAudio(result)
+            return Audio(result)
         return result
 
     def load_entries(self, chat_id, each, visibility=None):
@@ -348,7 +348,7 @@ class TelegramStorage:
         cursor = self.db.cursor()
         cursor.execute(sql, data)
         for row in cursor:
-            each(TgAudio(row))
+            each(Audio(row))
         cursor.close()
 
     def add_audio(self, data, convert=True):
@@ -411,4 +411,4 @@ class TelegramStorage:
 
         d['id'] = cursor.lastrowid
         self.db.commit()
-        return d if not convert else TgAudio(d)
+        return d if not convert else Audio(d)

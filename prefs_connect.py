@@ -16,14 +16,13 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 import re, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from telegram.client import AuthorizationState
-from DialogCode import DialogCode
-from TelegramAccount import KEY_CONNECTED
-from TelegramApi import TelegramApi, TelegramAuthError, TelegramAuthStateError
-from PrefsPage import PrefsPage
+from auth_dialog import AuthDialog
+from account import KEY_CONNECTED
+from telegram_client import TelegramApi, TelegramAuthError, TelegramAuthStateError
+from prefs_base import PrefsPageBase
 from common import show_error
 
 
@@ -34,7 +33,7 @@ def safe_cast(val, to_type, default=None):
         return default
 
 
-class PrefsConnectPage(PrefsPage):
+class PrefsConnectPage(PrefsPageBase):
     name = _('Connect')
     main_box = 'connect_vbox'
     ui_file = 'ui/prefs/connect.ui'
@@ -51,7 +50,7 @@ class PrefsConnectPage(PrefsPage):
         phone_entry = self.ui.get_object("phone_number_entry")
         connect_btn = self.ui.get_object("connect_btn")
         details_box = self.ui.get_object('details_box')
-        helpbox_wrap = self.ui.get_object('helpbox_wrap')
+        # helpbox_wrap = self.ui.get_object('helpbox_wrap')
         helpbox = self.ui.get_object('helpbox')
 
         def update_connect(connected=None):
@@ -126,30 +125,30 @@ class PrefsConnectPage(PrefsPage):
         def upd_spinner():
             # @TODO fixme
             print('upd_spinner')
-            return
-            if self.loading:
-                if self.spinner is None:
-                    helpbox_wrap.set_property('height_request', 80)
-                    self.spinner = Gtk.Spinner()
-                    helpbox_wrap.pack_start(self.spinner, True, True, 0)
-                    helpbox_wrap.remove(helpbox)
-                self.spinner.show()
-                self.spinner.start()
-            elif self.loading is not None:
-                helpbox_wrap.set_property('height_request', -1)
-                if self.spinner:
-                    self.spinner.stop()
-                    helpbox_wrap.remove(self.spinner)
-                self.spinner = None
-                if self.connected:
-                    helpbox_wrap.pack_start(helpbox, True, True, 0)
-            elif not self.connected:
-                self.loading = False
-                helpbox_wrap.set_property('height_request', 40)
-                self.spinner = Gtk.Spinner()
-                helpbox_wrap.pack_start(self.spinner, True, True, 0)
-                helpbox_wrap.remove(helpbox)
-                self.spinner.show()
+            # return
+            # if self.loading:
+            #     if self.spinner is None:
+            #         helpbox_wrap.set_property('height_request', 80)
+            #         self.spinner = Gtk.Spinner()
+            #         helpbox_wrap.pack_start(self.spinner, True, True, 0)
+            #         helpbox_wrap.remove(helpbox)
+            #     self.spinner.show()
+            #     self.spinner.start()
+            # elif self.loading is not None:
+            #     helpbox_wrap.set_property('height_request', -1)
+            #     if self.spinner:
+            #         self.spinner.stop()
+            #         helpbox_wrap.remove(self.spinner)
+            #     self.spinner = None
+            #     if self.connected:
+            #         helpbox_wrap.pack_start(helpbox, True, True, 0)
+            # elif not self.connected:
+            #     self.loading = False
+            #     helpbox_wrap.set_property('height_request', 40)
+            #     self.spinner = Gtk.Spinner()
+            #     helpbox_wrap.pack_start(self.spinner, True, True, 0)
+            #     helpbox_wrap.remove(helpbox)
+            #     self.spinner.show()
 
         def connect_btn_clicked(event):
             print('connect_btn_clicked')
@@ -226,7 +225,7 @@ class PrefsConnectPage(PrefsPage):
                             show_error(_("Unable to login Telegram"), _('Login code is required'), parent=self.box)
                             set_state(False)
 
-                        DialogCode(self, connect_api, unable_to_login)
+                        AuthDialog(self, connect_api, unable_to_login)
                         return
                     else:
                         show_error(_("Unable to login Telegram"), e, parent=self.box)
