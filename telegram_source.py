@@ -233,7 +233,84 @@ class DownloadBar(metaclass=SingletonMeta):
         self._update_ui()
 
 
+class RefreshBtn:
+    activated = False
+
+    def __init__(self, source):
+        self.source = source
+
+    def activate(self):
+        if self.activated:
+            return
+
+        entry_view = self.source.get_entry_view()
+        paned = entry_view.get_parent()
+        grid = paned.get_parent()
+        toolbar = None
+
+        for child in grid.get_children():
+            if 'RB.SourceToolbar' in '%s' % type(child):
+                toolbar = child
+                break
+
+        if toolbar:
+            toolbar.set_column_homogeneous(False)
+
+            button = Gtk.Button(label=_("Refresh"))
+            button.get_style_context().add_class("flat")
+            button.props.visible = True
+
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            box.props.visible = True
+            toolbar.attach(box, 3, 0, 1, 1)
+
+            box.pack_start(button, False, False, 0)
+
+            spinner = Gtk.Spinner()
+            spinner.props.visible = False
+            # spinner.start()
+            label = Gtk.Label(label="  %s" % _("Loading..."))
+            label.props.visible = False
+
+            box.pack_start(spinner, False, False, 0)
+            box.pack_start(label, False, False, 0)
+
+            self.button = button
+            self.spinner = spinner
+            self.label = label
+
+            self.source.connect("playlist-fetch-started", self.fetch_started_cb)
+            self.source.connect("playlist-fetch-end", self.fetch_end_cb)
+
+            self.activated = True
+            button.connect("clicked", self.clicked_cb)
+
+    def clicked_cb(self, *obj):
+        if self.source.loader:
+            self.source.loader.fetch()
+
+    def fetch_started_cb(self, *obj):
+        self.button.props.visible = False
+        self.spinner.props.visible = True
+        self.label.props.visible = True
+        self.spinner.start()
+
+    def fetch_end_cb(self, *obj):
+        self.spinner.stop()
+        self.button.props.visible = True
+        self.spinner.props.visible = False
+        self.label.props.visible = False
+
+
 class TelegramSource(RB.BrowserSource):
+    __gsignals__ = {
+        'playlist_fetch_started': (GObject.SIGNAL_RUN_FIRST, None, ()),
+        'playlist_fetch_end': (GObject.SIGNAL_RUN_FIRST, None, ()),
+    }
+
+    def __str__(self) -> str:
+        return f'TelegramSource <{self.chat_id}>'
+
     def __init__(self):
         self.is_activated = False
         RB.BrowserSource.__init__(self)
@@ -248,6 +325,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_id = None
         self.chat_title = None
         self.visibility = None
+        self.refresh_btn = RefreshBtn(self)
         self.bar = None
         self.bar_ui = None
         self.entry_updated_id = None
@@ -283,6 +361,7 @@ class TelegramSource(RB.BrowserSource):
         self.state_column = StateColumn(self) # noqa
 
     def activate(self):
+        self.refresh_btn.activate()
         self.activated = True
         self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
         self.props.entry_type.activate()
@@ -290,6 +369,8 @@ class TelegramSource(RB.BrowserSource):
     def deactivate(self):
         if self.activated:
             self.activated = False
+            if self.loader is not None:
+                self.loader.stop()
             self.db.disconnect(self.entry_updated_id)
             self.props.entry_type.deactivate()
 
@@ -308,7 +389,7 @@ class TelegramSource(RB.BrowserSource):
                 audio.save({"rating": round(rating)})
 
     def hide_thyself(self):
-        self.deactivate()
+        # self.deactivate()
         self.set_property('visibility', False)
 
     def show_thyself(self):
@@ -336,7 +417,7 @@ class TelegramSource(RB.BrowserSource):
         self.plugin.add_plugin_menu()
 
         if self.visibility in (1, None):
-            self.loader = PlaylistLoader(self.chat_id, self.add_entry)
+            self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)
             self.loader.start()
 
     def add_entries(self):
