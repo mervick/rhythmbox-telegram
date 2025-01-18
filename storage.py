@@ -35,7 +35,7 @@ class Playlist:
     chat_id: int
     title: str
     original_title: str
-    snapshot: List[List[int]]
+    snapshot: str
     segments: List[List[int]]
     has_changed: bool = False
 
@@ -46,7 +46,7 @@ class Playlist:
         self.update(data)
 
     def is_changed_segments(self):
-        return self.segments != self.snapshot
+        return json.dumps(self.segments) != self.snapshot
 
     def update(self, data):
         id_, chat_id, title, original_title, segments = data
@@ -54,8 +54,8 @@ class Playlist:
         self.chat_id = chat_id
         self.title = title
         self.original_title = original_title
+        self.snapshot = segments
         self.segments = json.loads(segments)
-        self.snapshot = self.segments.copy()
 
     def insert_empty(self):
         self.segments.insert(CURRENT_SEGMENT, [0, 0])

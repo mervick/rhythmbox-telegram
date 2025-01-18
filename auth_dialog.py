@@ -19,50 +19,52 @@ from gi.repository import Gtk, GLib
 
 
 class AuthDialog:
+    code: str
+
     def __init__(self, config, on_ok, on_cancel):
-        self.ok_received = False
-        self.code = None
-        self.is_done = False
-        self._on_ok = on_ok
-        self._on_cancel = on_cancel
+        self._is_closed = False
+        self._on_ok_cb = on_ok
+        self._on_cancel_cb = on_cancel
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(config.plugin, "ui/dialog-code.ui"))
 
         self.window = builder.get_object('window')
         self.code_entry = builder.get_object('code_entry')
-        self.code_entry.connect("focus-out-event", self._entry_changed)
+        self.code_entry.connect("focus-out-event", self._entry_changed_cb)
 
-        cb = {
-            "ok_btn_clicked_cb" : self._ok_clicked,
-            "cancel_btn_clicked_cb" : self._cancel_clicked,
-            "on_window_destroy": self._cancel_clicked,
-            "destroy": self._cancel_clicked,
-            "delete-event": self._cancel_clicked
+        signals = {
+            "ok_btn_clicked_cb" : self._ok_clicked_cb,
+            "cancel_btn_clicked_cb" : self._cancel_clicked_cb,
+            "on_window_destroy": self._cancel_clicked_cb,
+            "destroy": self._cancel_clicked_cb,
+            "delete-event": self._cancel_clicked_cb
         }
-        builder.connect_signals(cb)
+        builder.connect_signals(signals)
         self.window.set_title(_('Telegram Authorization'))
         self.window.show_all()
         center = config.get_center()
         self.window.move(center["x"] - 180, center["y"] - 130)
         self.window.present()
 
-    def _entry_changed(self, entry, event):
+    def _entry_changed_cb(self, *arg):
         self.code = self.code_entry.get_text().strip()
-        print(self.code)
 
-    def _done(self):
-        print(self.code)
-        self._on_ok(self.code)
+    def _complete_ok(self):
+        # print(self.code)
+        self._on_ok_cb(self.code)
 
-    def _ok_clicked(self, event):
-        self.ok_received = True
-        self.window.close()
-        GLib.timeout_add(100, self._done)
+    def close(self):
+        if not self._is_closed:
+            self._is_closed = True
+            self.window.close()
+            return True
+        return False
 
-    def _cancel_clicked(self, event):
-        self.window.close()
-        if not self.ok_received and not self.is_done:
-            self.code = None
-            self.is_done = True
-            GLib.timeout_add(100, self._on_cancel)
+    def _ok_clicked_cb(self, *arg):
+        self.close()
+        GLib.timeout_add(100, self._complete_ok)
+
+    def _cancel_clicked_cb(self, *arg):
+        if self.close():
+            GLib.timeout_add(100, self._on_cancel_cb)

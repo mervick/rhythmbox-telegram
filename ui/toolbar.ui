@@ -69,10 +69,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </item>
         </section>
       </submenu>
-<!--      <item>-->
-<!--        <attribute name="label" translatable="yes">Download</attribute>-->
-<!--        <attribute name="action">app.tg-download</attribute>-->
-<!--      </item>-->
     </section>
   </menu>
 </interface>
