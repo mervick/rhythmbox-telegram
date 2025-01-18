@@ -19,8 +19,9 @@ import shutil
 from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
-from storage import Playlist, Audio
-from telegram_client import TelegramApi
+from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
+from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED
+from typing import Tuple
 
 
 class AudioTempLoader(metaclass=SingletonMeta):
@@ -246,79 +247,217 @@ class AudioDownloader(metaclass=SingletonMeta):
                 audio.download(success=self._process, fail=self._next)
 
 
+INTERVAL_SHORT  = 5000    # 5 sec
+INTERVAL_MEDIUM = 10000   # 10 sec
+INTERVAL_LOW    = 300000  # 5 min
+
+SIGNAL_REACHED_START = 'SIGNAL_REACHED_START'
+SIGNAL_REACHED_END   = 'SIGNAL_REACHED_END'
+SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'
+
+
+class Timer:
+    _next: Tuple[any, any] | None
+    _timer_id: int | None
+
+    def __init__(self):
+        self._next = None
+        self._timer_id = None
+
+    def add(self, interval, callback, *args):
+        self.remove()
+        self._next = (callback, args)
+        self._timer_id = GLib.timeout_add(interval, self.callback)
+
+    def remove(self):
+        ret = False
+        if self._timer_id:
+            ret = GLib.source_remove(self._timer_id)
+            self._timer_id = None
+        return ret
+
+    def callback(self):
+        self._timer_id = None
+        if self._next:
+            callback, args = self._next
+            self._next = None
+            return callback(*args)
+
+
 class PlaylistLoader:
+    api: TelegramApi
+    playlist: Playlist
+    timer: Timer | None
+    terminated: bool
+    last_msg_id: int
+
     def __str__(self) -> str:
         return f'PlaylistLoader <{self.chat_id}>'
 
-    def __init__(self, chat_id, add_entry):
+    def __init__(self, source, chat_id, add_entry):
         self.api = TelegramApi.loaded()
-        self.playlist = Playlist.read(chat_id)
+        self.source = source
         self.chat_id = chat_id
         self.add_entry = add_entry
-        self.segment = [0,0]
-        self.offset_msg_id = 0
         self.page = 0
-        self._end_of_page = False
-        self._terminated = False
-        self._loaded = False
+        self.timer = Timer()
 
-    def start(self):
-        self.playlist = Playlist.read(self.chat_id )
-        self.playlist.segments.insert(0, [0, 0])
-        self.segment = self.playlist.segment(1)
-        blob = {}
-        self._load(blob, limit=1)
+    def start(self, *obj):
+        """ Start loading messages starting from new messages """
+        self.terminated = False
+        self.last_msg_id = 0
+        self.playlist = Playlist.read(self.chat_id)
+        self.playlist.insert_empty()
+        self._load({}, limit=1)
         return self
 
-    def _add_audio(self, audio):
-        # update audio, add entries to playlist
-        if audio.message_id == self.segment[0]:
-            self._end_of_page = True
-        if audio.message_id == self.segment[1]:
-            self._end_of_page = True
-        if not self._end_of_page:
+    def _add_audio(self, audio, blob):
+        """ Add audio as entry in the playlist. """
+        if not audio.is_reloaded:
+            print('add_entry %s' % audio.message_id)
             self.add_entry(audio)
+        # print('_add_audio % ' % audio.message_id)
+        # update audio, add entries to playlist
+        # if audio.message_id == self.playlist.current(SEGMENT_START):
+        #     blob['signal'] = SIGNAL_REACHED_START
+        #     print('SIGNAL_REACHED_START, audio.message_id == current_segment[SEGMENT_START]')
+        #     # self._end_of_page = True
+        # elif audio.message_id == self.playlist.current(SEGMENT_END):
+        #     blob['signal'] = SIGNAL_REACHED_END
+        #     print('SIGNAL_REACHED_END, audio.message_id == current_segment[SEGMENT_END]')
+        #     # self._end_of_page = True
+        # if audio.is_reloaded:
+        #     print('audio.is_reloaded')
 
-    def _next(self, blob, cmd):
+        #     repeat_ids = blob.get('repeat_ids', [])
+        #     repeat_ids.append(audio.message_id)
+        #     blob['repeat_ids'] = repeat_ids
+        #     # self._end_of_page = True
+        #     # print('need to join with %s' % audio.message_id)
+        #     # print('segments %s' % self.playlist.segments)
+        #     # self.playlist.join_segment_with_id(audio.message_id)
+        # if not self._end_of_page and not audio.is_reloaded:
+
+    def _each(self, data, blob):
+        """ Iterate over all messages, check for segment boundaries """
+        message_id = int(data['id'])
+        print('_EACH %s' % message_id)
+        print('%s' % self.playlist.segments)
+        # if message_id == self.playlist.current(SEGMENT_START):
+        #     blob['signal'] = SIGNAL_REACHED_START
+        #     blob['message_id'] = message_id
+        #     return False
+        # if message_id == self.playlist.current(SEGMENT_END):
+        #     blob['signal'] = SIGNAL_REACHED_END
+        #     blob['message_id'] = message_id
+        #     return False
+        result = self.playlist.search(message_id)
+        if result is not None:
+            blob['signal'] = SIGNAL_REACHED_NEXT
+            blob['message_id'] = message_id
+            return False
+        if self.playlist.current(SEGMENT_START) == 0:
+            self.playlist.set_current(SEGMENT_START, message_id)
+        return True
+
+    def _process(self, blob, cmd):
+        """ Read data, update playlist segments, loading next page """
+        if self.terminated:
+            return
+        print('_process %s' % self.source)
+
+        self._timer_id = None
+        # emit playlist-fetch-end with delay
+        GLib.timeout_add(2000, self.source.emit, 'playlist-fetch-end')
+
         self.page = self.page + 1
-        last_msg_id = blob.get('last_msg_id', 0)
+        signal = blob.get('signal')
+        offset_msg_id = blob.get('last_msg_id', 0)
 
-        if last_msg_id == 0:
-            GLib.timeout_add(60 * 5000, self.start)
+        if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
+            print('Nothing to load, stop')
+            self.timer.add(INTERVAL_LOW, self.start)
             return
 
-        if self.playlist.segments[0][0] == 0:
-            self.playlist.segments[0][0] = last_msg_id
-        self.playlist.segments[0][1] = last_msg_id
-        offset_msg_id = last_msg_id
+        # if self.playlist.current(SEGMENT_START) == 0:
+        #     self.playlist.set_current(SEGMENT_START, last_msg_id)
+        #
+        # repeat_ids = blob.get('repeat_ids', [])
+        # if repeat_ids:
+        #     self.playlist.join_segments(repeat_ids)
+        # blob['repeat_ids'] = []
+        #
+        # if last_msg_id not in repeat_ids:
+        #     print('last_msg_id not in repeat_ids')
+        #     self.playlist.set_current(SEGMENT_END, last_msg_id)
+        #     # self.playlist.segments[CURRENT_SEGMENT][SEGMENT_END] = last_msg_id
+        #     offset_msg_id = last_msg_id
+        # else:
+        #     offset_msg_id = self.playlist.current(SEGMENT_END)
+        #     print('set offset_msg_id from SEGMENT_END %s' % offset_msg_id)
+        #
+        # if self._end_of_page:
+        #     self.playlist.segments[0][1] = self.segment[1]
+        #     offset_msg_id = self.segment[1]
+        #     del self.playlist.segments[1]
+        #     self.segment = self.playlist.segment(1)
+        #
+        # self._end_of_page = False
 
-        if self._end_of_page:
-            self.playlist.segments[0][1] = self.segment[1]
-            offset_msg_id = self.segment[1]
-            del self.playlist.segments[1]
-            self.segment = self.playlist.segment(1)
+        if self.playlist.current(SEGMENT_START) == 0:
+            self.playlist.set_current(SEGMENT_START, offset_msg_id)
+        self.playlist.set_current(SEGMENT_END, offset_msg_id)
 
-        self._end_of_page = False
+        if signal == SIGNAL_REACHED_NEXT:
+            message_id = blob.get('message_id')
+            self.playlist.set_current(SEGMENT_END, message_id)
+            self.playlist.join_segments(message_id)
+            offset_msg_id = self.playlist.current(SEGMENT_END)
 
-#         if cmd == 'DONE' or offset_msg_id == -1 or (last_msg_id == self.offset_msg_id and self._loaded):
-        if cmd == 'DONE' or offset_msg_id == -1 or last_msg_id == self.offset_msg_id:
-#             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
-            self.playlist.segments = [[ self.playlist.segments[0][0], offset_msg_id]]
-            self.playlist.save()
-            self._loaded = True
-            GLib.timeout_add(60 * 5000, self.start)
+        # if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == -1 or last_msg_id == self.offset_msg_id:
+#         if last_msg_id == self.offset_msg_id:
+# #             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
+# #             if last_msg_id != self.offset_msg_id:
+# #                 self.playlist.segments = [[self.playlist.segments[CURRENT_SEGMENT][SEGMENT_START], offset_msg_id]]
+# #                 self.playlist.save(True)
+#             print('Loaded all messages, wait and load from start %s' % cmd)
+#             self._next_props = [self.start, None]
+#             # self._timer_id = GLib.timeout_add(60 * 5000, self.start)
+#             self._timer_id = GLib.timeout_add(2 * 5000, self.start)
+#             return
+
+
+
+        # self.playlist.optimize()
+
+        if self.playlist.save():
+            self.playlist = Playlist.read(self.chat_id)
+
+        print('page %s, offset_msg_id %s' % (self.page, offset_msg_id))
+
+        self.last_msg_id = offset_msg_id
+        self.timer.add(INTERVAL_MEDIUM if self.page > 10 else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
+
+    def _load(self, blob, limit=50):
+        """ Load messages """
+        if self.terminated:
             return
+        print('_load %s' % self.source)
+        print(blob)
+        self.source.emit('playlist-fetch-started')
+        print('emit playlist-fetch-started')
+        self.api.load_messages_idle(self.chat_id, update=self._add_audio, each=self._each, on_success=self._process,
+                                    blob={**blob}, limit=limit)
 
-        self.playlist.save()
-        self.playlist.reload()
-        self.segment = self.playlist.segment(1)
-
-        self.offset_msg_id = offset_msg_id
-        GLib.timeout_add(10000 if self.page > 10 else 5000, self._load, {"offset_msg_id": offset_msg_id})
+    def fetch(self):
+        """ Fetch next messages """
+        print('FETCH %s' % self.source)
+        if self.timer.remove():
+            self.timer.callback()
 
     def stop(self):
-        self._terminated = True
-
-    def _load(self, blob={}, limit=50):
-        if not self._terminated:
-            self.api.load_messages_idle( self.chat_id, update=self._add_audio, done=self._next, blob={**blob}, limit=limit)
+        """ Stop loading """
+        print('STOP %s' % self.source)
+        self.terminated = True
+        self.timer.remove()
+        self.source.emit('playlist-fetch-end')

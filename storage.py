@@ -22,11 +22,30 @@ import schema as SQL
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
 from common import get_location_data, set_entry_state
+from typing import List, Literal
 
 logger = logging.getLogger(__name__)
 
+SEGMENT_START = 0
+SEGMENT_END = 1
+CURRENT_SEGMENT = 0
+
+# SEGMENT_IDS = {
+#     SEGMENT_START: SEGMENT_START,
+#     SEGMENT_END: SEGMENT_END,
+#     'start': SEGMENT_START,
+#     'end': SEGMENT_END,
+# }
 
 class Playlist:
+    id: int
+    chat_id: int
+    title: str
+    original_title: str
+    snapshot: str
+    segments: List[List[int]]
+    has_changed: bool = False
+
     def __str__(self) -> str:
         return f'Playlist <{self.chat_id}>'
 
@@ -34,18 +53,38 @@ class Playlist:
         self._data = data
         self.update(data)
 
+    def is_changed_segments(self):
+        print('CMP = %s  = %s VS %s' % (str(json.dumps(self.segments)) != self.snapshot, json.dumps(self.segments), self.snapshot))
+        return str(json.dumps(self.segments)) != self.snapshot
+
     def update(self, data):
         id_, chat_id, title, original_title, segments = data
         self.id = id_
         self.chat_id = chat_id
         self.title = title
         self.original_title = original_title
+        self.snapshot = str(segments)
         self.segments = json.loads(segments)
 
-    def segment(self, index):
-        if len(self.segments) > index:
-            return self.segments[index]
-        return [0, 0]
+    def insert_empty(self):
+        self.segments.insert(CURRENT_SEGMENT, [0, 0])
+
+    def set_current(self, segment_type, value):
+        # if self.segments[CURRENT_SEGMENT][segment_type] != value:
+        #     print('SET_CURRENT %s' % value)
+        #     self.has_changed = True
+        self.segments[CURRENT_SEGMENT][segment_type] = value
+
+    def current(self, segment_type):
+        return self.segments[CURRENT_SEGMENT][segment_type] if len(self.segments) else 0
+
+    def search(self, value):
+        for num, segment in enumerate(self.segments):
+            if num == CURRENT_SEGMENT:
+                continue
+            if value in segment:
+                return num, segment.index(value)
+        return None
 
     @staticmethod
     def read(chat_id):
@@ -56,13 +95,84 @@ class Playlist:
     def reload(self):
         self._data = Playlist.read(self.chat_id)._data
 
-    def save(self):
+    def join_segments(self, value):
+        segments = [self.segments[CURRENT_SEGMENT].copy()]
+        segments_old = self.segments.copy()
+        for num, segment in enumerate(segments_old):
+            if num == CURRENT_SEGMENT:
+                continue
+            if value in segment:
+                bound = segment.index(value)
+                if bound == SEGMENT_START:
+                    segments[CURRENT_SEGMENT][SEGMENT_END] = segment[SEGMENT_END]
+                # else:
+                #     segments[CURRENT_SEGMENT][SEGMENT_END] = value
+                continue
+            segments.append(segment)
+        self.segments = segments
+
+    # def join_segments1(self, values):
+    #     """ Join current segment with others that contain values """
+    #     segments = self.segments
+    #     values = [val for val in values if any(val in segment for segment in segments)]
+    #
+    #     for value in values:
+    #         segments_old = segments.copy()
+    #         # copy current segment
+    #         segments = segments[:1].copy()
+    #         # each over other segments
+    #         for segment in segments_old[1:]:
+    #             seg_start = segment[SEGMENT_START] == value
+    #             # segment is entirely in the current, just ignore, don't save it
+    #             seg_end = segment[SEGMENT_END] == value
+    #             if not seg_start and not seg_end:
+    #                 segments.append(segment)
+    #             # segment connect with the current
+    #             if seg_start:
+    #                 segments[CURRENT_SEGMENT][SEGMENT_END] = segment[SEGMENT_END]
+    #
+    #     self.segments = segments
+    #
+    #     if self.is_changed_segments():
+    #         self.has_changed = True
+    #
+    #     return len(values) > 0
+
+    # def optimize(self):
+    #     start_ids = []
+    #     temp = []
+    #     # remove duplicated
+    #     for idx, seg in enumerate(self.segments):
+    #         if seg not in temp:
+    #             # if seg[0] == seg[1] and seg[0] in
+    #             if seg[0] == seg[1]:
+    #                 if idx != CURRENT_SEGMENT and seg[0] in self.segments[CURRENT_SEGMENT]:
+    #                     continue
+    #             else:
+    #                 start_ids.append(seg[0])
+    #             temp.append(seg)
+    #     dump = []
+    #     # remove segments with 1 id that are also in other segments
+    #     for seg in temp:
+    #         if seg[0] == seg[1] and seg[0] in start_ids:
+    #             continue
+    #         dump.append(seg)
+    #     self.segments = dump
+    #     # if self.is_changed_segments():
+    #     #     self.has_changed = True
+    #     print('Optimized segments: %s' % self.segments)
+
+    def save(self, force=False):
+        if not force and not self.is_changed_segments():
+            return False
         playlist = {
             "chat_id": self.chat_id,
             "title": self.title,
             "original_title": self.original_title,
             "segments": json.dumps(self.segments)
         }
+        print('Saving playlist: %s [force %s, changed %s]' % (self.segments, force, self.has_changed))
+        self.has_changed = False
         if self.id != 0:
             return Storage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
         return Storage.loaded().insert('playlist', playlist)
@@ -76,7 +186,30 @@ class Audio:
     STATE_HIDDEN = 8
     STATE_ERROR = 9
 
+    id: int
+    chat_id: int
+    message_id: int
+    mime_type: str
+    track_number: int
+    title: str
+    artist: str
+    album_artist: str
+    album: str
+    genre: str
+    file_name: str
+    created_at: int
+    date: int
+    size: int
+    duration: int
+    is_downloaded: int
+    is_moved: Literal[0, 1]
+    is_hidden: Literal[0, 1]
+    local_path: str
+    play_count: int
+    rating: Literal[0, 1, 2, 3, 4, 5]
+
     is_error = False
+    is_reloaded = False
 
     def __str__(self) -> str:
         return f'Audio <{self.chat_id},{self.message_id}>'
@@ -125,7 +258,7 @@ class Audio:
             self.date = data.get('date', 0)
             self.size = data.get('size', 0)
             self.duration = data.get('duration', 0)
-            self.is_downloaded = data.get('is_downloaded', False)
+            self.is_downloaded = data.get('is_downloaded', 0)
             self.is_moved = data.get('is_moved', 0)
             self.is_hidden = data.get('is_hidden', 0)
             self.local_path = data.get('local_path')
@@ -141,9 +274,7 @@ class Audio:
     def is_file_exists(self):
         isfile = self.is_downloaded and self.local_path and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
-            # print('file not exists, is_downloaded: %s, len: %s, is_file: %s, path: %s' %
-            #       (self.is_downloaded, len(self.local_path) > 1, os.path.isfile(self.local_path), self.local_path))
-            self.is_downloaded = False
+            self.is_downloaded = 0
         return isfile
 
     def get_state(self):
@@ -194,7 +325,7 @@ class Audio:
             self.is_error = True
             fail()
 
-        api.download_audio_idle(self.chat_id, self.message_id, priority=1, done=on_success, cancel=on_fail)
+        api.download_audio_idle(self.chat_id, self.message_id, priority=1, on_success=on_success, on_error=on_fail)
 
     def get_path(self):
         if not self.is_file_exists():
@@ -220,7 +351,6 @@ class Audio:
     def update_entry(self, entry, db=None, commit=True, state=True):
         if db is None:
             db = entry.get_entry_type().db
-        # self.db.entry_set(entry, RB.RhythmDBPropType.MOUNTPOINT, file_uri(audio.local_path))
         db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, self.track_number)
         db.entry_set(entry, RB.RhythmDBPropType.TITLE, self.title)
         db.entry_set(entry, RB.RhythmDBPropType.ARTIST, self.artist)
@@ -261,6 +391,15 @@ class Storage:
             except Exception as e:
                 os.remove(self.db_file)
                 raise Exception(e)
+
+        # sql = 'SELECT * FROM `playlist` WHERE 1=1'
+        # cursor = self.db.cursor()
+        # cursor.execute(sql)
+        # for row in cursor:
+        #     print('load playlist %s' % row[0])
+        #     playlist = Playlist(row)
+        #     playlist.save()
+        # cursor.close()
 
     @staticmethod
     def loaded():
@@ -382,23 +521,24 @@ class Storage:
 
         tg_audio = self.get_audio(d['chat_id'], d['message_id'], True)
         if tg_audio:
-            if len(d['local_path']) > 1:
+            # flag for indicate already loaded audio for PlaylistLoader
+            tg_audio.is_reloaded = True
+            if d['local_path']:
+                # update audio only if it was downloaded
+                print('Update audio %s' % tg_audio.id)
                 tg_audio.save({
                     'size': d['size'],
                     'local_path': d['local_path'],
                     'is_downloaded': d['is_downloaded'],
                     'is_moved': 0,
                 })
-                d['id'] = tg_audio.id
+            d['id'] = tg_audio.id
             d['size'] = tg_audio.size
             d['local_path'] = tg_audio.local_path
             d['is_downloaded'] = tg_audio.is_downloaded
             d['is_moved'] = tg_audio.is_moved
+
             return d if not convert else tg_audio
-        # else:
-        #     print('No audio file %s %s' % (d['chat_id'], d['message_id']))
-        #     show_error('No audio file')
-        #     return None
 
         cursor = self.db.execute("""
             INSERT INTO `audio` (
