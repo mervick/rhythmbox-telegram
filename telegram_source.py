@@ -406,7 +406,7 @@ class TelegramSource(RB.BrowserSource):
     def do_selected(self):
         self.plugin.source = self
         self.state_column.activate()
-        self.get_entry_view().set_sorting_order("Date Added", Gtk.SortType.DESCENDING)
+        self.get_entry_view().set_sorting_order("FirstSeen", Gtk.SortType.DESCENDING)
         self.bar = DownloadBar(self.plugin)
         self.bar.activate(self)
 
