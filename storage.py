@@ -30,13 +30,6 @@ SEGMENT_START = 0
 SEGMENT_END = 1
 CURRENT_SEGMENT = 0
 
-# SEGMENT_IDS = {
-#     SEGMENT_START: SEGMENT_START,
-#     SEGMENT_END: SEGMENT_END,
-#     'start': SEGMENT_START,
-#     'end': SEGMENT_END,
-# }
-
 class Playlist:
     id: int
     chat_id: int
@@ -54,7 +47,7 @@ class Playlist:
         self.update(data)
 
     def is_changed_segments(self):
-        print('CMP = %s  = %s VS %s' % (str(json.dumps(self.segments)) != self.snapshot, json.dumps(self.segments), self.snapshot))
+        # print('CMP = %s  = %s VS %s' % (str(json.dumps(self.segments)) != self.snapshot, json.dumps(self.segments), self.snapshot))
         return str(json.dumps(self.segments)) != self.snapshot
 
     def update(self, data):
@@ -70,9 +63,6 @@ class Playlist:
         self.segments.insert(CURRENT_SEGMENT, [0, 0])
 
     def set_current(self, segment_type, value):
-        # if self.segments[CURRENT_SEGMENT][segment_type] != value:
-        #     print('SET_CURRENT %s' % value)
-        #     self.has_changed = True
         self.segments[CURRENT_SEGMENT][segment_type] = value
 
     def current(self, segment_type):
@@ -111,59 +101,8 @@ class Playlist:
             segments.append(segment)
         self.segments = segments
 
-    # def join_segments1(self, values):
-    #     """ Join current segment with others that contain values """
-    #     segments = self.segments
-    #     values = [val for val in values if any(val in segment for segment in segments)]
-    #
-    #     for value in values:
-    #         segments_old = segments.copy()
-    #         # copy current segment
-    #         segments = segments[:1].copy()
-    #         # each over other segments
-    #         for segment in segments_old[1:]:
-    #             seg_start = segment[SEGMENT_START] == value
-    #             # segment is entirely in the current, just ignore, don't save it
-    #             seg_end = segment[SEGMENT_END] == value
-    #             if not seg_start and not seg_end:
-    #                 segments.append(segment)
-    #             # segment connect with the current
-    #             if seg_start:
-    #                 segments[CURRENT_SEGMENT][SEGMENT_END] = segment[SEGMENT_END]
-    #
-    #     self.segments = segments
-    #
-    #     if self.is_changed_segments():
-    #         self.has_changed = True
-    #
-    #     return len(values) > 0
-
-    # def optimize(self):
-    #     start_ids = []
-    #     temp = []
-    #     # remove duplicated
-    #     for idx, seg in enumerate(self.segments):
-    #         if seg not in temp:
-    #             # if seg[0] == seg[1] and seg[0] in
-    #             if seg[0] == seg[1]:
-    #                 if idx != CURRENT_SEGMENT and seg[0] in self.segments[CURRENT_SEGMENT]:
-    #                     continue
-    #             else:
-    #                 start_ids.append(seg[0])
-    #             temp.append(seg)
-    #     dump = []
-    #     # remove segments with 1 id that are also in other segments
-    #     for seg in temp:
-    #         if seg[0] == seg[1] and seg[0] in start_ids:
-    #             continue
-    #         dump.append(seg)
-    #     self.segments = dump
-    #     # if self.is_changed_segments():
-    #     #     self.has_changed = True
-    #     print('Optimized segments: %s' % self.segments)
-
-    def save(self, force=False):
-        if not force and not self.is_changed_segments():
+    def save(self):
+        if not self.is_changed_segments():
             return False
         playlist = {
             "chat_id": self.chat_id,
@@ -171,7 +110,7 @@ class Playlist:
             "original_title": self.original_title,
             "segments": json.dumps(self.segments)
         }
-        print('Saving playlist: %s [force %s, changed %s]' % (self.segments, force, self.has_changed))
+        print('Saving playlist')
         self.has_changed = False
         if self.id != 0:
             return Storage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
@@ -391,15 +330,6 @@ class Storage:
             except Exception as e:
                 os.remove(self.db_file)
                 raise Exception(e)
-
-        # sql = 'SELECT * FROM `playlist` WHERE 1=1'
-        # cursor = self.db.cursor()
-        # cursor.execute(sql)
-        # for row in cursor:
-        #     print('load playlist %s' % row[0])
-        #     playlist = Playlist(row)
-        #     playlist.save()
-        # cursor.close()
 
     @staticmethod
     def loaded():

@@ -314,43 +314,15 @@ class PlaylistLoader:
     def _add_audio(self, audio, blob):
         """ Add audio as entry in the playlist. """
         if not audio.is_reloaded:
-            print('add_entry %s' % audio.message_id)
+            # print('add_entry %s' % audio.message_id)
             self.add_entry(audio)
-        # print('_add_audio % ' % audio.message_id)
-        # update audio, add entries to playlist
-        # if audio.message_id == self.playlist.current(SEGMENT_START):
-        #     blob['signal'] = SIGNAL_REACHED_START
-        #     print('SIGNAL_REACHED_START, audio.message_id == current_segment[SEGMENT_START]')
-        #     # self._end_of_page = True
-        # elif audio.message_id == self.playlist.current(SEGMENT_END):
-        #     blob['signal'] = SIGNAL_REACHED_END
-        #     print('SIGNAL_REACHED_END, audio.message_id == current_segment[SEGMENT_END]')
-        #     # self._end_of_page = True
-        # if audio.is_reloaded:
-        #     print('audio.is_reloaded')
-
-        #     repeat_ids = blob.get('repeat_ids', [])
-        #     repeat_ids.append(audio.message_id)
-        #     blob['repeat_ids'] = repeat_ids
-        #     # self._end_of_page = True
-        #     # print('need to join with %s' % audio.message_id)
-        #     # print('segments %s' % self.playlist.segments)
-        #     # self.playlist.join_segment_with_id(audio.message_id)
-        # if not self._end_of_page and not audio.is_reloaded:
 
     def _each(self, data, blob):
         """ Iterate over all messages, check for segment boundaries """
         message_id = int(data['id'])
-        print('_EACH %s' % message_id)
-        print('%s' % self.playlist.segments)
-        # if message_id == self.playlist.current(SEGMENT_START):
-        #     blob['signal'] = SIGNAL_REACHED_START
-        #     blob['message_id'] = message_id
-        #     return False
-        # if message_id == self.playlist.current(SEGMENT_END):
-        #     blob['signal'] = SIGNAL_REACHED_END
-        #     blob['message_id'] = message_id
-        #     return False
+        # print('_EACH %s' % message_id)
+        # print('%s' % self.playlist.segments)
+
         result = self.playlist.search(message_id)
         if result is not None:
             blob['signal'] = SIGNAL_REACHED_NEXT
@@ -364,7 +336,7 @@ class PlaylistLoader:
         """ Read data, update playlist segments, loading next page """
         if self.terminated:
             return
-        print('_process %s' % self.source)
+        # print('_process %s' % self.source)
 
         self._timer_id = None
         # emit playlist-fetch-end with delay
@@ -375,34 +347,9 @@ class PlaylistLoader:
         offset_msg_id = blob.get('last_msg_id', 0)
 
         if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
-            print('Nothing to load, stop')
+            # print('Nothing to load, stop')
             self.timer.add(INTERVAL_LOW, self.start)
             return
-
-        # if self.playlist.current(SEGMENT_START) == 0:
-        #     self.playlist.set_current(SEGMENT_START, last_msg_id)
-        #
-        # repeat_ids = blob.get('repeat_ids', [])
-        # if repeat_ids:
-        #     self.playlist.join_segments(repeat_ids)
-        # blob['repeat_ids'] = []
-        #
-        # if last_msg_id not in repeat_ids:
-        #     print('last_msg_id not in repeat_ids')
-        #     self.playlist.set_current(SEGMENT_END, last_msg_id)
-        #     # self.playlist.segments[CURRENT_SEGMENT][SEGMENT_END] = last_msg_id
-        #     offset_msg_id = last_msg_id
-        # else:
-        #     offset_msg_id = self.playlist.current(SEGMENT_END)
-        #     print('set offset_msg_id from SEGMENT_END %s' % offset_msg_id)
-        #
-        # if self._end_of_page:
-        #     self.playlist.segments[0][1] = self.segment[1]
-        #     offset_msg_id = self.segment[1]
-        #     del self.playlist.segments[1]
-        #     self.segment = self.playlist.segment(1)
-        #
-        # self._end_of_page = False
 
         if self.playlist.current(SEGMENT_START) == 0:
             self.playlist.set_current(SEGMENT_START, offset_msg_id)
@@ -414,26 +361,10 @@ class PlaylistLoader:
             self.playlist.join_segments(message_id)
             offset_msg_id = self.playlist.current(SEGMENT_END)
 
-        # if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == -1 or last_msg_id == self.offset_msg_id:
-#         if last_msg_id == self.offset_msg_id:
-# #             self.playlist.segments = [[ self.playlist.segments[0][0], -1]]
-# #             if last_msg_id != self.offset_msg_id:
-# #                 self.playlist.segments = [[self.playlist.segments[CURRENT_SEGMENT][SEGMENT_START], offset_msg_id]]
-# #                 self.playlist.save(True)
-#             print('Loaded all messages, wait and load from start %s' % cmd)
-#             self._next_props = [self.start, None]
-#             # self._timer_id = GLib.timeout_add(60 * 5000, self.start)
-#             self._timer_id = GLib.timeout_add(2 * 5000, self.start)
-#             return
-
-
-
-        # self.playlist.optimize()
-
         if self.playlist.save():
             self.playlist = Playlist.read(self.chat_id)
 
-        print('page %s, offset_msg_id %s' % (self.page, offset_msg_id))
+        # print('page %s, offset_msg_id %s' % (self.page, offset_msg_id))
 
         self.last_msg_id = offset_msg_id
         self.timer.add(INTERVAL_MEDIUM if self.page > 10 else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
@@ -442,8 +373,8 @@ class PlaylistLoader:
         """ Load messages """
         if self.terminated:
             return
-        print('_load %s' % self.source)
-        print(blob)
+        # print('_load %s' % self.source)
+        # print(blob)
         self.source.emit('playlist-fetch-started')
         print('emit playlist-fetch-started')
         self.api.load_messages_idle(self.chat_id, update=self._add_audio, each=self._each, on_success=self._process,
@@ -451,13 +382,13 @@ class PlaylistLoader:
 
     def fetch(self):
         """ Fetch next messages """
-        print('FETCH %s' % self.source)
+        # print('FETCH %s' % self.source)
         if self.timer.remove():
             self.timer.callback()
 
     def stop(self):
         """ Stop loading """
-        print('STOP %s' % self.source)
+        # print('STOP %s' % self.source)
         self.terminated = True
         self.timer.remove()
         self.source.emit('playlist-fetch-end')
