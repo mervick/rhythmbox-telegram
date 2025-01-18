@@ -32,7 +32,7 @@ from storage import Storage
 
 logger = logging.getLogger(__name__)
 
-REGEX_TME_LINK = re.compile('^https://t\.me/(c/)?([a-zA-Z0-9_]+)/([0-9]+)(\?.+)?$')
+REGEX_TME_LINK = re.compile(r'^https://t\.me/(c/)?([a-zA-Z0-9_]+)/([0-9]+)(\?.+)?$')
 
 def inst_key(api_hash, phone):
     return '|'.join([phone.strip('+'), api_hash])
@@ -120,7 +120,7 @@ API_PAGE_LOADED = 'API_PAGE_LOADED'
 
 
 class TelegramApi(GObject.Object):
-    object = GObject.property(type=GObject.Object)
+    object = GObject.Property(type=GObject.Object)
     total_count = 0
     chats = []
     chats_info = {}
@@ -403,10 +403,12 @@ class TelegramApi(GObject.Object):
             "for_group": False
         })
         r.wait()
-        return r.update['link'] if 'link' in r.update else None
+        return r.update.get('link') if r.update else None
 
     def get_message_direct_link(self, chat_id, message_id):
         link = self.get_message_link(chat_id, message_id)
+        if not link:
+            return None
         m = REGEX_TME_LINK.match(link)
         if not m:
             return link

@@ -502,7 +502,8 @@ class TelegramSource(RB.BrowserSource):
         chat_id, message_id = get_location_data(location)
         audio = Audio({"chat_id": chat_id, "message_id": message_id})
         url = audio.get_link()
-        Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
+        if url:
+            Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
 
     def file_manager_action(self):
         entries = self.get_entry_view().get_selected_entries()
