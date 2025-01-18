@@ -249,7 +249,7 @@ class AudioDownloader(metaclass=SingletonMeta):
 
 INTERVAL_SHORT  = 5000    # 5 sec
 INTERVAL_MEDIUM = 10000   # 10 sec
-INTERVAL_LOW    = 300000  # 5 min
+INTERVAL_LONG   = 300000  # 5 min
 
 SIGNAL_REACHED_START = 'SIGNAL_REACHED_START'
 SIGNAL_REACHED_END   = 'SIGNAL_REACHED_END'
@@ -347,7 +347,7 @@ class PlaylistLoader:
 
         if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
             # print('Nothing to load, stop')
-            self.timer.add(INTERVAL_LOW, self.start)
+            self.timer.add(INTERVAL_LONG, self.start)
             return
 
         if self.playlist.current(SEGMENT_START) == 0:
