@@ -158,7 +158,7 @@ def get_chat_info(chat):
 def timestamp():
     return datetime.timestamp(datetime.now())
 
-def empty_cb(*args, **kwargs): # noqa
+def empty_cb(*args): # noqa
     pass
 
 def cb(fn):

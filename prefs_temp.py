@@ -187,7 +187,7 @@ class PrefsTempPage(PrefsPageBase):
             label = self.clear_tmp_btn_label.get_label()
             self.clear_tmp_btn_label.set_label(_('Deleting...'))
 
-            def on_done():
+            def on_complete():
                 self.plugin.storage.update('audio',
                                            {'is_downloaded': 0, 'local_path': ''},
                                            {'is_downloaded': 1, 'is_moved': 0})
@@ -201,7 +201,7 @@ class PrefsTempPage(PrefsPageBase):
             #     self.progress_label.set_text(path)
 
             if len(self.temp_dir) > 10:
-                start_deletion(self.temp_dir + '/music', completion_callback=on_done)
+                start_deletion(self.temp_dir + '/music', completion_callback=on_complete)
         else:
             self.clear_tmp_btn.set_sensitive(True)
 
