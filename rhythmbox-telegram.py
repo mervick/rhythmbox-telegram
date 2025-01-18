@@ -46,11 +46,11 @@ def delete_source(source_list):
 
 class TelegramPlugin(GObject.GObject, Peas.Activatable):
     __gtype_name__ = 'Telegram'
-    object = GObject.property(type=GObject.GObject)
+    object = GObject.Property(type=GObject.GObject)
 
     __gsignals__ = {
-        'reload_display_pages': (GObject.SIGNAL_RUN_FIRST, None, ()),
-        'update_download_info': (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'reload_display_pages': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'update_download_info': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self):

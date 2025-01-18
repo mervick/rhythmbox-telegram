@@ -369,7 +369,6 @@ class PlaylistLoader:
             return
 
         self.source.emit('playlist-fetch-started')
-        print('emit playlist-fetch-started')
         self.api.load_messages_idle(self.chat_id, update=self._add_audio, each=self._each, on_success=self._process,
                                     blob={**blob}, limit=limit)
 

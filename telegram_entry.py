@@ -22,7 +22,7 @@ from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 class TelegramEntryType(RB.RhythmDBEntryType):
     __gsignals__ = {
-        'entry_downloaded': (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'entry_downloaded': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
 
     def __init__(self, plugin):

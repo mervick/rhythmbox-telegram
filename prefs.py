@@ -29,7 +29,7 @@ from prefs_temp import PrefsTempPage
 
 class TelegramPrefs(GObject.GObject, PeasGtk.Configurable):
     __gtype_name__ = 'TelegramPrefs'
-    object = GObject.property(type=GObject.GObject)
+    object = GObject.Property(type=GObject.GObject)
     loading = None
     spinner = None
     parent = None

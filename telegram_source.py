@@ -27,7 +27,6 @@ from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLU
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
-
 class FormatColumn:
     def __init__(self, source):
         self.source = source
@@ -304,8 +303,8 @@ class RefreshBtn:
 
 class TelegramSource(RB.BrowserSource):
     __gsignals__ = {
-        'playlist_fetch_started': (GObject.SIGNAL_RUN_FIRST, None, ()),
-        'playlist_fetch_end': (GObject.SIGNAL_RUN_FIRST, None, ()),
+        'playlist_fetch_started': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'playlist_fetch_end': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __str__(self) -> str:
