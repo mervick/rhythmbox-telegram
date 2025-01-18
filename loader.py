@@ -274,6 +274,7 @@ class Timer:
         if self._timer_id:
             ret = GLib.source_remove(self._timer_id)
             self._timer_id = None
+            self._next = None
         return ret
 
     def callback(self):
