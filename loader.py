@@ -246,6 +246,7 @@ class AudioDownloader(metaclass=SingletonMeta):
             else:
                 audio.download(success=self._process, fail=self._next)
 
+MAX_PAGES_SHORT_INTERVAL = 10
 
 INTERVAL_SHORT  = 5000    # 5 sec
 INTERVAL_MEDIUM = 10000   # 10 sec
@@ -315,20 +316,18 @@ class PlaylistLoader:
     def _add_audio(self, audio, blob):
         """ Add audio as entry in the playlist. """
         if not audio.is_reloaded:
-            # print('add_entry %s' % audio.message_id)
             self.add_entry(audio)
 
     def _each(self, data, blob):
         """ Iterate over all messages, check for segment boundaries """
         message_id = int(data['id'])
-        # print('_EACH %s' % message_id)
-        # print('%s' % self.playlist.segments)
-
         result = self.playlist.search(message_id)
+
         if result is not None:
             blob['signal'] = SIGNAL_REACHED_NEXT
             blob['message_id'] = message_id
             return False
+
         if self.playlist.current(SEGMENT_START) == 0:
             self.playlist.set_current(SEGMENT_START, message_id)
         return True
@@ -337,16 +336,14 @@ class PlaylistLoader:
         """ Read data, update playlist segments, loading next page """
         if self.terminated:
             return
-        # print('_process %s' % self.source)
-        # emit playlist-fetch-end with delay
         GLib.timeout_add(2000, self.source.emit, 'playlist-fetch-end')
 
-        self.page = self.page + 1
+        if self.page <= MAX_PAGES_SHORT_INTERVAL:
+            self.page = self.page + 1
         signal = blob.get('signal')
         offset_msg_id = blob.get('last_msg_id', 0)
 
         if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
-            # print('Nothing to load, stop')
             self.timer.add(INTERVAL_LONG, self.start)
             return
 
@@ -363,17 +360,14 @@ class PlaylistLoader:
         if self.playlist.save():
             self.playlist = Playlist.read(self.chat_id)
 
-        # print('page %s, offset_msg_id %s' % (self.page, offset_msg_id))
-
         self.last_msg_id = offset_msg_id
-        self.timer.add(INTERVAL_MEDIUM if self.page > 10 else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
+        self.timer.add(INTERVAL_MEDIUM if self.page > MAX_PAGES_SHORT_INTERVAL else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
 
     def _load(self, blob, limit=50):
         """ Load messages """
         if self.terminated:
             return
-        # print('_load %s' % self.source)
-        # print(blob)
+
         self.source.emit('playlist-fetch-started')
         print('emit playlist-fetch-started')
         self.api.load_messages_idle(self.chat_id, update=self._add_audio, each=self._each, on_success=self._process,
@@ -381,13 +375,11 @@ class PlaylistLoader:
 
     def fetch(self):
         """ Fetch next messages """
-        # print('FETCH %s' % self.source)
         if self.timer.remove():
             self.timer.callback()
 
     def stop(self):
         """ Stop loading """
-        # print('STOP %s' % self.source)
         self.terminated = True
         self.timer.remove()
         self.source.emit('playlist-fetch-end')
