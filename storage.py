@@ -35,7 +35,7 @@ class Playlist:
     chat_id: int
     title: str
     original_title: str
-    snapshot: str
+    snapshot: List[List[int]]
     segments: List[List[int]]
     has_changed: bool = False
 
@@ -43,12 +43,10 @@ class Playlist:
         return f'Playlist <{self.chat_id}>'
 
     def __init__(self, data):
-        self._data = data
         self.update(data)
 
     def is_changed_segments(self):
-        # print('CMP = %s  = %s VS %s' % (str(json.dumps(self.segments)) != self.snapshot, json.dumps(self.segments), self.snapshot))
-        return str(json.dumps(self.segments)) != self.snapshot
+        return self.segments != self.snapshot
 
     def update(self, data):
         id_, chat_id, title, original_title, segments = data
@@ -56,8 +54,8 @@ class Playlist:
         self.chat_id = chat_id
         self.title = title
         self.original_title = original_title
-        self.snapshot = str(segments)
         self.segments = json.loads(segments)
+        self.snapshot = self.segments.copy()
 
     def insert_empty(self):
         self.segments.insert(CURRENT_SEGMENT, [0, 0])
@@ -81,9 +79,6 @@ class Playlist:
         playlist = Storage.loaded().select('playlist', {"chat_id": chat_id})
         data = playlist if playlist else tuple([0, chat_id, '', '', '[]'])
         return Playlist(data)
-
-    def reload(self):
-        self._data = Playlist.read(self.chat_id)._data
 
     def join_segments(self, value):
         segments = [self.segments[CURRENT_SEGMENT].copy()]
