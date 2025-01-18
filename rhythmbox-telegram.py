@@ -40,6 +40,7 @@ def hide_source(source_list):
 
 def delete_source(source_list):
     for source in source_list:
+        source.deactivate()
         source.delete_thyself()
 
 
