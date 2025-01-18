@@ -274,15 +274,15 @@ class Timer:
         if self._timer_id:
             ret = GLib.source_remove(self._timer_id)
             self._timer_id = None
-            self._next = None
         return ret
 
     def callback(self):
         self._timer_id = None
         if self._next:
             callback, args = self._next
+            ret = callback(*args)
             self._next = None
-            return callback(*args)
+            return ret
 
 
 class PlaylistLoader:
@@ -338,8 +338,6 @@ class PlaylistLoader:
         if self.terminated:
             return
         # print('_process %s' % self.source)
-
-        self._timer_id = None
         # emit playlist-fetch-end with delay
         GLib.timeout_add(2000, self.source.emit, 'playlist-fetch-end')
 
