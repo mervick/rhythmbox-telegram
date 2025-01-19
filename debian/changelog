@@ -1,3 +1,21 @@
+rhythmbox-telegram-plugin (1.0.8) unstable; urgency=medium
+
+  * Add refresh button
+  * Add fetch signals
+  * Improved loading messages api
+  * Improved playlist loading
+  * Fix sort order
+  * Fix get_message_direct_link()
+  * Connect settings: add connect status
+  * Update AuthDialog
+  * Refactoring, following PEP 8
+  * Fix deprecated warnings
+  * Clean code
+  * Minor fixes
+  * Add and update screenshots
+
+ -- izman <izmanw@gmail.com>  Sun, 19 Jan 2025 08:44:19 +0200
+
 rhythmbox-telegram-plugin (1.0.7) unstable; urgency=medium
 
   * Avoiding duplicate custom columns
