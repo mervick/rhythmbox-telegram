@@ -258,16 +258,16 @@ SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'
 
 
 class Timer:
-    _next: Tuple[any, any] | None
+    _props: Tuple[any, any] | None
     _timer_id: int | None
 
     def __init__(self):
-        self._next = None
+        self._props = None
         self._timer_id = None
 
     def add(self, interval, callback, *args):
         self.remove()
-        self._next = (callback, args)
+        self._props = (callback, args)
         self._timer_id = GLib.timeout_add(interval, self.callback)
 
     def remove(self):
@@ -279,10 +279,10 @@ class Timer:
 
     def callback(self):
         self._timer_id = None
-        if self._next:
-            callback, args = self._next
+        if self._props:
+            callback, args = self._props
             ret = callback(*args)
-            self._next = None
+            self._props = None
             return ret
 
 
@@ -297,6 +297,7 @@ class PlaylistLoader:
         return f'PlaylistLoader <{self.chat_id}>'
 
     def __init__(self, source, chat_id, add_entry):
+        self.terminated = False
         self.api = TelegramApi.loaded()
         self.source = source
         self.chat_id = chat_id
@@ -306,7 +307,8 @@ class PlaylistLoader:
 
     def start(self, *obj):
         """ Start loading messages starting from new messages """
-        self.terminated = False
+        if self.terminated:
+            return
         self.last_msg_id = 0
         self.playlist = Playlist.read(self.chat_id)
         self.playlist.insert_empty()

@@ -400,6 +400,7 @@ class TelegramSource(RB.BrowserSource):
         self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
+            self.loader = None
         self.plugin.remove_plugin_menu()
 
     def do_selected(self):
