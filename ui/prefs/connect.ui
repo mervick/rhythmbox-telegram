@@ -185,6 +185,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <property name="position">0</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkLabel" id="connect_status">
+            <property name="label" translatable="yes">Status: Connected ✅ </property>
+            <property name="width-request">280</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="halign">center</property>
+            <property name="justify">center</property>
+            <property name="margin-top">10</property>
+            <style>
+              <class name="small-text"/>
+            </style>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="expand">False</property>

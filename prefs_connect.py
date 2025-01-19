@@ -49,6 +49,7 @@ class PrefsConnectPage(PrefsPageBase):
         api_hash_entry = self.ui.get_object("api_hash_entry")
         phone_entry = self.ui.get_object("phone_number_entry")
         connect_btn = self.ui.get_object("connect_btn")
+        connect_status = self.ui.get_object("connect_status")
         details_box = self.ui.get_object('details_box')
         # helpbox_wrap = self.ui.get_object('helpbox_wrap')
         helpbox = self.ui.get_object('helpbox')
@@ -71,11 +72,16 @@ class PrefsConnectPage(PrefsPageBase):
             details_box.set_sensitive(enabled)
             helpbox.set_sensitive(enabled)
             connect_btn.set_sensitive(not self.loading)
-            btn_label = _('Connect') if not connected else _('Disconnect')
+            status = _('Connected ✅') if connected else _('Not Connected ❌')
 
             if self.loading:
                 btn_label = _('Disconnecting...') if not connected else _('Connecting...')
+            else:
+                btn_label = _('Connect') if not connected else _('Disconnect')
+
             connect_btn.set_label(btn_label)
+            connect_status.set_markup('<small>%s: %s</small>' % (_('Status'), status))
+
             # @TODO enable/disable prefs pages
 #             channel_box.set_sensitive(not self.loading and not enabled)
 
