@@ -405,8 +405,7 @@ class TelegramApi(GObject.Object):
         r.wait()
         return r.update.get('link') if r.update else None
 
-    def get_message_direct_link(self, chat_id, message_id):
-        link = self.get_message_link(chat_id, message_id)
+    def get_message_direct_link(self, link):
         if not link:
             return None
         m = REGEX_TME_LINK.match(link)

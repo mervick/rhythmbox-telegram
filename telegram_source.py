@@ -370,6 +370,7 @@ class TelegramSource(RB.BrowserSource):
             self.activated = False
             if self.loader is not None:
                 self.loader.stop()
+            self.loader = None
             self.db.disconnect(self.entry_updated_id)
             self.props.entry_type.deactivate()
 
@@ -417,6 +418,8 @@ class TelegramSource(RB.BrowserSource):
         self.plugin.add_plugin_menu()
 
         if self.visibility in (1, None):
+            if self.loader is not None:
+                self.loader.stop()
             self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)
             self.loader.start()
 
@@ -502,9 +505,15 @@ class TelegramSource(RB.BrowserSource):
         location = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(location)
         audio = Audio({"chat_id": chat_id, "message_id": message_id})
-        url = audio.get_link()
-        if url:
-            Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
+        link = audio.get_link()
+        direct_link = self.plugin.api.get_message_direct_link(link)
+        if direct_link:
+            try:
+                Gtk.show_uri(screen, direct_link, Gdk.CURRENT_TIME)
+            except GLib.Error:
+                Gtk.show_uri(screen, link, Gdk.CURRENT_TIME)
+        elif link:
+            Gtk.show_uri(screen, link, Gdk.CURRENT_TIME)
 
     def file_manager_action(self):
         entries = self.get_entry_view().get_selected_entries()

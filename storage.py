@@ -144,6 +144,7 @@ class Audio:
 
     is_error = False
     is_reloaded = False
+    link = None
 
     def __str__(self) -> str:
         return f'Audio <{self.chat_id},{self.message_id}>'
@@ -275,7 +276,7 @@ class Audio:
         return res
 
     def get_link(self):
-        return Storage.loaded().api.get_message_direct_link(self.chat_id, self.message_id)
+       return Storage.loaded().api.get_message_link(self.chat_id, self.message_id)
 
     def get_file_ext(self):
         if self.mime_type in mime_types.keys():
