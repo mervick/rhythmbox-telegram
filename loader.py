@@ -125,12 +125,15 @@ class AudioDownloader(metaclass=SingletonMeta):
         self.filename_template = self.plugin.settings[KEY_FILENAME_TEMPLATE] # noqa
 
     def add_entries(self, entries):
+        commit = False
         for entry in entries:
             state = get_entry_state(entry)
             if state != Audio.STATE_IN_LIBRARY:
                 self.entries.append(entry)
                 set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
-                self.plugin.db.commit()
+                commit = True
+        if commit:
+            self.plugin.db.commit()
 
     def stop(self):
         self._running = False
