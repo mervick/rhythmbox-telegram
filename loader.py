@@ -246,18 +246,19 @@ class AudioDownloader(metaclass=SingletonMeta):
             else:
                 audio.download(success=self._process, fail=self._next)
 
+
 MAX_PAGES_SHORT_INTERVAL = 10
 
 INTERVAL_SHORT  = 5000    # 5 sec
-INTERVAL_MEDIUM = 10000   # 10 sec
-INTERVAL_LONG   = 300000  # 5 min
+INTERVAL_MEDIUM = 20000   # 20 sec
+INTERVAL_LONG   = 60000   # 2 min
 
 SIGNAL_REACHED_START = 'SIGNAL_REACHED_START'
 SIGNAL_REACHED_END   = 'SIGNAL_REACHED_END'
 SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'
 
 
-class Timer:
+class Timer(metaclass=SingletonMeta):
     _props: Tuple[any, any] | None
     _timer_id: int | None
 
@@ -281,9 +282,13 @@ class Timer:
         self._timer_id = None
         if self._props:
             callback, args = self._props
-            ret = callback(*args)
+            callback(*args)
             self._props = None
-            return ret
+        return False
+
+    def clear(self):
+        self._timer_id = None
+        self._props = None
 
 
 class PlaylistLoader:
@@ -313,7 +318,6 @@ class PlaylistLoader:
         self.playlist = Playlist.read(self.chat_id)
         self.playlist.insert_empty()
         self._load({}, limit=1)
-        return self
 
     def _add_audio(self, audio, blob):
         """ Add audio as entry in the playlist. """
@@ -340,12 +344,11 @@ class PlaylistLoader:
             return
         GLib.timeout_add(2000, self.source.emit, 'playlist-fetch-end')
 
-        if self.page <= MAX_PAGES_SHORT_INTERVAL:
-            self.page = self.page + 1
         signal = blob.get('signal')
         offset_msg_id = blob.get('last_msg_id', 0)
 
         if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
+            self.source.has_reached_end = True
             self.timer.add(INTERVAL_LONG, self.start)
             return
 
@@ -361,6 +364,13 @@ class PlaylistLoader:
 
         if self.playlist.save():
             self.playlist = Playlist.read(self.chat_id)
+
+        if signal == SIGNAL_REACHED_NEXT and self.source.has_reached_end:
+            self.timer.add(INTERVAL_LONG, self.start)
+            return
+
+        if self.page <= MAX_PAGES_SHORT_INTERVAL:
+            self.page = self.page + 1
 
         self.last_msg_id = offset_msg_id
         self.timer.add(INTERVAL_MEDIUM if self.page > MAX_PAGES_SHORT_INTERVAL else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
@@ -383,4 +393,5 @@ class PlaylistLoader:
         """ Stop loading """
         self.terminated = True
         self.timer.remove()
+        self.timer.clear()
         self.source.emit('playlist-fetch-end')

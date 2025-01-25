@@ -327,6 +327,7 @@ class TelegramSource(RB.BrowserSource):
         self.refresh_btn = RefreshBtn(self)
         self.bar = None
         self.bar_ui = None
+        self.has_reached_end = False
         self.entry_updated_id = None
         self.loaded_entries = []
         self.custom_model = {}
