@@ -1,3 +1,13 @@
+rhythmbox-telegram-plugin (1.0.9) unstable; urgency=medium
+
+  * Improve loader, fix loader timer
+  * Fix stop loading playlist
+  * Fallback to web link if Telegram is not installed
+  * Improve add_entries in AudioDownloader
+  * Add VISIBILITY_* constants, don't show RefreshBtn on source with hidden tracks
+
+ -- izman <izmanw@gmail.com>  Sun, 26 Jan 2025 06:36:52 +0200
+
 rhythmbox-telegram-plugin (1.0.8) unstable; urgency=medium
 
   * Add refresh button
