@@ -21,7 +21,7 @@ from common import to_location, get_location_data, empty_cb, SingletonMeta, get_
 from common import get_location_audio_id, pretty_file_size
 from common import file_uri, get_entry_state, set_entry_state
 from loader import PlaylistLoader
-from storage import Audio
+from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 
 import gettext
@@ -31,7 +31,7 @@ class FormatColumn:
     def __init__(self, source):
         self.source = source
 
-        entry_view = source.get_entry_view()
+        entry_view = source.get_entry_view() # noqa
 
         column = Gtk.TreeViewColumn()
         renderer = Gtk.CellRendererText()
@@ -63,7 +63,7 @@ class SizeColumn:
     def __init__(self, source):
         self.source = source
 
-        entry_view = source.get_entry_view()
+        entry_view = source.get_entry_view() # noqa
 
         column = Gtk.TreeViewColumn()
         renderer = Gtk.CellRendererText()
@@ -125,7 +125,7 @@ class StateColumn:
         column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
         column.set_fixed_width(36)
 
-        entry_view = source.get_entry_view()
+        entry_view = source.get_entry_view() # noqa
         self.entry_view = entry_view
 
         entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
@@ -201,7 +201,7 @@ class DownloadBar(metaclass=SingletonMeta):
             entry_view = source.get_entry_view()
             builder = Gtk.Builder()
             builder.add_from_file(rb.find_plugin_file(source.plugin, "ui/status.ui"))
-            status_box = builder.get_object('status_box')
+            status_box: Gtk.Box = builder.get_object('status_box')
             source.bar_ui = {
                 "box": status_box,
                 "counter": builder.get_object('counter_label'),
@@ -350,18 +350,21 @@ class TelegramSource(RB.BrowserSource):
         self.set_property("playlist-menu", self.shell.props.application.get_shared_menu("playlist-page-menu"))
 
     def init_columns(self):
+        entry_view = self.get_entry_view() # noqa
+
         if self.plugin.account.settings[KEY_RATING_COLUMN]:
-            self.get_entry_view().append_column(rb.RB.EntryViewColumn.RATING, True)
+            entry_view.append_column(rb.RB.EntryViewColumn.RATING, True)
         if self.plugin.account.settings[KEY_FILE_SIZE_COLUMN]:
             SizeColumn(self)
         if self.plugin.account.settings[KEY_AUDIO_FORMAT_COLUMN]:
             FormatColumn(self)
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
-            self.get_entry_view().append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
+            entry_view.append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
         self.state_column = StateColumn(self) # noqa
 
     def activate(self):
-        self.refresh_btn.activate()
+        if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
+            self.refresh_btn.activate()
         self.activated = True
         self.entry_updated_id = self.db.connect('entry-changed', self.on_entry_changed)
         self.props.entry_type.activate()
@@ -418,7 +421,7 @@ class TelegramSource(RB.BrowserSource):
 
         self.plugin.add_plugin_menu()
 
-        if self.visibility in (1, None):
+        if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
             if self.loader is not None:
                 self.loader.stop()
             self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)

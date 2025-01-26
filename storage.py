@@ -30,6 +30,10 @@ SEGMENT_START = 0
 SEGMENT_END = 1
 CURRENT_SEGMENT = 0
 
+VISIBILITY_ALL = None
+VISIBILITY_VISIBLE = 1
+VISIBILITY_HIDDEN = 0
+
 class Playlist:
     id: int
     chat_id: int
@@ -401,13 +405,13 @@ class Storage:
             return Audio(result)
         return result
 
-    def load_entries(self, chat_id, each, visibility=None):
+    def load_entries(self, chat_id, each, visibility=VISIBILITY_ALL):
         sql = 'SELECT * FROM `audio` WHERE chat_id = ?' # noqa
         data = (chat_id,)
-        if visibility == 1:
+        if visibility == VISIBILITY_VISIBLE:
             sql += ' AND is_hidden = ?'
             data = (chat_id, 0)
-        elif visibility == 0:
+        elif visibility == VISIBILITY_HIDDEN:
             sql += ' AND is_hidden = ?'
             data = (chat_id, 1)
         cursor = self.db.cursor()

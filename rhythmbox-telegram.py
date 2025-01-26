@@ -28,6 +28,7 @@ from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
+from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
 
 def show_source(source_list):
@@ -222,19 +223,19 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         sources = []
 
         if av == VAL_AV_ALL:
-            source = self.register_source(chat_id, name, None)
+            source = self.register_source(chat_id, name, VISIBILITY_ALL)
             self.shell.append_display_page(source, group)
             self.sources[chat_id] = (source,)
             return
 
         if av in (VAL_AV_VISIBLE, VAL_AV_DUAL):
-            source = self.register_source(chat_id, name, 1)
+            source = self.register_source(chat_id, name, VISIBILITY_VISIBLE)
             self.shell.append_display_page(source, group)
             sources.append(source)
 
         if av in (VAL_AV_HIDDEN, VAL_AV_DUAL):
             hidden_name = "%s [%s]" % (name, _('Hidden'))
-            source = self.register_source(chat_id, hidden_name, 0)
+            source = self.register_source(chat_id, hidden_name, VISIBILITY_HIDDEN)
             self.shell.append_display_page(source, group)
             sources.append(source)
 
