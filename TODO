@@ -1,4 +1,3 @@
-* fix connect spinner in settings page
 * update state for entries after deleting temp files
 * change is_moved & is_downloaded when user deletes song entry
 * add option "ask" in the resolve variants, create dialog which asks what to do when downloaded file already exists
