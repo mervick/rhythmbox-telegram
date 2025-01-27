@@ -36,6 +36,13 @@ class TelegramPrefs(GObject.GObject, PeasGtk.Configurable):
     api = None
     removed_help = False
 
+    main_box: Gtk.Box
+    page1: PrefsConnectPage
+    page2: PrefsChannelsPage
+    page3: PrefsSettingsPage
+    page4: PrefsViewPage
+    page5: PrefsTempPage
+
     __gsignals__ = {
         'api-connect' : (GObject.SignalFlags.RUN_FIRST, None, ()),
         'api-disconnect' : (GObject.SignalFlags.RUN_FIRST, None, ()),

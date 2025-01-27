@@ -32,23 +32,20 @@ class PrefsChannelsPage(PrefsPageBase):
         self.prefs.settings.set_string(KEY_CHANNELS, json.dumps(v))
         self.on_change(KEY_CHANNELS, [channel["id"] for channel in v])
 
-    def on_channels_clear(self, obj=None):
+    def on_channels_clear(self, *obj):
         self.search_list_box.clear_selected(False)
         self.search_list_box.clear_list()
         self.search_list_box.reset()
         self.prefs.account.settings.set_string(KEY_CHANNELS, '[]')
 
-    def on_channels_reload(self, obj=None):
+    def on_channels_reload(self, *obj):
         selected = json.loads(self.prefs.account.settings[KEY_CHANNELS])
         self.search_list_box.set_selected(selected)
 
-    def on_channels_fetch(self, obj=None):
+    def on_channels_fetch(self, *obj):
         def _set_chats(chats):
             self.search_list_box.clear_list()
             self.search_list_box.set_items(list(chats.values()))
-            # @TODO add spinner?
-#             self.loading = False
-#             upd_spinner()
         self.prefs.api.get_chats_idle(_set_chats)
 
     def register_signals(self):
@@ -66,12 +63,13 @@ class PrefsChannelsPage(PrefsPageBase):
         channels_list_box = self.ui.get_object("channels_list_box")
         channels_flow_box = self.ui.get_object("channels_flow_box")
 
-#         channel_box = self.ui.get_object("channel_box")
-#         channel_wrap = self.ui.get_object('channel_wrap_box')
-
         search_list_box = SearchListBox(search_entry, placeholder, channels_flow_box, channels_list_box, list_frame, empty_label)
         search_list_box.connect_on_change(self.on_list_box_change)
         self.search_list_box = search_list_box
 
         add_chat_btn = self.ui.get_object("add_chat_btn")
         add_chat_btn.set_popover(popover)
+
+    def set_sensitive(self, sensitive):
+        self.box.set_sensitive(sensitive)
+        self.ui.get_object("channels_list_box").set_sensitive(sensitive)

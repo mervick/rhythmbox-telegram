@@ -54,6 +54,9 @@ class PrefsPageBase(GObject.GObject):
         self._init_widget()
         self.register_signals()
 
+    def set_sensitive(self, sensitive):
+        self.box.set_sensitive(sensitive)
+
     def register_signals(self):
         pass
 
