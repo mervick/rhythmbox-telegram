@@ -16,7 +16,6 @@
 
 import rb
 import json
-from gi.overrides import GLib # noqa
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio
 from gi.repository import Peas, PeasGtk # noqa
