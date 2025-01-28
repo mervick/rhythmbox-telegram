@@ -11,5 +11,5 @@
 ![Rhythmbox-Telegram Settings - View Settings](prefs-6.png)  
 ![Rhythmbox-Telegram Settings - Temporary Files](prefs-7.png)  
 ![Rhythmbox Telegram playlist in Rhythmbox](playlist.png)  
-![Rhythmbox Telegram - Confirm Replace Dialog](replace-dialog.png))  
+![Rhythmbox Telegram - Confirm Replace Dialog](replace-dialog.png)  
 ![Rhythmbox Telegram - plugin menu](menu.png)  
