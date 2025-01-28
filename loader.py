@@ -18,7 +18,9 @@ import os
 import shutil
 from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
-from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
+from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
+from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state, CONFLICT_ACTION_IGNORE
+from resolve_dialog import ResolveDialog
 from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED
 from typing import Tuple
@@ -172,22 +174,21 @@ class AudioDownloader(metaclass=SingletonMeta):
         self._info = info
         self.plugin.emit('update_download_info', info)
 
-    def _move_file(self, src, dst):
+    def _move_file(self, action, src, dst):
         dst_dir = str(os.path.dirname(dst)).rstrip('/')
         os.makedirs(dst_dir, exist_ok=True)
 
-        if self.conflict_resolve == 'skip':
+        if action == CONFLICT_ACTION_SKIP:
             if os.path.exists(dst):
                 print(f"File '{dst}' already exists. Skipping.")
                 return dst
             else:
                 shutil.move(src, dst)
 
-        elif self.conflict_resolve == 'overwrite':
-            print(f"File '{dst}' already exists. Overwriting.")
+        elif action == CONFLICT_ACTION_REPLACE:
             shutil.move(src, dst)
 
-        elif self.conflict_resolve == 'rename':
+        elif action == CONFLICT_ACTION_RENAME:
             dst_base = os.path.basename(dst)
             name, ext = os.path.splitext(dst_base)
             counter = 1
@@ -199,8 +200,16 @@ class AudioDownloader(metaclass=SingletonMeta):
             return new_dst
         return dst
 
-    def _process(self, audio):
+    def _move_audio_and_update(self, action, audio, filename):
         entry = self.entries[self._idx]
+        if action != CONFLICT_ACTION_IGNORE:
+            filename = self._move_file(action, audio.local_path, filename)
+            audio.save({"local_path": filename, "is_moved": True})
+        audio.update_entry(entry)
+        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
+        self._next(1000)
+
+    def _process(self, audio):
         tags = {
             'title': audio.title,
             'artist': audio.artist,
@@ -212,15 +221,20 @@ class AudioDownloader(metaclass=SingletonMeta):
             'genre': audio.genre,
             'year': audio.get_year(),
         }
+        audio.meta_tags = tags
         file_ext = audio.get_file_ext()
         filename = filepath_parse_pattern(
             "%s/%s%s" % (self.folder_hierarchy, self.filename_template, f'.{file_ext}' if len(file_ext) else ''), tags)
         filename = "%s/%s" % (self.library_location, filename)
-        filename = self._move_file(audio.local_path, filename)
-        audio.save({"local_path": filename, "is_moved": True})
-        audio.update_entry(entry)
-        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next(1000)
+
+        if self.conflict_resolve == CONFLICT_ACTION_ASK:
+            if os.path.exists(filename):
+                dialog = ResolveDialog(self.plugin)
+                dialog.ask_resolve_action(audio, filename, self._move_audio_and_update)
+            else:
+                self._move_audio_and_update(CONFLICT_ACTION_REPLACE, audio, filename)
+        else:
+            self._move_audio_and_update(self.conflict_resolve, audio, filename)
 
     def _next(self, delay=1000):
         self.entries[self._idx] = None
