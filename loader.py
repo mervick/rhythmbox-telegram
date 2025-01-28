@@ -383,6 +383,7 @@ class PlaylistLoader:
             self.playlist = Playlist.read(self.chat_id)
 
         if (signal == SIGNAL_REACHED_NEXT and self.source.has_reached_end) or offset_msg_id == LAST_MESSAGE_ID:
+            self.source.has_reached_end = True
             self.timer.add(INTERVAL_LONG, self.start)
             return
 
