@@ -66,6 +66,7 @@
         <choice value='rename'/>
         <choice value='overwrite'/>
         <choice value='skip'/>
+        <choice value='ask'/>
       </choices>
       <summary>File download conflict handling</summary>
       <description>Determines how the plugin should handle situations where a file being downloaded has the same name as an existing file</description>
