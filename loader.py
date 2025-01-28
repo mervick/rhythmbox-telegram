@@ -22,7 +22,7 @@ from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACT
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state, CONFLICT_ACTION_IGNORE
 from resolve_dialog import ResolveDialog
 from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
-from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED
+from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
 from typing import Tuple
 
 
@@ -364,7 +364,7 @@ class PlaylistLoader:
         signal = blob.get('signal')
         offset_msg_id = blob.get('last_msg_id', 0)
 
-        if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id == 0 or offset_msg_id == self.last_msg_id:
+        if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id in (0, self.last_msg_id, LAST_MESSAGE_ID):
             self.source.has_reached_end = True
             self.timer.add(INTERVAL_LONG, self.start)
             return
@@ -382,7 +382,7 @@ class PlaylistLoader:
         if self.playlist.save():
             self.playlist = Playlist.read(self.chat_id)
 
-        if signal == SIGNAL_REACHED_NEXT and self.source.has_reached_end:
+        if (signal == SIGNAL_REACHED_NEXT and self.source.has_reached_end) or offset_msg_id == LAST_MESSAGE_ID:
             self.timer.add(INTERVAL_LONG, self.start)
             return
 

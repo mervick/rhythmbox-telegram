@@ -118,6 +118,8 @@ API_ALL_MESSAGES_LOADED = 'ALL_MESSAGES_LOADED'
 API_END_OF_SEGMENT = 'END_OF_SEGMENT'
 API_PAGE_LOADED = 'API_PAGE_LOADED'
 
+LAST_MESSAGE_ID = 0x100000  # 1048576
+
 
 class TelegramApi(GObject.Object):
     object = GObject.Property(type=GObject.Object)
@@ -346,6 +348,11 @@ class TelegramApi(GObject.Object):
 
         msgs = r.update.get('messages', [])
         blob['last_msg_id'] = msgs[-1]['id']
+
+        if blob['last_msg_id'] == LAST_MESSAGE_ID:
+            logger.debug('tg, load messages: No messages found, exit loop')
+            blob['on_success'](blob, API_ALL_MESSAGES_LOADED)
+            return False
 
         for data in msgs:
             if is_msg_valid(data):
