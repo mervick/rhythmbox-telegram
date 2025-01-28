@@ -21,6 +21,7 @@ from gi.repository import RB
 from gi.repository import Gtk
 from prefs_base import PrefsPageBase, set_combo_text_column
 from common import filepath_parse_pattern, show_error
+from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
 from account import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
 from account import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 
@@ -51,9 +52,10 @@ library_layout_filenames = [
 ]
 
 conflict_resolve_variants = [
-    [_('Rename'), 'rename'],
-    [_('Overwrite'), 'overwrite'],
-    [_('Skip'), 'skip'],
+    [_('Rename'), CONFLICT_ACTION_RENAME],
+    [_('Replace'), CONFLICT_ACTION_REPLACE],
+    [_('Skip'), CONFLICT_ACTION_SKIP],
+    [_('Ask for Action'), CONFLICT_ACTION_ASK],
 ]
 
 example_tags = {
