@@ -109,14 +109,13 @@ class ResolveDialog:
         self.plugin = plugin
 
     def ask_resolve_action(self, audio, filename, callback):
-        print('ask_resolve_action')
-        self.new_file = FileInfo.from_audio(audio)
-        self.old_file = FileInfo.from_file(filename)
-
         if self._running:
             raise ConcurrentResolveError("Cannot invoke resolve: a previous operation is still running.")
 
         self._running = True
+
+        self.new_file = FileInfo.from_audio(audio)
+        self.old_file = FileInfo.from_file(filename)
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/resolve-dialog.ui"))
@@ -141,7 +140,6 @@ class ResolveDialog:
         self.window.set_resizable(False)
         self.window.set_modal(True)
         self.window.set_transient_for(self.plugin.shell.props.window)
-        # # self.window.set_keep_above(True)
         self.window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
 
         self.window.show_all()
