@@ -50,4 +50,5 @@ CREATE TABLE audio (
    `rating` INT(1) DEFAULT '0',
     UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
 );
+CREATE INDEX idx_chat_id ON audio(chat_id);
 '''
