@@ -16,6 +16,8 @@
 
 import enum
 import math
+import gi
+gi.require_version('Gio', '2.0')
 from datetime import datetime
 from gi.repository import RB, GLib, Gio, Gtk
 
@@ -42,6 +44,12 @@ class MessageType(enum.Enum):
     def has(value):
         return value in message_type_set
 
+
+CONFLICT_ACTION_RENAME = 'rename'
+CONFLICT_ACTION_REPLACE = 'overwrite'
+CONFLICT_ACTION_SKIP = 'skip'
+CONFLICT_ACTION_ASK = 'ask'
+CONFLICT_ACTION_IGNORE = 'ignore'
 
 message_type_set = set(item.value for item in MessageType)
 message_set = {'id', 'chat_id', 'date', 'content'}
@@ -303,3 +311,13 @@ def pretty_file_size(size_bytes, digits=2):
     p = math.pow(1000, i)
     s = round(size_bytes / p, digits)
     return f"{s} {size_name[i]}"
+
+def get_file_size(filename):
+    file = Gio.File.new_for_path(filename)
+    info = file.query_info('standard::size', Gio.FileQueryInfoFlags.NONE)
+    return int(info.get_size())
+
+def format_time(seconds):
+    if seconds < 3600:
+        return f"{seconds // 60:01}:{seconds % 60:02}"
+    return f"{seconds // 3600:01}:{(seconds % 3600) // 60:02}:{seconds % 60:02}"
