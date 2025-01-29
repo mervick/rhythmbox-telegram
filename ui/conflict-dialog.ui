@@ -20,17 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
-  <object class="GtkWindow" id="window">
+  <object class="GtkDialog" id="window">
     <property name="visible">True</property>
     <property name="can-focus">True</property>
-    <property name="default-width">500</property>
     <signal name="destroy" handler="on_window_destroy" swapped="no"/>
-    <child>
-      <object class="GtkViewport">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <child>
-          <object class="GtkBox">
+    <action-widgets>
+      <action-widget response="-4">rename_btn</action-widget>
+      <action-widget response="-3">replace_btn</action-widget>
+      <action-widget response="-6">skip_btn</action-widget>
+    </action-widgets>
+    <child internal-child="vbox">
+      <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="border-width">20</property>
@@ -450,8 +450,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <property name="position">0</property>
               </packing>
             </child>
-            <child>
+            <child internal-child="action_area">
               <object class="GtkButtonBox">
+                <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="layout-style">spread</property>
                 <child>
@@ -513,8 +514,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </packing>
             </child>
           </object>
-        </child>
-      </object>
     </child>
   </object>
 </interface>

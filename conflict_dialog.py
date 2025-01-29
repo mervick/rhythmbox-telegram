@@ -21,7 +21,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GLib
 from typing import Callable
 from storage import Audio
-from common import get_audio_tags, format_time, pretty_file_size, get_file_size, file_uri
+from common import get_audio_tags, format_time, pretty_file_size, get_file_size, file_uri, move_window_center
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_IGNORE
 
 # def parse_stream_info(data):
@@ -128,16 +128,19 @@ class ConflictDialog:
         self.window.set_title(_('Telegram: Download File Conflict'))
 
         self.callback = callback
-        self.update_window()
+        self.update_ui()
 
+        self.window.set_default_size(500, 400)
         self.window.set_resizable(False)
         self.window.set_modal(True)
         self.window.set_transient_for(self.plugin.shell.props.window)
         self.window.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
-
         self.window.show_all()
 
-    def update_window(self):
+        # if self.plugin.shell.props.visibility:
+        #     GLib.timeout_add(400, move_window_center, self.window, self.plugin.shell.props.window)
+
+    def update_ui(self):
         basename = os.path.basename(self.old_file.file_path)
         self.builder.get_object('title').set_label(
             '<span font_desc=\'14\' weight=\'bold\'>%s</span>' % (_('Replace file "%s"?') % basename))
