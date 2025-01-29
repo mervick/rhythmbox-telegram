@@ -321,3 +321,24 @@ def format_time(seconds):
     if seconds < 3600:
         return f"{seconds // 60:01}:{seconds % 60:02}"
     return f"{seconds // 3600:01}:{(seconds % 3600) // 60:02}:{seconds % 60:02}"
+
+def get_window_center(window):
+    if isinstance(window, Gtk.ApplicationWindow):
+        width, height = window.get_size()
+        x, y = window.get_position()
+        left_center = round((width - x) / 2)
+        top_center = round((height - y) / 2)
+    else:
+        position = window.get_position()
+        geometry = window.get_geometry()
+        left_center = round(position.x + (geometry.width - geometry.x) / 2)
+        top_center = round(position.y + (geometry.height - geometry.y) / 2)
+    return top_center, left_center
+
+def move_window_center(window, parent):
+    x11window = window.get_toplevel().get_property('window')
+    geometry = x11window.get_geometry()
+    top_center, left_center = get_window_center(parent)
+    top = max(0, top_center - round(geometry.height / 2))
+    left = max(0, left_center - round(geometry.width / 2))
+    window.move(y=top, x=left)
