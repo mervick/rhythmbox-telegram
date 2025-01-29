@@ -326,8 +326,8 @@ def get_window_center(window):
     if isinstance(window, Gtk.ApplicationWindow):
         width, height = window.get_size()
         x, y = window.get_position()
-        left_center = round((width - x) / 2)
-        top_center = round((height - y) / 2)
+        left_center = x + round(width / 2)
+        top_center = y + round(height / 2)
     else:
         position = window.get_position()
         geometry = window.get_geometry()
@@ -341,4 +341,4 @@ def move_window_center(window, parent):
     top_center, left_center = get_window_center(parent)
     top = max(0, top_center - round(geometry.height / 2))
     left = max(0, left_center - round(geometry.width / 2))
-    window.move(y=top, x=left)
+    window.move(left, top)
