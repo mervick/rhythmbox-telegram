@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
+<!-- Generated with glade 3.38.2
 
 Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
 This file is part of rhythmbox-telegram
@@ -17,17 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- -->
+-->
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <object class="GtkWindow" id="window">
-<!--  <object class="GtkDialog" id="window">-->
     <property name="visible">True</property>
     <property name="can-focus">True</property>
-<!--    <property name="default-width">300</property>-->
     <property name="default-width">500</property>
-<!--    <property name="default-height">540</property>-->
-    <property name="default-height">600</property>
     <signal name="destroy" handler="on_window_destroy" swapped="no"/>
     <child>
       <object class="GtkViewport">
@@ -40,35 +36,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <property name="border-width">20</property>
             <property name="orientation">vertical</property>
             <property name="spacing">10</property>
-
             <child>
               <object class="GtkBox">
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">10</property>
-                <property name="margin">10</property>
-
+<!--                <child>-->
+<!--                  <object class="GtkImage">-->
+<!--                    <property name="can-focus">False</property>-->
+<!--                    <property name="ypad">10</property>-->
+<!--                    <property name="icon-name">warning</property>-->
+<!--                    <property name="icon_size">6</property>-->
+<!--                  </object>-->
+<!--                  <packing>-->
+<!--                    <property name="expand">False</property>-->
+<!--                    <property name="fill">True</property>-->
+<!--                    <property name="position">0</property>-->
+<!--                  </packing>-->
+<!--                </child>-->
                 <child>
-                  <object class="GtkImage">
+                  <object class="GtkLabel" id="title">
                     <property name="can-focus">False</property>
-                    <property name="icon-name">warning</property>
-                    <property name="icon_size">6</property>
-                    <property name="ypad">10</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-
-                <child>
-                  <object class="GtkLabel">
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Downloaded file already exists.</property>
-                    <property name="xalign">0.5</property>
                     <property name="ypad">0</property>
+                    <property name="label" translatable="yes">&lt;span font_desc="14" weight="bold"&gt;Replace file "03. Can You Feel.mp3"?&lt;/span&gt;</property>
+                    <property name="use-markup">True</property>
                     <property name="wrap">True</property>
+                    <property name="xalign">0.5</property>
                     <attributes>
                       <attribute name="weight" value="bold"/>
                     </attributes>
@@ -79,78 +72,76 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="position">1</property>
                   </packing>
                 </child>
-
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">What would you like to do?</property>
-                    <property name="xalign">0.5</property>
-                    <property name="ypad">0</property>
-                    <property name="wrap">True</property>
-                    <attributes>
-                      <attribute name="weight" value="bold"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
-
-                <child>
-                  <!-- n-columns=3 n-rows=4 -->
-                  <object class="GtkGrid">
-                    <property name="can-focus">False</property>
-                    <property name="halign">center</property>
-                    <property name="column-spacing">15</property>
-                    <property name="row-spacing">6</property>
-                    <property name="margin-top">10</property>
-                    <property name="margin-bottom">15</property>
-
+                    <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="can-focus">False</property>
-<!--                        <property name="label">New File:</property>-->
-                        <property name="label">&lt;small&gt;New File&lt;/small&gt;</property>
-                        <property name="xalign">0</property>
-                        <property name="ypad">5</property>
-                        <property name="use-markup">True</property>
-                        <attributes>
-                          <attribute name="weight" value="bold"/>
-                        </attributes>
+                        <property name="ypad">0</property>
+                        <property name="label" translatable="yes">Another file with the same name already exists.</property>
+                        <property name="wrap">True</property>
+                        <property name="xalign">0.5</property>
                       </object>
                       <packing>
-                        <property name="width">3</property>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">0</property>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
-
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="can-focus">False</property>
+                        <property name="ypad">0</property>
+                        <property name="label" translatable="yes">Replacing it will overwrite its content</property>
+                        <property name="wrap">True</property>
+                        <property name="xalign">0.5</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">False</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <!-- n-columns=3 n-rows=2 -->
+                  <object class="GtkGrid">
+                    <property name="can-focus">False</property>
+                    <property name="halign">center</property>
+                    <property name="margin-top">10</property>
+                    <property name="margin-bottom">15</property>
+                    <property name="row-spacing">25</property>
+                    <property name="column-spacing">25</property>
                     <child>
                       <object class="GtkImage">
                         <property name="can-focus">False</property>
+                        <property name="valign">start</property>
+                        <property name="margin-top">5</property>
                         <property name="icon-name">audio-x-generic</property>
                         <property name="icon_size">6</property>
-                        <property name="valign">start</property>
-                        <property name="margin-top">3</property>
                       </object>
                       <packing>
                         <property name="left-attach">0</property>
                         <property name="top-attach">1</property>
                       </packing>
                     </child>
-
                     <child>
                       <object class="GtkButton" id="browse_new_btn">
+                        <property name="label" translatable="yes">Browse</property>
                         <property name="can-focus">False</property>
                         <property name="receives-default">False</property>
-                        <property name="label" translatable="yes">Browse</property>
-                        <property name="use-underline">True</property>
                         <property name="valign">start</property>
-                        <property name="vexpand">False</property>
                         <property name="hexpand">False</property>
-                        <property name="margin-top">2</property>
+                        <property name="vexpand">False</property>
+                        <property name="use-underline">True</property>
                         <signal name="clicked" handler="browse_new_btn_clicked_cb" swapped="no"/>
                       </object>
                       <packing>
@@ -158,40 +149,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="top-attach">1</property>
                       </packing>
                     </child>
-
                     <child>
                       <!-- n-columns=2 n-rows=5 -->
                       <object class="GtkGrid">
                         <property name="can-focus">False</property>
+                        <property name="row-spacing">2</property>
                         <property name="column-spacing">10</property>
-                        <property name="row-spacing">5</property>
-
                         <child>
                           <object class="GtkLabel" id="filename_new_val">
                             <property name="can-focus">False</property>
-                            <property name="label">&lt;small&gt;12. Can You Feel.mp3&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="ypad">5</property>
+                            <property name="label">Replace with</property>
+                            <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="max-width-chars">30</property>
-                            <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
                             </attributes>
                           </object>
                           <packing>
-                            <property name="width">2</property>
                             <property name="left-attach">0</property>
                             <property name="top-attach">0</property>
+                            <property name="width">2</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="artist_new_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Artist:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -202,22 +190,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="artist_new_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Bring Me The Horizon&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-                            <property name="wrap">True</property>
                             <property name="use-markup">True</property>
+                            <property name="wrap">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">1</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="title_new_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Title:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -228,22 +215,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="title_new_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Can You Feel&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-                            <property name="wrap">True</property>
                             <property name="use-markup">True</property>
+                            <property name="wrap">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">2</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="duration_new_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Duration:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -254,22 +240,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="duration_new_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;03:20&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-<!--                            <property name="width-request">300</property>-->
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">3</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="filesize_new_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;File size:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -280,161 +264,80 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="filesize_new_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;2.3 MB&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">4</property>
                           </packing>
                         </child>
-
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="samplerate_new_lbl">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;Sample rate:&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">0</property>-->
-<!--                            <property name="top-attach">5</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="samplerate_new_val">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;44100 Hz&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="width-request">300</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">1</property>-->
-<!--                            <property name="top-attach">5</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="bitrate_new_lbl">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;Bit rate:&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">0</property>-->
-<!--                            <property name="top-attach">6</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="bitrate_new_val">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;320 kbps&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="width-request">300</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">1</property>-->
-<!--                            <property name="top-attach">6</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-
                       </object>
-
                       <packing>
                         <property name="left-attach">1</property>
                         <property name="top-attach">1</property>
                       </packing>
                     </child>
-
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="can-focus">False</property>
-<!--                        <property name="label">Old File:</property>-->
-                        <property name="label">&lt;small&gt;Old File&lt;/small&gt;</property>
-                        <property name="xalign">0</property>
-                        <property name="ypad">5</property>
-                        <property name="use-markup">True</property>
-                        <property name="margin-top">10</property>
-                        <attributes>
-                          <attribute name="weight" value="bold"/>
-                        </attributes>
-                      </object>
-                      <packing>
-                        <property name="width">3</property>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">2</property>
-                      </packing>
-                    </child>
-
                     <child>
                       <object class="GtkImage">
                         <property name="can-focus">False</property>
+                        <property name="valign">start</property>
+                        <property name="margin-top">5</property>
                         <property name="icon-name">audio-x-generic</property>
                         <property name="icon_size">6</property>
-                        <property name="valign">start</property>
-                        <property name="margin-top">3</property>
                       </object>
                       <packing>
                         <property name="left-attach">0</property>
-                        <property name="top-attach">3</property>
+                        <property name="top-attach">0</property>
                       </packing>
                     </child>
-
                     <child>
                       <object class="GtkButton" id="browse_old_btn">
-                        <property name="receives-default">False</property>
-                        <property name="can-focus">False</property>
                         <property name="label" translatable="yes">Browse</property>
-                        <property name="use-underline">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="receives-default">False</property>
                         <property name="valign">start</property>
-                        <property name="vexpand">False</property>
                         <property name="hexpand">False</property>
-                        <property name="margin-top">2</property>
+                        <property name="vexpand">False</property>
+                        <property name="use-underline">True</property>
                         <signal name="clicked" handler="browse_old_btn_clicked_cb" swapped="no"/>
                       </object>
                       <packing>
                         <property name="left-attach">2</property>
-                        <property name="top-attach">3</property>
+                        <property name="top-attach">0</property>
                       </packing>
                     </child>
-
                     <child>
-
                       <!-- n-columns=2 n-rows=5 -->
                       <object class="GtkGrid">
                         <property name="can-focus">False</property>
+                        <property name="row-spacing">2</property>
                         <property name="column-spacing">10</property>
-                        <property name="row-spacing">5</property>
-
                         <child>
                           <object class="GtkLabel" id="filename_old_val">
                             <property name="can-focus">False</property>
-                            <property name="label">&lt;small&gt;12. Can You Feel.mp3&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="ypad">5</property>
+                            <property name="label">Original file</property>
+                            <property name="use-markup">True</property>
                             <property name="wrap">True</property>
                             <property name="max-width-chars">30</property>
-                            <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
                             </attributes>
                           </object>
                           <packing>
-                            <property name="width">2</property>
                             <property name="left-attach">0</property>
                             <property name="top-attach">0</property>
+                            <property name="width">2</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="artist_old_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Artist:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -445,22 +348,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="artist_old_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Bring Me The Horizon&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-                            <property name="wrap">True</property>
                             <property name="use-markup">True</property>
+                            <property name="wrap">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">1</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="title_old_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Title:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -471,22 +373,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="title_old_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Can You Feel&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-                            <property name="wrap">True</property>
                             <property name="use-markup">True</property>
+                            <property name="wrap">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">2</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="duration_old_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;Duration:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -497,22 +398,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="duration_old_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;03:20&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
-<!--                            <property name="width-request">300</property>-->
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">3</property>
                           </packing>
                         </child>
-
                         <child>
                           <object class="GtkLabel" id="filesize_old_lbl">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;File size:&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
@@ -523,133 +422,94 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLabel" id="filesize_old_val">
                             <property name="can-focus">False</property>
                             <property name="label">&lt;small&gt;2.3 MB&lt;/small&gt;</property>
-                            <property name="xalign">0</property>
                             <property name="use-markup">True</property>
+                            <property name="xalign">0</property>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">4</property>
                           </packing>
                         </child>
-
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="samplerate_old_lbl">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;Sample rate:&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">0</property>-->
-<!--                            <property name="top-attach">5</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="samplerate_old_val">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;44100 Hz&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="width-request">300</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">1</property>-->
-<!--                            <property name="top-attach">5</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="bitrate_old_lbl">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;Bit rate:&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">0</property>-->
-<!--                            <property name="top-attach">6</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-<!--                        <child>-->
-<!--                          <object class="GtkLabel" id="bitrate_old_val">-->
-<!--                            <property name="can-focus">False</property>-->
-<!--                            <property name="label">&lt;small&gt;320 kbps&lt;/small&gt;</property>-->
-<!--                            <property name="xalign">0</property>-->
-<!--                            <property name="width-request">300</property>-->
-<!--                            <property name="use-markup">True</property>-->
-<!--                          </object>-->
-<!--                          <packing>-->
-<!--                            <property name="left-attach">1</property>-->
-<!--                            <property name="top-attach">6</property>-->
-<!--                          </packing>-->
-<!--                        </child>-->
-
                       </object>
-
                       <packing>
                         <property name="left-attach">1</property>
-                        <property name="top-attach">3</property>
+                        <property name="top-attach">0</property>
                       </packing>
                     </child>
-
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">3</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
-
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
+                <property name="position">0</property>
               </packing>
             </child>
-
             <child>
               <object class="GtkButtonBox">
                 <property name="can-focus">False</property>
                 <property name="layout-style">spread</property>
-<!--                <property name="spacing">6</property>-->
                 <child>
                   <object class="GtkButton" id="rename_btn">
+                    <property name="label" translatable="yes">Keep Both</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="label" translatable="yes">Keep Both</property>
-                    <property name="use-underline">True</property>
+                    <property name="receives-default">False</property>
                     <property name="margin-top">2</property>
                     <property name="margin-bottom">2</property>
+                    <property name="use-underline">True</property>
                     <signal name="clicked" handler="rename_btn_clicked_cb" swapped="no"/>
                   </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="replace_btn">
+                    <property name="label" translatable="yes">Replace</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="label" translatable="yes">Replace</property>
-                    <property name="use-underline">True</property>
+                    <property name="receives-default">False</property>
                     <property name="margin-top">2</property>
                     <property name="margin-bottom">2</property>
+                    <property name="use-underline">True</property>
                     <signal name="clicked" handler="replace_btn_clicked_cb" swapped="no"/>
                   </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="skip_btn">
+                    <property name="label" translatable="yes">Skip</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="label" translatable="yes">Skip</property>
-                    <property name="use-underline">True</property>
                     <property name="receives-default">True</property>
                     <property name="margin-top">2</property>
                     <property name="margin-bottom">2</property>
+                    <property name="use-underline">True</property>
                     <signal name="clicked" handler="skip_btn_clicked_cb" swapped="no"/>
                   </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
                 </child>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
