@@ -97,28 +97,21 @@ def set_small_label(widget, label):
     widget.set_markup('<small>%s</small>' % label)
 
 
-class ResolveDialog:
+class ConflictDialog:
     builder: Gtk.Builder
     window: Gtk.Window | None = None
     callback: Callable[[str, Audio, str], None] | None = None
     new_file: FileInfo | None = None
     old_file: FileInfo | None = None
 
-    def __init__(self, plugin):
-        self._running = False
-        self.plugin = plugin
-
-    def ask_resolve_action(self, audio, filename, callback):
-        if self._running:
-            raise ConcurrentResolveError("Cannot invoke resolve: a previous operation is still running.")
-
+    def __init__(self, plugin, audio, filename, callback):
         self._running = True
-
+        self.plugin = plugin
         self.new_file = FileInfo.from_audio(audio)
         self.old_file = FileInfo.from_file(filename)
 
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/resolve-dialog.ui"))
+        self.builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/conflict-dialog.ui"))
 
         self.window = self.builder.get_object('window')
         signals = {
@@ -132,7 +125,7 @@ class ResolveDialog:
             "delete-event": self._on_window_destroy,
         }
         self.builder.connect_signals(signals)
-        self.window.set_title(_('Telegram Download File'))
+        self.window.set_title(_('Telegram: Download File Conflict'))
 
         self.callback = callback
         self.update_window()
@@ -146,14 +139,8 @@ class ResolveDialog:
 
     def update_window(self):
         basename = os.path.basename(self.old_file.file_path)
-        name_len = len(basename)
-
-        if name_len > 40:
-            set_small_label(self.builder.get_object('filename_new_val'), basename)
-            set_small_label(self.builder.get_object('filename_old_val'), basename)
-        else:
-            self.builder.get_object('filename_new_val').set_label(basename)
-            self.builder.get_object('filename_old_val').set_label(basename)
+        self.builder.get_object('title').set_label(
+            '<span font_desc=\'14\' weight=\'bold\'>%s</span>' % (_('Replace file "%s"?') % basename))
 
         set_small_label(self.builder.get_object('artist_new_lbl'), _('Artist:'))
         set_small_label(self.builder.get_object('artist_new_val'), self.new_file.meta_tags.get('artist', 'Unknown'))

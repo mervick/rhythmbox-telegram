@@ -20,7 +20,7 @@ from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state, CONFLICT_ACTION_IGNORE
-from resolve_dialog import ResolveDialog
+from conflict_dialog import ConflictDialog
 from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
 from typing import Tuple
@@ -229,8 +229,7 @@ class AudioDownloader(metaclass=SingletonMeta):
 
         if self.conflict_resolve == CONFLICT_ACTION_ASK:
             if os.path.exists(filename):
-                dialog = ResolveDialog(self.plugin)
-                dialog.ask_resolve_action(audio, filename, self._move_audio_and_update)
+                ConflictDialog(self.plugin, audio, filename, self._move_audio_and_update)
             else:
                 self._move_audio_and_update(CONFLICT_ACTION_REPLACE, audio, filename)
         else:
