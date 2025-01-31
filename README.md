@@ -7,7 +7,7 @@ Rhythmbox-Telegram is a plugin for Rhythmbox that allows you to listen to and do
 
 ## Key Features
 
-- **Telegram Integration**: Easily add Telegram channels and chats to Rhythmbox as playlists, simplifying your music browsing experience.
+- **Telegram Integration**: Easily add Telegram channels/groups/chats to Rhythmbox as playlists, simplifying your music browsing experience.
 
 - **Browse Audio Files**: Easily browse, search, and organize audio files shared in Telegram directly from Rhythmbox, ensuring quick and convenient access to your favorite tracks.
 
@@ -15,12 +15,11 @@ Rhythmbox-Telegram is a plugin for Rhythmbox that allows you to listen to and do
 
 - **Download to Library**: Download audio files from Telegram directly to your Rhythmbox library, expanding your music collection with the content you enjoy.
 
-With Rhythmbox-Telegram, enjoy the convenience of accessing and loading your favorite Telegram audio content into your music library, transforming how you organize and enjoy your music collection.
-
+With Rhythmbox-Telegram, enjoy the convenience of accessing and downloading your favorite Telegram audio content into your music library, transforming how you organize and enjoy your music collection.
 
 ## Installation
 
-**Note:** Regardless of the installation method, the plugin depends on TDLib. For architectures other than x64, TDLib must be installed manually.  Refer to the official [TDLib GitHub repository](https://github.com/tdlib/td) for instructions.
+**Note:** Regardless of the installation method, the plugin depends on TDLib. For architectures other than x64, TDLib must be installed manually.  Refer to the official [TDLib GitHub repository](https://github.com/tdlib/td) for instructions. TDLib for x64 is installed automatically.
 
 ### Method 1: Install from Debian Package
 
@@ -30,7 +29,7 @@ For Debian-like systems, download the latest `.deb` package from the [releases p
 sudo dpkg -i rhythmbox-telegram-plugin_*.deb
 ```
 
-**Note:** If the architecture is different from x64, you can still use the Debian package, but you will need to [install TDLib manually](https://github.com/tdlib/td).
+If the architecture is different from x64, you can still use the Debian package, but you will need to [install TDLib manually](https://github.com/tdlib/td).
 
 ---
 
@@ -45,7 +44,7 @@ bash rhythmbox-telegram/install.sh
 
 The script will handle the entire installation process, including downloading dependencies, setting up the plugin, and compiling schemas.
 
-**Note:** If the architecture is different from x64, you will need to [install TDLib manually](https://github.com/tdlib/td).
+If the architecture is different from x64, you will need to [install TDLib manually](https://github.com/tdlib/td).
 
 ---
 
@@ -67,8 +66,6 @@ sudo cp rhythmbox-telegram/org.gnome.rhythmbox.plugins.telegram.gschema.xml /usr
 # update glib schema
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
-
-**Note:** As in all cases, if the architecture is different from x64, you will need to [install TDLib manually](https://github.com/tdlib/td).
 
 ### Restart Rhythmbox
 
@@ -107,40 +104,37 @@ The plugin uses the Telegram API strictly for reading purposes.
 The following actions are carried out:
 
 * Authorization process
-* Retrieving the contact list (necessary to fetch groups and channels)
-* Iterating over all messages in groups and channels selected as "Music Sources" in the plugin settings (only audio files are searched; messages and audio messages are ignored)
+* Retrieving the chats list
+* Iterating over all messages in chats selected as "Music Sources" in the plugin settings (only audio files are searched)
 * Downloading of audio files
 * Getting a public link to a message with an audio file
 
 No other operations are conducted.
 
-### TDLib API Methods and Handlers Used
+### Full list of API methods and handlers that the plugin uses:
 
-The plugin uses only the following methods and handlers:
+* `setTdlibParameters` - Sets the parameters for TDLib initialization
+* `checkDatabaseEncryptionKey` - Checks the database encryption key for correctness
+* `getAuthorizationState` - Gets the current authorization state
+* `setAuthenticationPhoneNumber` - Sets the phone number of the user and sends an authentication code to the user
+* `checkAuthenticationPassword` - Checks the 2-step verification password for correctness
+* `checkAuthenticationCode` - Checks the authentication code
+* `getChats` - Gets an ordered list of chats from the beginning of a chat list
+* `loadChats` - Loads more chats from a chat list
+* `getChat` - Gets information about a chat by its identifier
+* `getChatHistory` - Gets messages in a chat
+* `getMessage` - Gets information about a message
+* `downloadFile` - Downloads a file from the cloud
+* `getMessageLink` - Gets an HTTPS link to a message in a chat
+* `updateAuthorizationState` - Listens the user authorization state
+* `updateNewChat` -  Listens when a chat is loaded or created
 
-* `setTdlibParameters`
-* `checkDatabaseEncryptionKey`
-* `getAuthorizationState`
-* `setAuthenticationPhoneNumber`
-* `checkAuthenticationPassword`
-* `checkAuthenticationCode`
-* `loadChats`
-* `getChats`
-* `getChat`
-* `getMessage`
-* `getChatHistory`
-* `downloadFile`
-* `getMessageLink`
-* `updateAuthorizationState`
-* `updateNewChat`
 
-### Caching and Audio File Retrieval
+### Audio Loading and Data Retrieving
 
-The plugin caches information about retrieved audio files. The audio file list is initially fetched in small batches to stay within API quota limits. If the initial retrieval is incomplete, remaining tracks will be loaded later. The plugin automatically fetches new files and continues to load any remaining tracks with intervals of 5-10 minutes, both during initialization and while retrieving new content. This approach ensures efficient, quota-compliant, and timely updates of new content.
-
-## Data Storage
-
-We strive to protect your data by implementing various security measures.
+The audio file list is fetched in small batches with a 20-second interval (the first few pages are loaded with a 5-second interval) to stay within API quota limits. To ensure a low number of requests, the plugin retrieves the list of files from chats once. Once the playlist is completely loaded, the system checks for new messages every 2 minutes.
+The plugin caches information about retrieved audio files.
+This approach ensures efficient, quota-compliant, and timely updates of new content.
 
 ### Authentication Data
 
@@ -149,7 +143,7 @@ Authentication data is encrypted and stored within the GNOME Keyring. This ensur
 ### Telegram Data
 
 Data obtained from Telegram is encrypted using a user-provided encryption key and managed by the official Telegram client [TDLib](https://core.telegram.org/tdlib).  
-The encrypted databases are stored at `~/.local/share/rhythmbox/telegram/*/database`  
+The encrypted database is stored at `~/.local/share/rhythmbox/telegram/*/database`  
 This database is required for TDLib to work.
 
 ### Temporary Audio Files
@@ -160,18 +154,13 @@ You can also delete these files through the plugin settings.
 
 ### Audio Metadata
 
-We store metadata of audio files in an plain format.  
-This includes: chat identifier, message identifier of audio file within the chat, publication date and time, file size, file name, audio meta tags and the file's location in the file system.
+We store audio file metadata in a plain SQLite database.
+This includes: chat identifier, message ID of the audio file within the chat, publication date/time, file size, file name, and audio metadata tags.
+Additionally, it stores information about loaded chats as segments of message ID ranges, as well as details on hidden and downloaded audio files within the playlist.
 
-This data is stored within the database at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`
+This database is located at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`
 
-This is a general database of all metadata about audio files.
-Data is loaded only once, and later data is loaded if new audio appear. Information about hidden and downloaded audio is also stored here. If you delete this database, the information will have to be fetched again.
-
-
-## License
-
-[Rhythmbox-Telegram](https://github.com/mervick/rhythmbox-telegram) is an open-source plugin distributed under the [GPL-3 license](https://github.com/mervick/rhythmbox-telegram/blob/master/LICENCE).
+Data is loaded  once for each chat. If you delete this database, the information will have to be fetched again.
 
 
 ## Contribute
