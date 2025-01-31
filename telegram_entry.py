@@ -110,7 +110,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
 
         if self.plugin.account.settings[KEY_PRELOAD_PREV_TRACK]:
             prev_entry = self.get_prev_entry(entry)
-            if preload_hidden or get_entry_state(prev_entry) != Audio.STATE_HIDDEN:
+            if prev_entry and (preload_hidden or get_entry_state(prev_entry) != Audio.STATE_HIDDEN):
                 prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
 
                 if prev_audio and not prev_audio.is_file_exists():
@@ -119,7 +119,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         # The preloader loads first what was sent last
         if self.plugin.account.settings[KEY_PRELOAD_NEXT_TRACK]:
             next_entry = self.get_next_entry(entry)
-            if preload_hidden or get_entry_state(next_entry) != Audio.STATE_HIDDEN:
+            if next_entry and (preload_hidden or get_entry_state(next_entry) != Audio.STATE_HIDDEN):
                 next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
 
                 if next_audio and not next_audio.is_file_exists():

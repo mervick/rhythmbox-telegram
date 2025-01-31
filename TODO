@@ -5,4 +5,3 @@
 * detect existing directories in a case-insensitive manner
 * allow re-download downloaded songs
 * add best artists
-* fix: first entry (from bottom) does not playing nor downloading
