@@ -1,3 +1,20 @@
+rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
+
+  * Set file info after check if it is running
+  * Update INTERVAL_LONG
+  * Add index on sql
+  * Define LAST_MESSAGE_ID, checking message_id for LAST_MESSAGE_ID
+  * Rename ConflictDialog, update window titles
+  * Improve conflict-dialog.ui
+  * Add move_window_center(), get_window_center()
+  * Fix preload prev/next entry
+  * Update screenshots
+  * Add replace-dialog.png screenshot
+  * Fix typos
+  * Upd README
+
+ -- izman <izmanw@gmail.com>  Fri, 31 Jan 2025 11:05:43 +0200
+
 rhythmbox-telegram-plugin (1.0.10) unstable; urgency=medium
 
   * Update mime types
