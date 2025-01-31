@@ -1,5 +1,7 @@
 rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
 
+  * Set tdlib parameters
+  * Set tdlib application_version
   * Set file info after check if it is running
   * Update INTERVAL_LONG
   * Add index on sql
@@ -11,9 +13,10 @@ rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
   * Update screenshots
   * Add replace-dialog.png screenshot
   * Fix typos
+  * Upd rules
   * Upd README
 
- -- izman <izmanw@gmail.com>  Fri, 31 Jan 2025 11:05:43 +0200
+ -- izman <izmanw@gmail.com>  Fri, 31 Jan 2025 13:25:33 +0200
 
 rhythmbox-telegram-plugin (1.0.10) unstable; urgency=medium
 
