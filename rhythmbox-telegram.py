@@ -29,6 +29,7 @@ from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
 from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
+VERSION = "1.0.11"
 
 def show_source(source_list):
     for source in source_list:
@@ -55,6 +56,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
 
     def __init__(self):
         super(TelegramPlugin, self).__init__()
+        TelegramApi.application_version = VERSION
         self.account = Account(self)
         self.app = Gio.Application.get_default()
         self.shell = None
