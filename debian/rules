@@ -6,9 +6,6 @@
 override_dh_makeshlibs:
 	dh_makeshlibs -V
 
-override_dh_builddeb:
-	dh_builddeb -- -Zgzip
-
 override_dh_strip:
 	dh_strip --exclude=libtdjson.so
 
