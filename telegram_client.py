@@ -121,11 +121,19 @@ API_PAGE_LOADED = 'API_PAGE_LOADED'
 LAST_MESSAGE_ID = 0x100000  # 1048576
 
 
+TDLIB_VERB_FATAL = 0
+TDLIB_VERB_ERROR = 1
+TDLIB_VERB_WARN  = 2
+TDLIB_VERB_INFO  = 3
+TDLIB_VERB_DEBUG = 4
+
+
 class TelegramApi(GObject.Object):
     object = GObject.Property(type=GObject.Object)
     total_count = 0
     chats = []
     chats_info = {}
+    application_version = '1.0.0'
 
     artist = ''
     artist_audio = []
@@ -171,6 +179,10 @@ class TelegramApi(GObject.Object):
             phone=self.phone,
             database_encryption_key=self.api_hash,
             files_directory=self.files_dir,
+            device_model='Rhythmbox Telegram Plugin',
+            application_version=TelegramApi.application_version,
+            use_secret_chats=False,
+            tdlib_verbosity=TDLIB_VERB_FATAL
         )
 
     def get_error(self):
