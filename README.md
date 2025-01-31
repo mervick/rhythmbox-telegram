@@ -133,8 +133,8 @@ No other operations are conducted.
 ### Audio Loading and Data Retrieving
 
 The audio file list is fetched in small batches with a 20-second interval (the first few pages are loaded with a 5-second interval) to stay within API quota limits. To ensure a low number of requests, the plugin retrieves the list of files from chats once. Once the playlist is completely loaded, the system checks for new messages every 2 minutes.
-The plugin caches information about retrieved audio files.
-This approach ensures efficient, quota-compliant, and timely updates of new content.
+The plugin caches information about retrieved audio files.  
+This approach ensures efficient, quota-compliant, and timely updates of new content.  
 
 ### Authentication Data
 
@@ -154,9 +154,9 @@ You can also delete these files through the plugin settings.
 
 ### Audio Metadata
 
-We store audio file metadata in a plain SQLite database.
-This includes: chat identifier, message ID of the audio file within the chat, publication date/time, file size, file name, and audio metadata tags.
-Additionally, it stores information about loaded chats as segments of message ID ranges, as well as details on hidden and downloaded audio files within the playlist.
+We store audio file metadata in a plain SQLite database.  
+This includes: chat identifier, message ID of the audio file within the chat, publication date/time, file size, file name, and audio metadata tags.  
+Additionally, it stores information about loaded chats as segments of message ID ranges, as well as details on hidden and downloaded audio files within the playlist.  
 
 This database is located at: `~/.local/share/rhythmbox/telegram/*/data.sqlite`
 
