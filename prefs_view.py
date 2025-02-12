@@ -22,6 +22,7 @@ from prefs_base import PrefsPageBase, set_combo_text_column
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
 from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
+from storage import Audio
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -52,6 +53,8 @@ class PrefsViewPage(PrefsPageBase):
 
         self.page_group_combo = self.ui.get_object('page_group_combo')
         self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
+        self.sync_hidden_btn = self.ui.get_object('sync_hidden_btn')
+        self.sync_hidden_btn.connect('clicked', self._sync_hidden_globally_cb)
 
         self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
@@ -107,3 +110,77 @@ class PrefsViewPage(PrefsPageBase):
                 self.restart_warning_box.set_visible(True)
             self.settings.set_string(name, value)
             self.on_change(name, value)
+
+    def _sync_hidden_globally_cb(self, *args):
+        db = self.plugin.storage.db
+        blob = {}
+        album = []
+        data = []
+        keys = set()
+        max_upd_size = 50 * 3
+
+        self.sync_hidden_btn.set_sensitive(False)
+
+        def done():
+            self.sync_hidden_btn.set_sensitive(True)
+
+        def write(values):
+            count = int(len(values) / 3)
+            placeholders = ', '.join(['(?, ?, ?)'] * count)
+
+            query = f"""
+                UPDATE audio
+                SET is_hidden = 1
+                WHERE is_hidden = 0 AND (artist, title, duration) IN ({placeholders})
+            """
+
+            db_cur = db.cursor()
+            db_cur.execute(query, values)
+            db.commit()
+            db_cur.close()
+            blob['pending'] = blob.get('pending') - 1
+
+            if blob.get('pending') == 0:
+                done()
+
+        def flash():
+            values = []
+            for item in data:
+                artist, title, duration = item
+                values.append(artist)
+                values.append(title)
+                values.append(duration)
+
+                if len(values) >= max_upd_size:
+                    blob['pending'] = blob.get('pending', 0) + 1
+                    GLib.idle_add(write, values.copy())
+                    values = []
+
+            if len(values) > 0:
+                blob['pending'] = blob.get('pending', 0) + 1
+                GLib.idle_add(write, values.copy())
+
+        def update():
+            if len(album) > 2:
+                for audio in album:
+                    key = (audio.artist, audio.title, audio.duration)
+                    if key not in keys:
+                        keys.add(key)
+                        data.append(list(key))
+            album.clear()
+
+        def each(row):
+            audio = Audio(row)
+            if audio.artist and audio.title:
+                if blob.get('artist') == audio.artist:
+                    if blob.get('album') == audio.album or (not audio.album and len(album) > 1):
+                        album.append(audio)
+                        return
+            update()
+            blob["artist"] = audio.artist
+            blob["album"] = audio.album
+            album.append(audio)
+
+        self.plugin.storage.each(table='audio', where={'is_hidden': 1}, order='date DESC', callback=each)
+        update()
+        flash()
