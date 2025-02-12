@@ -420,6 +420,22 @@ class Storage:
             each(Audio(row))
         cursor.close()
 
+    def each(self, callback, table, where, order=None):
+        set_where = []
+        set_values = []
+        for k in where.keys():
+            set_where.append(f'{k} = ?')
+            set_values.append(where[k])
+        set_where = ' and '.join(set_where)
+        sql = f"SELECT * FROM `{table}` WHERE {set_where}"
+        if order:
+            sql += ' ORDER BY %s' % order
+        cursor = self.db.cursor()
+        cursor.execute(sql, tuple(set_values))
+        for row in cursor:
+            callback(row)
+        cursor.close()
+
     def add_audio(self, data, convert=True):
         if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
             logger.warning('Audio message has no required keys, skipping...')
