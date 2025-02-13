@@ -28,7 +28,6 @@ class PrefsChannelsPage(PrefsPageBase):
     ui_file = 'ui/prefs/channels.ui'
 
     def on_list_box_change(self, v):
-        print('on_list_box_change')
         self.prefs.settings.set_string(KEY_CHANNELS, json.dumps(v))
         self.on_change(KEY_CHANNELS, [channel["id"] for channel in v])
 
