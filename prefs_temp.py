@@ -18,6 +18,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 import os
 import subprocess
+import shlex
 from gi.repository import RB
 from gi.repository import Gtk, Gio, GLib, Gdk
 from common import file_uri, pretty_file_size
@@ -91,7 +92,6 @@ class PrefsTempPage(PrefsPageBase):
         self.clear_tmp_btn_label = self.ui.get_object('clear_tmp_btn_label')
         self.view_dir_btn = self.ui.get_object('view_dir_btn')
         # self.progress_label = self.ui.get_object('deleting_progress_label')
-
         # self.progress_label.set_text('')
 
         self.usage_refresh_btn.connect('clicked', self._refresh_btn_clicked)
@@ -105,8 +105,8 @@ class PrefsTempPage(PrefsPageBase):
         self.prefs.connect('api-disconnect', self.upd_temp_dir)
 
     def upd_temp_dir(self, obj=None):
-        if self.plugin.api and self.plugin.api.temp_dir:
-            self.temp_dir = self.plugin.api.temp_dir
+        if self.plugin.api and self.plugin.api.temp_dir and len(self.plugin.api.temp_dir) > 32:
+            self.temp_dir = os.path.join(self.plugin.api.temp_dir, 'music')
         else:
             self.temp_dir = None
         if self.temp_path_entry is not None:
@@ -126,7 +126,8 @@ class PrefsTempPage(PrefsPageBase):
         self.usage_refresh_btn.set_sensitive(False)
         self.temp_usage_label.set_text(_("Calculating..."))
         try:
-            result = subprocess.Popen(['du', '-sb', self.temp_dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            cmd = f"du -sb -- {shlex.quote(self.temp_dir)}/* 2>/dev/null | awk '{{sum += $1}} END {{print sum}}'"
+            result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             GLib.io_add_watch(result.stdout, GLib.IO_IN, self.on_subprocess_output, result)
         except Exception as e:
             self.temp_usage_label.set_text(f"Error: {e}")
@@ -137,7 +138,7 @@ class PrefsTempPage(PrefsPageBase):
     def on_subprocess_output(self, source, condition, process):
         if condition == GLib.IO_IN:
             output = source.read()
-            size = output.split()[0] if output else "Error"
+            size = ("%s 0" % output).split()[0] if output else "Error"
             readable_size = pretty_file_size(int(size)) if size.isdigit() else size
             self.temp_usage_label.set_text(readable_size)
             process.stdout.close()
@@ -200,8 +201,8 @@ class PrefsTempPage(PrefsPageBase):
             # def on_progress(path):
             #     self.progress_label.set_text(path)
 
-            if len(self.temp_dir) > 10:
-                start_deletion(self.temp_dir + '/music', completion_callback=on_complete)
+            if len(self.temp_dir) > 32 and self.temp_dir.endswith('music'):
+                start_deletion(self.temp_dir, completion_callback=on_complete)
         else:
             self.clear_tmp_btn.set_sensitive(True)
 
