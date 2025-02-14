@@ -1,3 +1,13 @@
+rhythmbox-telegram-plugin (1.0.12) unstable; urgency=medium
+
+  * Add ability to hide similar audio across all chats
+  * Add hide similar audio ui
+  * Add Storage.each()
+  * Update settngs ui
+  * Improve temp directory size calculation
+
+ -- izman <izmanw@gmail.com>  Fri, 14 Feb 2025 22:27:56 +0200
+
 rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
 
   * Set tdlib parameters
