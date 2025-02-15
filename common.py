@@ -342,3 +342,9 @@ def move_window_center(window, parent):
     top = max(0, top_center - round(geometry.height / 2))
     left = max(0, left_center - round(geometry.width / 2))
     window.move(left, top)
+
+def version_to_number(version: str) -> int:
+    parts = [int(x) for x in version.split(".")]
+    while len(parts) < 3:
+        parts.append(0)
+    return parts[0] * 10**6 + parts[1] * 10**3 + parts[2]

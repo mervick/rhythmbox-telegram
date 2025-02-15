@@ -18,11 +18,11 @@ import os
 import sqlite3
 import json
 import logging
-import schema as SQL
+import schema
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
-from common import get_location_data, set_entry_state
-from typing import List, Literal
+from common import get_location_data, set_entry_state, version_to_number
+from typing import List, Literal, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +308,42 @@ class Audio:
             db.commit()
 
 
+class Migration:
+    def __init__(self, db, migrations: Dict[str, str]):
+        self.db = db
+        self.migrations: Dict[int, str] = {}
+
+        for version, sql in migrations.items():
+            self.add_migration(version, sql)
+
+    def add_migration(self, version: str, sql: str):
+        self.migrations[version_to_number(version)] = sql
+
+    def _get_current_version(self) -> int:
+        cursor = self.db.cursor()
+        cursor.execute("PRAGMA table_info(migrations);")
+        if not cursor.fetchall():
+            version_1_0_0 = version_to_number('1.0.0')
+            cursor.execute("CREATE TABLE migrations (version INTEGER PRIMARY KEY);")
+            cursor.execute("INSERT INTO migrations (version) VALUES (?);", (version_1_0_0,))
+            self.db.commit()
+            return version_1_0_0
+
+        cursor.execute("SELECT version FROM migrations ORDER BY version DESC LIMIT 1;")
+        return int(cursor.fetchone()[0])
+
+    def apply(self):
+        cursor = self.db.cursor()
+        current_version = self._get_current_version()
+
+        for version, sql in sorted(self.migrations.items(), key=lambda item: item[0]):
+            if version > current_version:
+                cursor.execute(sql)
+                cursor.execute("INSERT INTO migrations (version) VALUES (?);", (version,))
+                self.db.commit()
+                print(f"Applied migration {version}")
+
+
 class Storage:
     _instance = None
 
@@ -324,12 +360,13 @@ class Storage:
 
         if create_db:
             try:
-                self.db.execute(SQL.TABLE_PLAYLIST)
-                self.db.execute(SQL.TABLE_AUDIO)
-                self.db.commit()
+                self.db.executescript(schema.INIT_SCHEMA)
             except Exception as e:
                 os.remove(self.db_file)
                 raise Exception(e)
+
+        migration = Migration(self.db, schema.MIGRATIONS)
+        migration.apply()
 
     @staticmethod
     def loaded():

@@ -14,8 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from common import version_to_number
 
-TABLE_PLAYLIST = '''
+
+INIT_VERSION = version_to_number('1.0.13')
+
+INIT_SCHEMA = f'''
 CREATE TABLE playlist (
    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
    `chat_id` INTEGER NOT NULL,
@@ -24,9 +28,7 @@ CREATE TABLE playlist (
    `segments` TEXT NOT NULL DEFAULT '[]',
     UNIQUE (`chat_id`) ON CONFLICT REPLACE
 );
-'''
 
-TABLE_AUDIO = '''
 CREATE TABLE audio (
    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
    `chat_id` INTEGER NOT NULL,
@@ -51,4 +53,13 @@ CREATE TABLE audio (
     UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
 );
 CREATE INDEX idx_chat_id ON audio(chat_id);
+
+CREATE TABLE migrations (
+    version INTEGER PRIMARY KEY
+);
+INSERT INTO migrations (version) VALUES ( {INIT_VERSION} );
 '''
+
+MIGRATIONS = {
+    # '1.0.13': MIGRATION_1_0_13,
+}
