@@ -3,4 +3,3 @@
 * fix crash when playing from 1 tg source and downloading at the same time from another tg source
 * detect existing directories in a case-insensitive manner
 * allow re-download downloaded songs
-* add best artists
