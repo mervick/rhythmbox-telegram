@@ -17,19 +17,20 @@
 import rb
 import json
 from gi.repository import RB
-from gi.repository import GObject, Gtk, Gio
+from gi.repository import GObject, Gtk, Gio, GLib
 from gi.repository import Peas, PeasGtk # noqa
 from loader import AudioDownloader, AudioTempLoader
 from telegram_source import TelegramSource
 from telegram_client import TelegramApi, TelegramAuthError
-from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page
+from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page  # noqa
 from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
+from columns import TopRated
 from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
-VERSION = "1.0.11"
+VERSION = "1.0.13"
 
 def show_source(source_list):
     for source in source_list:
@@ -61,6 +62,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.app = Gio.Application.get_default()
         self.shell = None
         self.db = None
+        self.top_rated = None
         self.icon = None
         self.display_icon = None
         self.settings = None
@@ -89,11 +91,11 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
 
     def add_plugin_menu(self):
         for item in self._context_menu:
-            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])
+            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])  # noqa
 
     def remove_plugin_menu(self):
         for item in self._context_menu:
-            self.app.remove_plugin_menu_item("browser-popup", item[0])
+            self.app.remove_plugin_menu_item("browser-popup", item[0])  # noqa
 
     def do_activate(self):
         print('Telegram plugin activating')
@@ -113,6 +115,8 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.sources = {}
         self.init_actions()
         self.connect_api()
+        self.top_rated = TopRated(self.shell)
+        GLib.timeout_add(2000, self.top_rated.collect)
 
     def init_actions(self):
         app = Gio.Application.get_default()
@@ -146,7 +150,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
         self.toolbar = builder.get_object("telegram-toolbar")
-        app.link_shared_menus(self.toolbar)
+        app.link_shared_menus(self.toolbar)  # noqa
 
     def connect_api(self):
         api_id, api_hash, phone_number, self.connected = self.account.get_secure()
@@ -170,7 +174,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
                 audio = self.storage.get_audio(chat_id, message_id)
                 if audio:
                     audio.save({"is_hidden": True})
-        except:
+        except:  # noqa
             pass
 
     def get_display_group(self):
