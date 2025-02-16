@@ -27,7 +27,7 @@ from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
-from columns import TopRated
+from columns import TopPicks
 from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
 VERSION = "1.0.13"
@@ -62,7 +62,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.app = Gio.Application.get_default()
         self.shell = None
         self.db = None
-        self.top_rated = None
+        self.top_picks = None
         self.icon = None
         self.display_icon = None
         self.settings = None
@@ -115,8 +115,8 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.sources = {}
         self.init_actions()
         self.connect_api()
-        self.top_rated = TopRated(self.shell)
-        GLib.timeout_add(2000, self.top_rated.collect)
+        self.top_picks = TopPicks(self.shell)
+        GLib.timeout_add(2000, self.top_picks.collect)
 
     def init_actions(self):
         app = Gio.Application.get_default()

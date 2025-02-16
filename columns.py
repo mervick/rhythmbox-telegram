@@ -86,7 +86,7 @@ class SizeColumn:
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[0])
 
 
-state_icons = {
+STATE_ICONS = {
     Audio.STATE_DEFAULT : 'tg-state-download-symbolic',
     Audio.STATE_ERROR : 'tg-state-error',
     Audio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
@@ -172,13 +172,13 @@ class StateColumn:
                 if state in StateColumn._icon_cache:
                     gicon = StateColumn._icon_cache[state]
                 else:
-                    icon_name = state_icons[state] if state in state_icons else state_icons[Audio.STATE_DEFAULT]
+                    icon_name = STATE_ICONS[state] if state in STATE_ICONS else STATE_ICONS[Audio.STATE_DEFAULT]
                     gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
                     StateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
 
 
-class TopRated:
+class TopPicks:
     LEVEL_NONE = 0
     LEVEL_LOW = 1
     LEVEL_MEDIUM = 2
@@ -187,7 +187,7 @@ class TopRated:
 
     def __init__(self, shell):
         self.shell = shell
-        self.artists: Dict[str, Dict[int | str, int]] = {}
+        self.artists: Dict[str, Dict[int | str, int] | int] = {}
 
     def collect(self):
         db = self.shell.props.db
@@ -201,12 +201,24 @@ class TopRated:
             rating = entry.get_double(RB.RhythmDBPropType.RATING)
             if rating > 4:
                 artist = get_first_artist(entry.get_string(RB.RhythmDBPropType.ARTIST)).lower()
-                self.add_rating(artist, int(rating))
+                self._add_rating(artist, int(rating))
             iter = model.iter_next(iter)
 
-        self.detect_top_artists()
+        if len(self.artists):
+            sorted_artists = sorted(self.artists.items(), key=lambda x: (x[1].get(5, 0), x[1].get(4, 0)), reverse=True)
+            top_10_percent = int(len(sorted_artists) * 0.10)
+            top_artists = sorted_artists[:top_10_percent]
+            for artist in top_artists:
+                self.artists[artist[0]]["top"] = 1
 
-    def add_rating(self, artist: str, rating: int):
+        for artist in self.artists:
+            level = self._comp_rated_level(artist)
+            if level == TopPicks.LEVEL_NONE:
+                del self.artists[artist]
+            else:
+                self.artists[artist] = level
+
+    def _add_rating(self, artist: str, rating: int):
         artist = artist.lower()
         if artist not in self.artists:
             self.artists[artist] = {
@@ -215,18 +227,7 @@ class TopRated:
             }
         self.artists[artist][rating] += 1
 
-    def detect_top_artists(self):
-        if len(self.artists) == 0:
-            return
-        sorted_artists = sorted(self.artists.items(), key=lambda x: (x[1].get(5, 0), x[1].get(4, 0)), reverse=True)
-        top_10_percent = int(len(sorted_artists) * 0.10)
-        top_artists = sorted_artists[:top_10_percent]
-        for artist in top_artists:
-            self.artists[artist[0]]["top"] = 1
-
-        return [artist[0] for artist in top_artists]
-
-    def get_rated_level(self, artist: str):
+    def _comp_rated_level(self, artist: str):
         artist = get_first_artist(artist.lower())
         artist_rating = self.artists.get(artist)
 
@@ -235,30 +236,40 @@ class TopRated:
             artist_rating = self.artists.get(artist)
 
         if not artist_rating:
-            return TopRated.LEVEL_NONE
+            return TopPicks.LEVEL_NONE
 
         is_top = artist_rating.get('top', 0)
         if is_top:
-            return TopRated.LEVEL_TOP
+            return TopPicks.LEVEL_TOP
 
         star_5 = artist_rating.get(5, 0)
         if star_5 >= 10:
-            return TopRated.LEVEL_HIGH
+            return TopPicks.LEVEL_HIGH
         if star_5 >= 2:
-            return TopRated.LEVEL_MEDIUM
+            return TopPicks.LEVEL_MEDIUM
         star_4 = artist_rating.get(4, 0)
         if star_5 >= 1 or star_4 > 2:
-            return TopRated.LEVEL_LOW
+            return TopPicks.LEVEL_LOW
 
-        return TopRated.LEVEL_NONE
+        return TopPicks.LEVEL_NONE
+
+    def get_level(self, artist: str):
+        artist = get_first_artist(artist.lower())
+        artist_rating = self.artists.get(artist)
+
+        if not artist_rating and ',' in artist:
+            artist = get_first_artist(artist, ',')
+            artist_rating = self.artists.get(artist)
+
+        return artist_rating if artist_rating else TopPicks.LEVEL_NONE
 
 
-MATCH_LEVEL_EMOJI = {
-    TopRated.LEVEL_NONE:    '',
-    TopRated.LEVEL_LOW:     '⭐',  # star
-    TopRated.LEVEL_MEDIUM:  '❤️', # heart
-    TopRated.LEVEL_HIGH:    '🔥', # fire
-    TopRated.LEVEL_TOP:     '🔥', # fire
+TOP_PICKS_EMOJI = {
+    TopPicks.LEVEL_NONE: '',
+    TopPicks.LEVEL_LOW: '⭐',  # star
+    TopPicks.LEVEL_MEDIUM: '❤️', # heart
+    TopPicks.LEVEL_HIGH: '🔥', # fire
+    TopPicks.LEVEL_TOP: '🔥', # fire
     # TopRated.LEVEL_TOP:     '🏆', # cup
 }
 
@@ -299,8 +310,8 @@ class TopPicksColumn:
         entry = model.get_value(iter, 0)
         artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
 
-        if self.plugin.top_rated:
-            level = self.plugin.top_rated.get_rated_level(artist)
-            cell.set_property('text', MATCH_LEVEL_EMOJI[level])
+        if self.plugin.top_picks:
+            level = self.plugin.top_picks.get_level(artist)
+            cell.set_property('text', TOP_PICKS_EMOJI[level])
         else:
             cell.set_property('text', '')
