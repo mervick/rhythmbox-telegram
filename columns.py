@@ -200,7 +200,7 @@ class TopPicks:
         while iter:
             entry = model.get_value(iter, 0)
             rating = entry.get_double(RB.RhythmDBPropType.RATING)
-            if rating > 4:
+            if rating >= 4:
                 artist = get_first_artist(entry.get_string(RB.RhythmDBPropType.ARTIST)).lower()
                 self._add_rating(artist, int(rating))
             iter = model.iter_next(iter)
@@ -214,10 +214,7 @@ class TopPicks:
 
         for artist in self.artists:
             level = self._comp_rated_level(artist)
-            if level == TopPicks.LEVEL_NONE:
-                del self.artists[artist]
-            else:
-                self.artists[artist] = level
+            self.artists[artist] = level
 
     def _add_rating(self, artist: str, rating: int):
         artist = artist.lower()
