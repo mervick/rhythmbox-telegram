@@ -61,7 +61,7 @@
     </key>
 
     <key name="conflict-resolve" type="s">
-      <default>'rename'</default>
+      <default>'ask'</default>
       <choices>
         <choice value='rename'/>
         <choice value='overwrite'/>
@@ -85,7 +85,7 @@
     </key>
 
     <key name="page-group" type="s">
-      <default>'telegram'</default>
+      <default>'library'</default>
       <choices>
         <choice value='telegram'/>
         <choice value='library'/>
@@ -110,10 +110,10 @@
       <description>Choose which audio files to display: only visible, previously hidden, or all audio files.</description>
     </key>
 
-    <key name="rating-column" type="b">
+    <key name="top-picks-column" type="b">
       <default>true</default>
-      <summary>Show Rating column</summary>
-      <description>Displays the rating column for tracks in the playlist.</description>
+      <summary>A smart feature that predicts which tracks you might like based on your library</summary>
+      <description>Top Picks analyzes your rated tracks to predict which songs you might enjoy</description>
     </key>
 
     <key name="date-added-column" type="b">
@@ -132,6 +132,12 @@
       <default>true</default>
       <summary>Show Audio Format column</summary>
       <description>Shows the audio file format (e.g., MP3, FLAC, etc.).</description>
+    </key>
+
+    <key name="rating-column" type="b">
+      <default>false</default>
+      <summary>Show Rating column</summary>
+      <description>Displays the rating column for tracks in the playlist.</description>
     </key>
 
     <key name="preload-next-track" type="b">
