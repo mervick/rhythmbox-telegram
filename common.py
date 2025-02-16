@@ -255,8 +255,12 @@ filepath_pattern_markers = {
     "%tA": "artist_lower",
 }
 
-def get_first_artist(artist):
-    return artist.split('\x01')[0].split(';')[0]
+def get_first_artist(artist, extra_separators=None):
+    artist = artist.split('\x01')[0].split(';')[0]
+    if extra_separators:
+        for separator in list(extra_separators):
+            artist = artist.split(separator)[0]
+    return artist.strip()
 
 def filepath_parse_pattern(pattern, tags):
     # Parse a filename pattern and replace markers with values from the tags
