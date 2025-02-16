@@ -23,6 +23,7 @@ from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLU
 from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
 from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
 from storage import Audio
+from common import get_first_artist
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -115,6 +116,7 @@ class PrefsViewPage(PrefsPageBase):
         db = self.plugin.storage.db
         blob = {}
         album = []
+        titles = []
         data = []
         keys = set()
         max_upd_size = 50 * 3
@@ -167,17 +169,30 @@ class PrefsViewPage(PrefsPageBase):
                     if key not in keys:
                         keys.add(key)
                         data.append(list(key))
+                    key = (get_first_artist(audio.artist), audio.title, audio.duration)
+                    if key not in keys:
+                        keys.add(key)
+                        data.append(list(key))
+            titles.clear()
             album.clear()
 
         def each(row):
             audio = Audio(row)
-            if audio.artist and audio.title:
-                if blob.get('artist') == audio.artist:
-                    if blob.get('album') == audio.album or (not audio.album and len(album) > 1):
+            artist = get_first_artist(audio.artist)
+            if artist and audio.title:
+                if audio.title in titles:
+                    return
+                if blob.get('artist') == artist:
+                    # if previous album was empty, then set album
+                    if not blob.get('album') and audio.album:
+                        blob["album"] = audio.album
+                    # add to album if same album name or
+                    if blob.get('album') == audio.album or (not audio.album and len(album)):
+                        titles.append(audio.title)
                         album.append(audio)
                         return
             update()
-            blob["artist"] = audio.artist
+            blob["artist"] = artist
             blob["album"] = audio.album
             album.append(audio)
 
