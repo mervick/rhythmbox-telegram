@@ -190,6 +190,7 @@ class TopPicks:
         self.artists: Dict[str, Dict[int | str, int] | int] = {}
 
     def collect(self):
+        self.artists = {}
         db = self.shell.props.db
         entry_type = db.entry_type_get_by_name('song')
         source = self.shell.get_source_by_entry_type(entry_type)
