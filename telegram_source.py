@@ -19,7 +19,7 @@ from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size
 from common import file_uri, set_entry_state
-from columns import MatchColumn, StateColumn, SizeColumn, FormatColumn
+from columns import StateColumn, SizeColumn, FormatColumn, TopPicksColumn
 from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
@@ -206,7 +206,7 @@ class TelegramSource(RB.BrowserSource):
             FormatColumn(self)
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
             entry_view.append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
-        MatchColumn(self)
+        TopPicksColumn(self)
 
         self.state_column = StateColumn(self)
 
