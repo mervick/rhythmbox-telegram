@@ -179,6 +179,7 @@ class StateColumn:
 
 
 class TopRated:
+    LEVEL_NONE = 0
     LEVEL_LOW = 1
     LEVEL_MEDIUM = 2
     LEVEL_HIGH = 3
@@ -186,7 +187,7 @@ class TopRated:
 
     def __init__(self, shell):
         self.shell = shell
-        self.artists: Dict[str, Dict[int, int]] = {}
+        self.artists: Dict[str, Dict[int | str, int]] = {}
 
     def collect(self):
         db = self.shell.props.db
@@ -203,6 +204,8 @@ class TopRated:
                 self.add_rating(artist, int(rating))
             iter = model.iter_next(iter)
 
+        self.detect_top_artists()
+
     def add_rating(self, artist: str, rating: int):
         artist = artist.lower()
         if artist not in self.artists:
@@ -211,6 +214,17 @@ class TopRated:
                 4: 0
             }
         self.artists[artist][rating] += 1
+
+    def detect_top_artists(self):
+        if len(self.artists) == 0:
+            return
+        sorted_artists = sorted(self.artists.items(), key=lambda x: (x[1].get(5, 0), x[1].get(4, 0)), reverse=True)
+        top_10_percent = int(len(sorted_artists) * 0.10)
+        top_artists = sorted_artists[:top_10_percent]
+        for artist in top_artists:
+            self.artists[artist[0]]["top"] = 1
+
+        return [artist[0] for artist in top_artists]
 
     def get_rated_level(self, artist: str):
         artist = get_first_artist(artist.lower())
@@ -221,25 +235,31 @@ class TopRated:
             artist_rating = self.artists.get(artist)
 
         if not artist_rating:
-            return TopRated.LEVEL_LOW
+            return TopRated.LEVEL_NONE
+
+        is_top = artist_rating.get('top', 0)
+        if is_top:
+            return TopRated.LEVEL_TOP
 
         star_5 = artist_rating.get(5, 0)
-        if star_5 > 10:
-            return TopRated.LEVEL_TOP
-        if star_5 > 2:
+        if star_5 >= 10:
             return TopRated.LEVEL_HIGH
-        star_4 = artist_rating.get(4, 0)
-        if star_5 > 1 or star_4 > 2:
+        if star_5 >= 2:
             return TopRated.LEVEL_MEDIUM
+        star_4 = artist_rating.get(4, 0)
+        if star_5 >= 1 or star_4 > 2:
+            return TopRated.LEVEL_LOW
 
-        return TopRated.LEVEL_LOW
+        return TopRated.LEVEL_NONE
 
 
 MATCH_LEVEL_EMOJI = {
-    TopRated.LEVEL_LOW: '',
-    TopRated.LEVEL_MEDIUM: '⭐',  # star
-    TopRated.LEVEL_HIGH: '❤️',   # heart
-    TopRated.LEVEL_TOP: '🔥',    # fire
+    TopRated.LEVEL_NONE:    '',
+    TopRated.LEVEL_LOW:     '⭐',  # star
+    TopRated.LEVEL_MEDIUM:  '❤️', # heart
+    TopRated.LEVEL_HIGH:    '🔥', # fire
+    TopRated.LEVEL_TOP:     '🔥', # fire
+    # TopRated.LEVEL_TOP:     '🏆', # cup
 }
 
 
