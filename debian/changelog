@@ -1,3 +1,18 @@
+rhythmbox-telegram-plugin (1.0.13) unstable; urgency=medium
+
+  * Add database migrations
+  * Move columns to columns.py
+  * Add extra_separators to get_first_artist()
+  * Improved sync_hidden func
+  * Collect top-rated tracks
+  * Add TopPicks, TopPicksColumn
+  * TopPicks: detect top artists
+  * Add Top Picks settings
+  * Update gschema
+  * Minor fixes
+
+ -- izman <izmanw@gmail.com>  Sun, 16 Feb 2025 05:00:42 +0200
+
 rhythmbox-telegram-plugin (1.0.12) unstable; urgency=medium
 
   * Add ability to hide similar audio across all chats
