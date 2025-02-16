@@ -23,7 +23,7 @@ from loader import AudioDownloader, AudioTempLoader
 from telegram_source import TelegramSource
 from telegram_client import TelegramApi, TelegramAuthError
 from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page  # noqa
-from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP
+from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error
@@ -116,7 +116,8 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.init_actions()
         self.connect_api()
         self.top_picks = TopPicks(self.shell)
-        GLib.timeout_add(2000, self.top_picks.collect)
+        if self.account.settings[KEY_TOP_PICKS_COLUMN]:
+            GLib.timeout_add(2000, self.top_picks.collect)
 
     def init_actions(self):
         app = Gio.Application.get_default()

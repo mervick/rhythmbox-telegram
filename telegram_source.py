@@ -22,7 +22,7 @@ from common import file_uri, set_entry_state
 from columns import StateColumn, SizeColumn, FormatColumn, TopPicksColumn
 from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
-from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN, KEY_TOP_PICKS_COLUMN
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -206,7 +206,8 @@ class TelegramSource(RB.BrowserSource):
             FormatColumn(self)
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
             entry_view.append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
-        TopPicksColumn(self)
+        if self.plugin.account.settings[KEY_TOP_PICKS_COLUMN]:
+            TopPicksColumn(self)
 
         self.state_column = StateColumn(self)
 
