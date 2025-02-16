@@ -32,7 +32,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self.shell = plugin.shell
         self.db = plugin.db
         self.shell_player = self.shell.props.shell_player
-        self._pending_playback_entry = None
+        self._pending_playback = None
         self._entry_error_id = None
         self._entry_downloaded_id = None
 
@@ -45,12 +45,13 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self.disconnect(self._entry_downloaded_id)
 
     def _on_entry_downloaded(self, entry_type, entry):
-        if not self._pending_playback_entry:
+        if not self._pending_playback:
             return
 
-        if is_same_entry(entry, self._pending_playback_entry):
-            self._pending_playback_entry = None
-            self.shell_player.play_entry(entry, self.plugin.source)
+        location = entry.get_string(RB.RhythmDBPropType.LOCATION)
+        if location == self._pending_playback:
+            self._pending_playback = None
+            self.shell_player.play_entry(entry, entry.get_entry_type().source)
             # GLib.timeout_add(100, self.shell.props.shell_player.emit, "playing-changed", True)
 
     def _on_player_error(self, *args):
@@ -126,7 +127,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                     GLib.idle_add(self._load_entry_audio, next_entry)
 
         if audio.is_file_exists():
-            self._pending_playback_entry = None
+            self._pending_playback = None
             return file_uri(audio.local_path)
 
         return_uri = None
@@ -142,7 +143,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         if state == Audio.STATE_LOADING:
             return return_uri
 
-        self._pending_playback_entry = entry
+        self._pending_playback = location
         self._load_entry_audio(entry)
         return return_uri
 
