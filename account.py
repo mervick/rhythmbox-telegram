@@ -40,6 +40,7 @@ VAL_AV_HIDDEN = "hidden"
 VAL_AV_ALL = "all"
 VAL_AV_DUAL = "dual"
 
+KEY_TOP_PICKS_COLUMN = "top-picks-column"
 KEY_RATING_COLUMN = "rating-column"
 KEY_DATE_ADDED_COLUMN = "date-added-column"
 KEY_FILE_SIZE_COLUMN = "file-size-column"
