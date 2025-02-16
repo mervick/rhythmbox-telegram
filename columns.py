@@ -227,25 +227,19 @@ class TopPicks:
 
     def _comp_rated_level(self, artist: str):
         artist = get_first_artist(artist.lower())
-        artist_rating = self.artists.get(artist)
+        artist_level = self.artists.get(artist)
 
-        if not artist_rating and ',' in artist:
-            artist = get_first_artist(artist, ',')
-            artist_rating = self.artists.get(artist)
-
-        if not artist_rating:
+        if not artist_level:
             return TopPicks.LEVEL_NONE
-
-        is_top = artist_rating.get('top', 0)
+        is_top = artist_level.get('top', 0)
         if is_top:
             return TopPicks.LEVEL_TOP
-
-        star_5 = artist_rating.get(5, 0)
+        star_5 = artist_level.get(5, 0)
         if star_5 >= 10:
             return TopPicks.LEVEL_HIGH
         if star_5 >= 2:
             return TopPicks.LEVEL_MEDIUM
-        star_4 = artist_rating.get(4, 0)
+        star_4 = artist_level.get(4, 0)
         if star_5 >= 1 or star_4 > 2:
             return TopPicks.LEVEL_LOW
 
@@ -253,13 +247,13 @@ class TopPicks:
 
     def get_level(self, artist: str):
         artist = get_first_artist(artist.lower())
-        artist_rating = self.artists.get(artist)
+        artist_level = self.artists.get(artist)
 
-        if not artist_rating and ',' in artist:
+        if not artist_level and ',' in artist:
             artist = get_first_artist(artist, ',')
-            artist_rating = self.artists.get(artist)
+            artist_level = self.artists.get(artist)
 
-        return artist_rating if artist_rating else TopPicks.LEVEL_NONE
+        return artist_level if artist_level else TopPicks.LEVEL_NONE
 
 
 TOP_PICKS_EMOJI = {
