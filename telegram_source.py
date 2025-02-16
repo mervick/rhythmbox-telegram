@@ -17,170 +17,15 @@
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, empty_cb, SingletonMeta, get_first_artist, get_entry_location
-from common import get_location_audio_id, pretty_file_size
-from common import file_uri, get_entry_state, set_entry_state
+from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size
+from common import file_uri, set_entry_state
+from columns import MatchColumn, StateColumn, SizeColumn, FormatColumn
 from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
-
-class FormatColumn:
-    def __init__(self, source):
-        self.source = source
-
-        entry_view = source.get_entry_view() # noqa
-
-        column = Gtk.TreeViewColumn()
-        renderer = Gtk.CellRendererText()
-
-        column.set_title(_("Format"))
-        column.set_cell_data_func(renderer, self.data_func, None) # noqa
-
-        column.pack_start(renderer, expand=False)
-        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        entry_view.set_fixed_column_width(column, renderer, ["mp3", "flac"])
-
-        column.set_expand(False)
-        column.set_resizable(True)
-
-        entry_view.append_column_custom(column, _("Format"), "tg-format", empty_cb, None, None)
-        visible_columns = entry_view.get_property("visible-columns")
-
-        if 'tg-format' not in visible_columns:
-            visible_columns.append('tg-format')
-            entry_view.set_property("visible-columns", visible_columns)
-
-    def data_func(self, column, cell, model, iter, *data): # noqa
-        entry = model.get_value(iter, 0)
-        idx = get_location_audio_id(get_entry_location(entry))
-        cell.set_property("text", "%s" % self.source.get_custom_model(idx)[1])
-
-
-class SizeColumn:
-    def __init__(self, source):
-        self.source = source
-
-        entry_view = source.get_entry_view() # noqa
-
-        column = Gtk.TreeViewColumn()
-        renderer = Gtk.CellRendererText()
-
-        column.set_title(_("Size"))
-        column.set_cell_data_func(renderer, self.data_func, None) # noqa
-
-        column.pack_start(renderer, expand=False)
-        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        entry_view.set_fixed_column_width(column, renderer, ["4kb", "121.1MB"])
-
-        column.set_expand(False)
-        column.set_resizable(True)
-
-        entry_view.append_column_custom(column, _("Size"), "tg-size", empty_cb, None, None)
-        visible_columns = entry_view.get_property("visible-columns")
-
-        if 'tg-size' not in visible_columns:
-            visible_columns.append('tg-size')
-            entry_view.set_property("visible-columns", visible_columns)
-
-    def data_func(self, column, cell, model, iter, *data): # noqa
-        entry = model.get_value(iter, 0)
-        idx = get_location_audio_id(get_entry_location(entry))
-        cell.set_property("text", "%s" % self.source.get_custom_model(idx)[0])
-
-
-state_icons = {
-    Audio.STATE_DEFAULT : 'tg-state-download-symbolic',
-    Audio.STATE_ERROR : 'tg-state-error',
-    Audio.STATE_IN_LIBRARY : 'tg-state-library-symbolic',
-    Audio.STATE_HIDDEN : 'tg-state-visibility-off-symbolic',
-    Audio.STATE_DOWNLOADED : None,
-}
-
-
-class StateColumn:
-    _icon_cache = {}
-
-    def __init__(self, source):
-        self._pulse = 0
-        self._models = {}
-        self.timeout_id = None
-
-        column = Gtk.TreeViewColumn()
-        pixbuf_renderer = Gtk.CellRendererPixbuf()
-        spinner_renderer = Gtk.CellRendererSpinner()
-
-        column.set_title(" ")
-        column.set_cell_data_func(pixbuf_renderer, self.model_data_func, "pixbuf") # noqa
-        column.set_cell_data_func(spinner_renderer, self.model_data_func, "spinner") # noqa
-
-        column.pack_start(spinner_renderer, expand=True)
-        column.pack_start(pixbuf_renderer, expand=True)
-
-        column.set_expand(False)
-        column.set_resizable(False)
-
-        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-        column.set_fixed_width(36)
-
-        entry_view = source.get_entry_view() # noqa
-        self.entry_view = entry_view
-
-        entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
-        visible_columns = entry_view.get_property("visible-columns")
-
-        if 'tg-state' not in visible_columns:
-            visible_columns.append('tg-state')
-            entry_view.set_property("visible-columns", visible_columns)
-
-    def activate(self):
-        if not self.timeout_id:
-            self.timeout_id = GLib.timeout_add(100, self.spinner_pulse)
-
-    def deactivate(self):
-        if self.timeout_id:
-            GLib.source_remove(self.timeout_id)
-            self.timeout_id = None
-
-    def spinner_pulse(self):
-        self._pulse = 0 if self._pulse == 999999 else self._pulse + 1
-
-        for idx in self._models.keys():
-            model, iter = self._models[idx]
-            if model and iter:
-                model.emit("row_changed", model.get_path(iter), iter)
-            else:
-                del self._models[idx]
-        return True
-
-    def model_data_func(self, column, cell, model, iter, cell_type): # noqa
-        entry = model.get_value(iter, 0)
-        idx = model.get_value(iter, 1)
-        state = get_entry_state(entry)
-        is_spinner = cell_type == 'spinner'
-
-        if state == Audio.STATE_LOADING:
-            cell.props.visible = is_spinner
-            if is_spinner:
-                self._models[idx] = [model, iter]
-                cell.props.active = True
-                cell.props.pulse = self._pulse
-        else:
-            cell.props.visible = not is_spinner
-            if is_spinner:
-                if idx in self._models:
-                    del self._models[idx]
-                cell.props.active = False
-            else:
-                if state in StateColumn._icon_cache:
-                    gicon = StateColumn._icon_cache[state]
-                else:
-                    icon_name = state_icons[state] if state in state_icons else state_icons[Audio.STATE_DEFAULT]
-                    gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
-                    StateColumn._icon_cache[state] = gicon
-                cell.props.gicon = gicon
 
 
 class DownloadBar(metaclass=SingletonMeta):
@@ -331,6 +176,7 @@ class TelegramSource(RB.BrowserSource):
         self.entry_updated_id = None
         self.loaded_entries = []
         self.custom_model = {}
+        self.state_column = None
 
     def setup(self, plugin, chat_id, chat_title, visibility):
         self.initialised = False
@@ -360,9 +206,13 @@ class TelegramSource(RB.BrowserSource):
             FormatColumn(self)
         if self.plugin.account.settings[KEY_DATE_ADDED_COLUMN]:
             entry_view.append_column(rb.RB.EntryViewColumn.FIRST_SEEN, True)
-        self.state_column = StateColumn(self) # noqa
+        MatchColumn(self)
+
+        self.state_column = StateColumn(self)
 
     def activate(self):
+        if self.activated:
+            return
         if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
             self.refresh_btn.activate()
         self.activated = True
@@ -393,7 +243,6 @@ class TelegramSource(RB.BrowserSource):
                 audio.save({"rating": round(rating)})
 
     def hide_thyself(self):
-        # self.deactivate()
         self.set_property('visibility', False)
 
     def show_thyself(self):
