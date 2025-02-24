@@ -19,60 +19,66 @@ import shutil
 from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
-from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state, CONFLICT_ACTION_IGNORE
+from common import get_entry_location, CONFLICT_ACTION_IGNORE
+from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from conflict_dialog import ConflictDialog
 from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
 from typing import Tuple
 
 
-class AudioTempLoader(metaclass=SingletonMeta):
+class AbsAudioLoader:
+    def __init__(self, plugin):
+        self.plugin = plugin
+        self._queue = []
+        self._running = False
+        self._idx = 0
+
+    def stop(self):
+        self._running = False
+        self._queue = []
+        self._idx = 0
+
+    def get_entry(self, idx):
+        uri = self._queue[idx]
+        return self.plugin.db.entry_lookup_by_location(uri)
+
+
+class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
     """
     AudioTempLoader is designed to sequentially download audio files into a temp directory.
     The most recently added records to the queue are loaded first.
     The downloading process is assigned the highest priority level.
     """
     def __init__(self, plugin):
-        self.plugin = plugin
-        self.entries = []
-        self._running = False
-        self._idx = 0
+        AbsAudioLoader.__init__(self, plugin)
         self._is_hidden = False
-
-    def is_downloading(self, entry):
-        if self._running:
-            uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
-            for in_entry in self.entries:
-                if in_entry:
-                    in_uri = in_entry.get_string(RB.RhythmDBPropType.LOCATION)
-                    if in_uri == uri:
-                        return True
-        return False
 
     def add_entry(self, entry):
         state = get_entry_state(entry)
         if state != Audio.STATE_IN_LIBRARY and state != Audio.STATE_LOADING:
-            self.entries.append(entry)
-            set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
-            self.plugin.db.commit()
+            uri = get_entry_location(entry)
+            if uri not in self._queue:
+                self._queue.append(uri)
+                set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
+                self.plugin.db.commit()
         return self
 
     def start(self):
-        if len(self.entries) > 0:
+        if len(self._queue) > 0:
             if not self._running:
                 self._running = True
-                self._idx = len(self.entries) - 1
+                self._idx = len(self._queue) - 1
                 self._load()
         else:
             self.stop()
         return self
 
-    def stop(self):
-        self._running = False
-        self.entries = []
-
     def _process(self, audio):
-        entry = self.entries[self._idx]
+        entry = self.get_entry(self._idx)
+        if not entry:
+            self._next(20)
+            return
         if self._is_hidden:
             self._is_hidden = False
             audio.save({"is_hidden": True})
@@ -82,8 +88,8 @@ class AudioTempLoader(metaclass=SingletonMeta):
 
     def _next(self, delay=1000):
         self._is_hidden = False
-        del self.entries[self._idx]
-        self._idx = len(self.entries) - 1
+        del self._queue[self._idx]
+        self._idx = len(self._queue) - 1
         if self._idx < 0:
             self.stop()
             return
@@ -91,7 +97,10 @@ class AudioTempLoader(metaclass=SingletonMeta):
 
     def _load(self):
         if self._running:
-            entry = self.entries[self._idx]
+            entry = self.get_entry(self._idx)
+            if not entry:
+                self._next(20)
+                return
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio:
                 self._next(20)
@@ -106,17 +115,14 @@ class AudioTempLoader(metaclass=SingletonMeta):
                 audio.download(success=self._process, fail=self._next)
 
 
-class AudioDownloader(metaclass=SingletonMeta):
+class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
     """
     AudioDownloader is designed to sequentially download audio files into a Music library.
     The first entries added to the queue are downloaded first.
     The downloading process is assigned a medium priority level.
     """
     def __init__(self, plugin):
-        self.plugin = plugin
-        self.entries = []
-        self._running = False
-        self._idx = 0
+        AbsAudioLoader.__init__(self, plugin)
         self._info = {}
         self.setup()
 
@@ -131,20 +137,20 @@ class AudioDownloader(metaclass=SingletonMeta):
         for entry in entries:
             state = get_entry_state(entry)
             if state != Audio.STATE_IN_LIBRARY:
-                self.entries.append(entry)
-                set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
-                commit = True
+                uri = get_entry_location(entry)
+                if uri not in self._queue:
+                    self._queue.append(uri)
+                    set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
+                    commit = True
         if commit:
             self.plugin.db.commit()
 
     def stop(self):
-        self._running = False
-        self.entries = []
-        self._idx = 0
+        AbsAudioLoader.stop(self)
         self._update_progress()
 
     def start(self):
-        if len(self.entries) > 0:
+        if len(self._queue) > 0:
             if not self._running:
                 self._info = {}
                 self._running = True
@@ -163,7 +169,7 @@ class AudioDownloader(metaclass=SingletonMeta):
                 filename = '%s - %s.%s' % (audio.artist, audio.title, audio.get_file_ext())
             else:
                 filename = audio.file_name
-        total = len(self.entries)
+        total = len(self._queue)
         info = {
             "active": self._running,
             "index": self._idx + 1,
@@ -201,7 +207,10 @@ class AudioDownloader(metaclass=SingletonMeta):
         return dst
 
     def _move_audio_and_update(self, action, audio, filename):
-        entry = self.entries[self._idx]
+        entry = self.get_entry(self._idx)
+        if not entry:
+            self._next(20)
+            return
         if action != CONFLICT_ACTION_IGNORE:
             filename = self._move_file(action, audio.local_path, filename)
             audio.save({"local_path": filename, "is_moved": True})
@@ -236,16 +245,19 @@ class AudioDownloader(metaclass=SingletonMeta):
             self._move_audio_and_update(self.conflict_resolve, audio, filename)
 
     def _next(self, delay=1000):
-        self.entries[self._idx] = None
+        self._queue[self._idx] = None
         self._idx = self._idx + 1
-        if self._idx >= len(self.entries):
+        if self._idx >= len(self._queue):
             self.stop()
             return
         GLib.timeout_add(delay, self._load)
 
     def _load(self):
         if self._running:
-            entry = self.entries[self._idx]
+            entry = self.get_entry(self._idx)
+            if not entry:
+                self._next(20)
+                return
             audio = self.plugin.storage.get_entry_audio(entry)
             if not audio:
                 self._next(20)
@@ -274,7 +286,7 @@ SIGNAL_REACHED_END   = 'SIGNAL_REACHED_END'
 SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'
 
 
-class Timer(metaclass=SingletonMeta):
+class PlaylistTimer(metaclass=SingletonMeta):
     _props: Tuple[any, any] | None
     _timer_id: int | None
 
@@ -310,7 +322,7 @@ class Timer(metaclass=SingletonMeta):
 class PlaylistLoader:
     api: TelegramApi
     playlist: Playlist
-    timer: Timer | None
+    timer: PlaylistTimer | None
     terminated: bool
     last_msg_id: int
 
@@ -324,7 +336,7 @@ class PlaylistLoader:
         self.chat_id = chat_id
         self.add_entry = add_entry
         self.page = 0
-        self.timer = Timer()
+        self.timer = PlaylistTimer()
 
     def start(self, *obj):
         """ Start loading messages starting from new messages """
