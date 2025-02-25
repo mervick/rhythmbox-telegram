@@ -68,6 +68,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <attribute name="accel">&lt;Ctrl&gt;&lt;Shift&gt;D</attribute>
           </item>
         </section>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">Telegram Settings</attribute>
+            <attribute name="action">app.tg-prefs</attribute>
+          </item>
+        </section>
       </submenu>
     </section>
   </menu>
