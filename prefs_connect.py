@@ -129,7 +129,8 @@ class PrefsConnectPage(PrefsPageBase):
                     self.spinner.stop()
                     helpbox_wrap.remove(self.spinner)
                 self.spinner = None
-                helpbox_wrap.pack_start(helpbox, True, True, 0)
+                if helpbox.get_parent() is None:
+                    helpbox_wrap.pack_start(helpbox, True, True, 0)
                 self.loading = None
 
         def connect_btn_clicked(event):
