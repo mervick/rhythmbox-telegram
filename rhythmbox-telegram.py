@@ -30,7 +30,7 @@ from common import get_location_data, show_error
 from columns import TopPicks
 from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
-VERSION = "1.0.13"
+VERSION = "1.0.14"
 
 def show_source(source_list):
     for source in source_list:
@@ -147,6 +147,11 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         action.connect("activate", self.download_action_cb)
         app.add_action(action)
         self._add_plugin_menu_item(action, _("Download to Library"))
+
+        action = Gio.SimpleAction(name="tg-prefs")
+        action.connect("activate", self.show_settings_action_cb)
+        app.add_action(action)
+        self._add_plugin_menu_item(action, _("Telegram Settings"))
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
@@ -284,3 +289,15 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         shell = self.object
         shell.props.selected_page.unhide_action()
 
+    def show_settings_action_cb(self, action, parameter):
+        self.show_settings_dialog()
+
+    def show_settings_dialog(self):
+        dialog = Gtk.Dialog(title="Telegram Settings", parent=self.shell.props.window, flags=0)
+        dialog.add_button("Close", Gtk.ResponseType.CLOSE)
+        prefs = TelegramPrefs()
+        config_widget = prefs.do_create_configure_widget()
+        dialog.get_content_area().add(config_widget)
+        dialog.show_all()
+        dialog.run()
+        dialog.destroy()
