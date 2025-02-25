@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import enum
-import math
+import math, re
 import gi
 gi.require_version('Gio', '2.0')
 from datetime import datetime
@@ -261,6 +261,21 @@ def get_first_artist(artist, extra_separators=None):
         for separator in list(extra_separators):
             artist = artist.split(separator)[0]
     return artist.strip()
+
+RE_FEAT = re.compile(r'\(feat\.|\(feat |\(featuring |\[feat\.')
+
+def get_base_title(title):
+    match = RE_FEAT.search(title)
+    return title[:match.start()].strip() if match else title
+
+RE_TRACK_NUM = re.compile(r'^\d{1,3}')
+
+def extract_track_number(filename):
+    match = RE_TRACK_NUM.match(filename)
+    if match:
+        track_number = int(match.group())
+        return track_number if track_number <= 99 else 1
+    return 1
 
 def filepath_parse_pattern(pattern, tags):
     # Parse a filename pattern and replace markers with values from the tags
