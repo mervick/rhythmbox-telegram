@@ -21,7 +21,7 @@ import logging
 import schema
 from gi.repository import RB
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
-from common import get_location_data, set_entry_state, version_to_number
+from common import get_location_data, set_entry_state, version_to_number, extract_track_number
 from typing import List, Literal, Dict
 
 logger = logging.getLogger(__name__)
@@ -474,12 +474,15 @@ class Storage:
         cursor.close()
 
     def add_audio(self, data, convert=True):
-        if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
+        content = data.get('content', {})
+        audio = content.get('audio')
+
+        if not (audio and audio_content_set <= set(audio)):
             logger.warning('Audio message has no required keys, skipping...')
+            logger.debug(content)
             return
         d = {}
-        content = data['content']
-        audio = content['audio']
+
         completed = audio['audio']['remote']['is_uploading_completed']
         local = audio['audio']['local']
         d['audio_id'] = audio_id = audio['audio']['id']
@@ -488,7 +491,7 @@ class Storage:
             logger.warning('Audio message: %d not uploaded, skipping...', audio_id)
             return
 
-        d['track_number'] = 1
+        d['track_number'] = extract_track_number(audio['file_name'])
         d['chat_id'] = data['chat_id']
         d['message_id'] = data['id']
         d['mime_type'] = audio['mime_type']
