@@ -119,9 +119,7 @@ No other operations are conducted.
 * `setAuthenticationPhoneNumber` - Sets the phone number of the user and sends an authentication code to the user
 * `checkAuthenticationPassword` - Checks the 2-step verification password for correctness
 * `checkAuthenticationCode` - Checks the authentication code
-* `getChats` - Gets an ordered list of chats from the beginning of a chat list
-* `loadChats` - Loads more chats from a chat list
-* `getChat` - Gets information about a chat by its identifier
+* `loadChats` - Loads chats from a chat list
 * `getChatHistory` - Gets messages in a chat
 * `getMessage` - Gets information about a message
 * `downloadFile` - Downloads a file from the cloud

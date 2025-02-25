@@ -130,20 +130,9 @@ TDLIB_VERB_DEBUG = 4
 
 class TelegramApi(GObject.Object):
     object = GObject.Property(type=GObject.Object)
-    total_count = 0
-    chats = []
-    chats_info = {}
     application_version = '1.0.0'
 
-    artist = ''
-    artist_audio = []
-    artist_document = 0
-
-    _is_listen_chats = False
-    last_message_id = 0
     state = None
-
-    me = None
     storage = None
 
     __instances = {}
@@ -155,7 +144,6 @@ class TelegramApi(GObject.Object):
 
     @staticmethod
     def api(api_id, api_hash, phone):
-
         key = inst_key(api_hash, phone)
         if key not in TelegramApi.__instances or not TelegramApi.__instances[key]:
             TelegramApi.__instances[key] = TelegramApi(int(api_id), api_hash, phone)
@@ -173,6 +161,11 @@ class TelegramApi(GObject.Object):
         self.files_dir = os.path.join(plugin_dir, hasher.hexdigest())
         self.temp_dir = os.path.join(self.files_dir, 'files')
 
+        self.chats = {}
+        self.chats_count = 0
+        self.last_message_id = 0
+        self.is_chat_updates_started = False
+
         self.tg = TelegramClient(
             api_id=self.api_id,
             api_hash=self.api_hash,
@@ -185,134 +178,77 @@ class TelegramApi(GObject.Object):
             tdlib_verbosity=TDLIB_VERB_FATAL
         )
 
-    def get_error(self):
-        err = self.tg.error['message'] if self.tg.error and 'message' in self.tg.error else None
-        return API_ERRORS[err] if err in API_ERRORS else err
-
-    def is_ready(self):
-        return self.state == AuthorizationState.READY
-
+    ############################################################
+    # Authorization and state management
+    ############################################################
     def login(self, code=None):
         if code and self.state == self.tg.authorization_state.WAIT_CODE:
             self.tg.send_code(code=code)
 
         self.state = self.tg.login(blocking=False)
-
         if self.state != self.tg.authorization_state.READY:
             raise TelegramAuthStateError(self.state)
 
         self.storage = Storage(self, self.files_dir)
         if self.state:
-            self.start_update_chats()
+            self.start_chat_updates()
         else:
-            self.stop_update_chats()
+            self.stop_chat_updates()
         return self.state
 
-    def _update_new_chat_cb(self, update):
-        if 'chat' in update and 'id' in update['chat']:
-            chat_id = update['chat']['id']
-            self.chats.append(chat_id)
-            self.chats_info[chat_id] = get_chat_info(update['chat'])
-            # if self._update and self._updater:
-            #     self._updater(self.chats_info)
+    def get_error(self):
+        err = self.tg.error.get('message') if self.tg.error else None
+        return API_ERRORS[err] if err in API_ERRORS else err
 
-    def start_update_chats(self):
-        if not self._is_listen_chats:
-            self._is_listen_chats = True
+    def is_ready(self):
+        return self.state == AuthorizationState.READY
+
+    ############################################################
+    # Managing chats
+    ############################################################
+    def start_chat_updates(self):
+        if not self.is_chat_updates_started:
+            self.is_chat_updates_started = True
             self.tg.add_update_handler('updateNewChat', self._update_new_chat_cb)
 
-    def stop_update_chats(self):
-        self._is_listen_chats = False
+    def stop_chat_updates(self):
+        self.is_chat_updates_started = False
         self.tg.remove_update_handler('updateNewChat', self._update_new_chat_cb)
 
-    def _get_joined_chats(self):
-        chats = dict()
-        for k in self.chats_info.keys():
-            if k in self.chats:
-                chats[k] = self.chats_info[k]
-        return chats
+    def _update_new_chat_cb(self, update):
+        chat = update.get('chat', {})
+        chat_id = chat.get('id')
+        if chat_id:
+            self.chats[chat_id] = get_chat_info(chat)
 
     def _chats_idle_cb(self, data):
-        step = data.get("step", 0)
-        r = data.get("result", None)
+        r = data.get('result')
+        if not r:
+            r = data['result'] = self.tg.call_method('loadChats', {'limit': 100})
+        if not r._ready.is_set():  # wait to load
+            return True
 
-        # Step 0. Get first 100 chat ids
-        if step == 0:
-            # no result, call tg.get_chats
-            if not r:
-                # max limit is 100
-                data['result']  = self.tg.get_chats(limit=100)
-                return True
-            # wait to load
-            if not r._ready.is_set():
-                return True
-            data['result'] = None
-            # save chats ids
-            for chat_id in r.update['chat_ids']:
-                if chat_id not in self.chats:
-                    self.chats.append(chat_id)
-            # next step
-            data["step"] = 1
+        data['result'] = None
+        total = len(self.chats)
 
-        # Step 1. Loading chats info by ids
-        elif step == 1:
-            idx = data.get("idx", 0)
-            # no result, call get_chat by id
-            if not r:
-                # get idx of not loaded chat
-                while idx < len(self.chats) and self.chats[idx] in self.chats_info:
-                    idx += 1
-                if idx < len(self.chats):
-                    chat_id = self.chats[idx]
-                    # print('get_chat %s' % chat_id)
-                    data['result'] = self.tg.get_chat(chat_id)
-                else:
-                    # all chats loaded, move to next step
-                    data['result'] = None
-                    data["step"] = 2
-                return True
-            # wait to load
-            if not r._ready.is_set():
-                return True
-            data['result'] = None
-            # save chat info, increment idx
-            chat_id = self.chats[idx]
-            self.chats_info[chat_id] = get_chat_info(r.update)
-            data["idx"] = idx + 1
-
-        # Step 2. Load chats
-        elif step == 2:
-            # no result, call loadChats
-            if not r:
-                # max limit is 100
-                data['result'] = self.tg.call_method('loadChats', {'limit': 100})
-                return True
-            # wait to load
-            if not r._ready.is_set():
-                return True
-            data['result'] = None
-            data["idc"] = data.get('idc', 0) + 1
-            # call loadChats 4 times (> 400 chats?)
-            if data["idc"] >= 4:
-                # save total_count
-                self.total_count = len(self.chats)
-                # next step
-                data["step"] = 3
-
-        # All chats loaded, callback
-        else:
-            data["update"](self._get_joined_chats())
+        if self.chats_count == total:
+            self.chats_count = total
+            data['update'](self.chats)
             return False
+
+        self.chats_count = total
         return True
 
     def reset_chats(self):
-        self.total_count = 0
-        self.chats = []
-        self.chats_info = {}
+        self.chats_count = 0
+        self.chats = {}
 
     def get_chats_idle(self, update):
-        Gdk.threads_add_idle(0, self._chats_idle_cb, {"update": update})
+        Gdk.threads_add_idle(0, self._chats_idle_cb, {'update': update})
 
+    ############################################################
+    # Managing messages
+    ############################################################
     def load_message_idle(self, chat_id, message_id, on_success=empty_cb, on_error=empty_cb):
         logger.debug('%s %s' % (chat_id, message_id))
         blob = {
@@ -322,7 +258,7 @@ class TelegramApi(GObject.Object):
             "on_error": on_error,
             "result": self.tg.get_message(chat_id, message_id)
         }
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, blob)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, _wait_cb, blob)
 
     def load_messages_idle(self, chat_id, update=None, each=None, on_success=None, blob=None, limit=100, offset=0):
         blob = {
@@ -334,7 +270,6 @@ class TelegramApi(GObject.Object):
             "each": each if each else empty_cb,
             "on_success": on_success if on_success else empty_cb
         }
-        # print('load_messages_idle %s' % chat_id)
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_messages_idle_cb, blob)
 
     def _load_messages_idle_cb(self, blob):
@@ -387,33 +322,6 @@ class TelegramApi(GObject.Object):
         blob['on_success'](blob, API_PAGE_LOADED)
         return False
 
-    def _download_audio_async(self, data, priority=1):
-        if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
-            logger.debug('Audio message has no required keys, skipping...')
-            logger.debug(data.get('content'))
-            return None
-
-        content = data['content']
-        audio = content['audio']
-        completed = audio['audio']['remote']['is_uploading_completed']
-        audio_id = audio['audio']['id']
-
-        if not completed:
-            logger.debug('Audio message: %d not uploaded, skipping...', audio_id)
-            return None
-
-        return self.download_file_async(audio_id, priority=priority)
-
-    def download_file_async(self, file_id, priority=1):
-        r = self.tg.call_method('downloadFile', {
-            'file_id': file_id,
-            'priority': priority,
-            # 'synchronous': False
-            'synchronous': True
-        })
-        r.wait()
-        return r.update
-
     def get_message_link(self, chat_id, message_id):
         r = self.tg.call_method('getMessageLink', {
             'chat_id': int(chat_id),
@@ -436,17 +344,9 @@ class TelegramApi(GObject.Object):
         # public
         return "tg://resolve?domain=%s&post=%s&single" % (m.group(2), m.group(3))
 
-    def download_audio(self, chat_id, message_id, priority=1):
-        r = self.tg.get_message(chat_id, message_id)
-        r.wait()
-        msg = r.update
-        if msg:
-            file = self._download_audio_async(msg, priority=priority)
-            if file:
-                msg['content']['audio']['audio'] = file
-                return msg
-        return None
-
+    ############################################################
+    # Managing files
+    ############################################################
     def download_audio_idle(self, chat_id, message_id, priority=1, on_success=empty_cb, on_error=empty_cb):
         def download(data, *arg):
             if not data:
@@ -462,14 +362,15 @@ class TelegramApi(GObject.Object):
         self.load_message_idle(chat_id, message_id, on_success=download, on_error=on_error)
 
     def _download_audio_idle_cb(self, data, priority=1, on_success=empty_cb, on_error=empty_cb):
-        if not ('audio' in data['content'] and audio_content_set <= set(data['content']['audio'])):
+        content = data.get('content', {})
+        audio = content.get('audio')
+
+        if not (audio and audio_content_set <= set(audio)):
             logger.warning('Audio message has no required keys, skipping...')
-            logger.debug(data.get('content'))
+            logger.debug(content)
             on_error()
             return
 
-        content = data['content']
-        audio = content['audio']
         completed = audio['audio']['remote']['is_uploading_completed']
         audio_id = audio['audio']['id']
 
@@ -492,29 +393,27 @@ class TelegramApi(GObject.Object):
             "on_success": on_success if on_success else empty_cb,
             "on_error": on_error if on_error else empty_cb,
         }
-        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._wait_cb, blob)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, _wait_cb, blob)
 
-    def _wait_cb(self, blob):
-        r = blob.get('result', None)
-        if not r.ok_received and r.error:
-            show_error(_('Error: Telegram API request failed'), format_error(r))
-            cb(blob.get('on_error'))()
-            return False
 
-        if not r._ready.is_set():
-            return True
-
-        blob.get('on_success')(r.update)
+def _wait_cb(blob):
+    r = blob.get('result', None)
+    if not r.ok_received and r.error:
+        show_error(_('Error: Telegram API request failed'), format_error(r))
+        cb(blob.get('on_error'))()
         return False
 
+    if not r._ready.is_set():
+        return True
 
-def format_error(r: AsyncResult):
-    message = None
-    info = r.error_info
-    if info:
-        if 'message' in info:
-            message = info.get('message')
-            if '@extra' in info:
-                if 'request_id' in info['@extra']:
-                    message = '%s, request_id: %s' % (message, info['@extra'].get('request_id'))
+    blob.get('on_success')(r.update)
+    return False
+
+def format_error(r: AsyncResult) -> str | None:
+    info = r.error_info if r.error_info else {}
+    message = info.get('message')
+    if message:
+        request_id = info.get('@extra', {}).get('request_id')
+        if request_id:
+            message = f"{message}, request_id: {request_id}"
     return message

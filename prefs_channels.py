@@ -42,10 +42,10 @@ class PrefsChannelsPage(PrefsPageBase):
         self.search_list_box.set_selected(selected)
 
     def on_channels_fetch(self, *obj):
-        def _set_chats(chats):
+        def set_chats(chats):
             self.search_list_box.clear_list()
             self.search_list_box.set_items(list(chats.values()))
-        self.prefs.api.get_chats_idle(_set_chats)
+        self.prefs.api.get_chats_idle(set_chats)
 
     def register_signals(self):
         self.prefs.connect('channels-clear', self.on_channels_clear)
