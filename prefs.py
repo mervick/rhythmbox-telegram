@@ -56,6 +56,7 @@ class TelegramPrefs(GObject.GObject, PeasGtk.Configurable):
         self.shell = self.object
         self.account = None
         self.plugin = None
+        self.plugin_info = None
         self.settings = None
 
     def find_plugin_file(self, file):
@@ -66,6 +67,7 @@ class TelegramPrefs(GObject.GObject, PeasGtk.Configurable):
         self.account.init()
         self.plugin = self.account.plugin
         self.settings = self.account.settings
+        self.plugin_info = self.plugin.plugin_info
 
         main_box = Gtk.Box()
         self.main_box = main_box
