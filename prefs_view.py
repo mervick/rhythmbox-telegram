@@ -55,7 +55,7 @@ class PrefsViewPage(PrefsPageBase):
         self.page_group_combo = self.ui.get_object('page_group_combo')
         self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
         self.sync_hidden_btn = self.ui.get_object('sync_hidden_btn')
-        self.sync_hidden_btn.connect('clicked', self._sync_hidden_globally_cb)
+        self.sync_hidden_btn.connect('clicked', self._sync_hidden_chats_cb)
 
         self.restart_warning_box = self.ui.get_object('restart_warning_box')
 
@@ -114,7 +114,7 @@ class PrefsViewPage(PrefsPageBase):
             self.settings.set_string(name, value)
             self.on_change(name, value)
 
-    def _sync_hidden_globally_cb(self, *args):
+    def _sync_hidden_chats_cb(self, *args):
         db = self.plugin.storage.db
         blob = {}
         album = []
@@ -131,38 +131,35 @@ class PrefsViewPage(PrefsPageBase):
         def write(values):
             count = int(len(values) / 3)
             placeholders = ', '.join(['(?, ?, ?)'] * count)
-
             query = f"""
                 UPDATE audio
                 SET is_hidden = 1
                 WHERE is_hidden = 0 AND (artist, title, duration) IN ({placeholders})
             """
-
             db_cur = db.cursor()
             db_cur.execute(query, values)
             db.commit()
             db_cur.close()
-            blob['pending'] = blob.get('pending') - 1
 
-            if blob.get('pending') == 0:
-                done()
-
-        def flash():
+        def flash_idle(data_iter):
             values = []
-            for item in data:
-                artist, title, duration = item
-                values.append(artist)
-                values.append(title)
-                values.append(duration)
+            try:
+                while True:
+                    item = next(data_iter)
+                    artist, title, duration = item
+                    values.append(artist)
+                    values.append(title)
+                    values.append(duration)
 
-                if len(values) >= max_upd_size:
-                    blob['pending'] = blob.get('pending', 0) + 1
-                    GLib.idle_add(write, values.copy())
-                    values = []
-
-            if len(values) > 0:
-                blob['pending'] = blob.get('pending', 0) + 1
-                GLib.idle_add(write, values.copy())
+                    if len(values) >= max_upd_size:
+                        write(values.copy())
+                        values = []
+                        return True
+            except StopIteration:
+                if len(values) > 0:
+                    write(values.copy())
+            done()
+            return False
 
         def update():
             if len(album) > 2:
@@ -187,17 +184,17 @@ class PrefsViewPage(PrefsPageBase):
                 if blob.get('artist') == artist:
                     # if previous album was empty, then set album
                     if not blob.get('album') and audio.album:
-                        blob["album"] = audio.album
+                        blob['album'] = audio.album
                     # add to album if same album name or
                     if blob.get('album') == audio.album or (not audio.album and len(album)):
                         titles.append(audio.title)
                         album.append(audio)
                         return
             update()
-            blob["artist"] = artist
-            blob["album"] = audio.album
+            blob['artist'] = artist
+            blob['album'] = audio.album
             album.append(audio)
 
         self.plugin.storage.each(table='audio', where={'is_hidden': 1}, order='date DESC', callback=each)
         update()
-        flash()
+        GLib.idle_add(flash_idle, iter(data))
