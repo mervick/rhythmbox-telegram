@@ -14,13 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import uuid, re
-import threading
+import re
 from gi.repository import RB
 from gi.repository import GObject, Gdk, Gio, GLib
 import hashlib
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from telegram.client import Telegram
@@ -31,27 +29,6 @@ from common import get_chat_info, empty_cb, cb, show_error
 from storage import Storage
 
 logger = logging.getLogger(__name__)
-
-REGEX_TME_LINK = re.compile(r'^https://t\.me/(c/)?([a-zA-Z0-9_]+)/([0-9]+)(\?.+)?$')
-
-def inst_key(api_hash, phone):
-    return '|'.join([phone.strip('+'), api_hash])
-
-
-class TelegramAuthError(Exception):
-    def __init__(self, message, info):
-        super().__init__(message)
-        self.info = info
-
-    def get_info(self):
-        if self.info is not None:
-            if type(self.info) == dict:
-                return self.info.get('message', self.__str__())
-        return self.__str__()
-
-
-class TelegramAuthStateError(Exception):
-    pass
 
 
 class TelegramClient(Telegram):
@@ -77,49 +54,33 @@ class TelegramClient(Telegram):
         return AuthorizationState(authorization_state)
 
 
-class SyncResult:
-    def __init__(self, result):
-        self._r = result
-        self.ok_received = False
-        self.error = False
-        self.error_info: Optional[Dict[Any, Any]] = None
-        self.update: Optional[Dict[Any, Any]] = None
+class TelegramAuthError(Exception):
+    def __init__(self, message, info):
+        super().__init__(message)
+        self.info = info
 
-    def is_ready(self):
-        ready = self._r._ready.is_set()
-        if ready:
-            self.ok_received = self._r.ok_received
-            self.error = self._r.error
-            self.error_info = self._r.error_info
-            self.update = self._r.update
-        return ready
+    def get_info(self):
+        if self.info is not None:
+            if type(self.info) == dict:
+                return self.info.get('message', self.__str__())
+        return self.__str__()
 
 
-class AsyncCb:
-    def __init__(self):
-        self.id = uuid.uuid4().hex
-        self.update = None
-        self._ready = threading.Event()
+class TelegramAuthStateError(Exception):
+    pass
 
-    def __str__(self) -> str:
-        return f'AsyncCb <{self.id}>'
 
-    def wait(self, timeout=None):
-        result = self._ready.wait(timeout=timeout)
-        if result is False:
-            raise TimeoutError()
+def inst_key(api_id, phone):
+    return '|'.join([phone.strip('+'), api_id])
 
-    def release(self, update):
-        self.update = update
-        self._ready.set()
 
+REGEX_TME_LINK = re.compile(r'^https://t\.me/(c/)?([a-zA-Z0-9_]+)/([0-9]+)(\?.+)?$')
 
 API_ALL_MESSAGES_LOADED = 'ALL_MESSAGES_LOADED'
 API_END_OF_SEGMENT = 'END_OF_SEGMENT'
 API_PAGE_LOADED = 'API_PAGE_LOADED'
 
 LAST_MESSAGE_ID = 0x100000  # 1048576
-
 
 TDLIB_VERB_FATAL = 0
 TDLIB_VERB_ERROR = 1
@@ -144,7 +105,7 @@ class TelegramApi(GObject.Object):
 
     @staticmethod
     def api(api_id, api_hash, phone):
-        key = inst_key(api_hash, phone)
+        key = inst_key(api_id, phone)
         if key not in TelegramApi.__instances or not TelegramApi.__instances[key]:
             TelegramApi.__instances[key] = TelegramApi(int(api_id), api_hash, phone)
         TelegramApi.__current = TelegramApi.__instances[key]
