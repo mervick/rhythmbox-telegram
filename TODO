@@ -1,5 +1,3 @@
 * update state for entries after deleting temp files
-* change is_moved & is_downloaded when user deletes song entry
-* fix crash when playing from 1 tg source and downloading at the same time from another tg source
 * detect existing directories in a case-insensitive manner
 * allow re-download downloaded songs

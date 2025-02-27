@@ -1,3 +1,22 @@
+rhythmbox-telegram-plugin (1.0.14) unstable; urgency=medium
+
+  * Improve loaders, store uris in queue instead of entries
+  * Improve TelegramApi, remove unused methods
+  * Improve sync hidden chats, make it not blocking
+  * Add get_base_title(), extract_track_number()
+  * Extract track number from filename by default
+  * Fix repack helpbox in connect settings
+  * Set plugin_info in prefs
+  * Add show telegram settings action
+  * Add Telegram Settings action in toolbar
+  * Fix collect with rating >= 4
+  * Upd _comp_rated_level()
+  * Save location to _pending_playback, source get from entry_type
+  * Remove unused code
+  * Improve migrations
+
+ -- izman <izmanw@gmail.com>  Thu, 27 Feb 2025 17:22:04 +0200
+
 rhythmbox-telegram-plugin (1.0.13) unstable; urgency=medium
 
   * Add database migrations
