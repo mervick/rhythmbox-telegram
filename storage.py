@@ -336,13 +336,33 @@ class Migration:
         cursor = self.db.cursor()
         current_version = self._get_current_version()
 
-        for version, sql in sorted(self.migrations.items(), key=lambda item: item[0]):
-            if version > current_version:
-                cursor.execute(sql)
-                cursor.execute("INSERT INTO migrations (version) VALUES (?);", (version,))
-                self.db.commit()
-                print(f"Applied migration {version}")
+        for version, migration in sorted(self.migrations.items(), key=lambda item: item[0]):
+            if version > current_version or True:
+                print(f"Running migration for version {version}")
+                try:
+                    if isinstance(migration, str):  # SQL query
+                        cursor.execute(migration)
+                    elif callable(migration):  # Python func
+                        migration(cursor)
+                    elif isinstance(migration, (list, tuple)):
+                        # list or tuple of SQL queries and/or Python functions
+                        for section in migration:
+                            if isinstance(section, str):  # SQL query
+                                cursor.execute(section)
+                            elif callable(section):  # Python func
+                                section(cursor)
+                            else:
+                                raise ValueError(f"Unsupported migration type: {type(section)}")
+                    else:
+                        raise ValueError(f"Unsupported migration type: {type(migration)}")
 
+                    cursor.execute("INSERT INTO migrations (version) VALUES (?);", (version,))
+                    self.db.commit()
+                    print(f"Migration for version {version} applied successfully.")
+                except Exception as e:
+                    self.db.rollback()
+                    print(f"Error applying migration for version {version}: {e}")
+                    raise
 
 class Storage:
     _instance = None

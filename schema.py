@@ -17,7 +17,7 @@
 from common import version_to_number
 
 
-INIT_VERSION = version_to_number('1.0.13')
+INIT_VERSION = version_to_number('1.0.14')
 
 INIT_SCHEMA = f'''
 CREATE TABLE playlist (
@@ -34,7 +34,7 @@ CREATE TABLE audio (
    `chat_id` INTEGER NOT NULL,
    `message_id` INTEGER NOT NULL,
    `mime_type` VARCHAR(48) NOT NULL,
-   `track_number` INTEGER DEFAULT '1',
+   `track_number` INTEGER DEFAULT 1,
    `title` TEXT NOT NULL,
    `artist` TEXT NOT NULL,
    `album` TEXT DEFAULT NULL,
@@ -44,12 +44,12 @@ CREATE TABLE audio (
    `date` INTEGER NOT NULL,
    `size` INTEGER NOT NULL,
    `duration` INTEGER NOT NULL,
-   `is_downloaded` INT(1) DEFAULT '0',
-   `is_moved` INT(1) DEFAULT '0',
-   `is_hidden` INT(1) DEFAULT '0',
+   `is_downloaded` INTEGER DEFAULT 0,
+   `is_moved` INTEGER DEFAULT 0,
+   `is_hidden` INTEGER DEFAULT 0,
    `local_path` TEXT DEFAULT NULL,
-   `play_count` INTEGER DEFAULT '0',
-   `rating` INT(1) DEFAULT '0',
+   `play_count` INTEGER DEFAULT 0,
+   `rating` INTEGER DEFAULT 0,
     UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
 );
 CREATE INDEX idx_chat_id ON audio(chat_id);
@@ -61,5 +61,8 @@ INSERT INTO migrations (version) VALUES ( {INIT_VERSION} );
 '''
 
 MIGRATIONS = {
-    # '1.0.13': MIGRATION_1_0_13,
+    # '1.0.14': (
+    #     migration_1_0_14_sql,
+    #     migration_1_0_14_py
+    # ),
 }
