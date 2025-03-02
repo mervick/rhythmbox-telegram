@@ -15,9 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import shutil
 from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
+from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
 from common import get_entry_location, CONFLICT_ACTION_IGNORE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
@@ -121,16 +123,25 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
     The first entries added to the queue are downloaded first.
     The downloading process is assigned a medium priority level.
     """
+    library_location: str
+    folder_hierarchy: str
+    conflict_resolve: str
+    filename_template: str
+    detect_dirs_ignore_case: bool
+    detect_files_ignore_case: bool
+
     def __init__(self, plugin):
         AbsAudioLoader.__init__(self, plugin)
         self._info = {}
         self.setup()
 
     def setup(self):
-        self.library_location = self.plugin.account.get_library_path().rstrip('/') # noqa
-        self.folder_hierarchy = self.plugin.settings[KEY_FOLDER_HIERARCHY] # noqa
-        self.conflict_resolve = self.plugin.settings[KEY_CONFLICT_RESOLVE] # noqa
-        self.filename_template = self.plugin.settings[KEY_FILENAME_TEMPLATE] # noqa
+        self.library_location = self.plugin.account.get_library_path().rstrip('/')
+        self.folder_hierarchy = self.plugin.settings[KEY_FOLDER_HIERARCHY]
+        self.conflict_resolve = self.plugin.settings[KEY_CONFLICT_RESOLVE]
+        self.filename_template = self.plugin.settings[KEY_FILENAME_TEMPLATE]
+        self.detect_dirs_ignore_case = self.plugin.settings[KEY_DETECT_DIRS_IGNORE_CASE]
+        self.detect_files_ignore_case = self.plugin.settings[KEY_DETECT_FILES_IGNORE_CASE]
 
     def add_entries(self, entries):
         commit = False
@@ -218,6 +229,42 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next(1000)
 
+    def _create_dirs(self, root, directory):
+        if not self.detect_dirs_ignore_case:
+            path = os.path.join(root, directory)
+            os.makedirs(path, exist_ok=True)
+            return path
+
+        current_path = root
+        dirs = directory.split('/')
+
+        for dir_name in dirs:
+            pattern = re.compile(re.escape(dir_name), re.IGNORECASE)
+            found = False
+            for item in os.listdir(current_path):
+                if os.path.isdir(os.path.join(current_path, item)) and pattern.fullmatch(item):
+                    current_path = os.path.join(current_path, item)
+                    found = True
+                    break
+            if not found:
+                new_dir = os.path.join(current_path, dir_name)
+                os.makedirs(new_dir)
+                current_path = new_dir
+        return current_path
+
+    def _get_filename(self, filename):
+        if not self.detect_files_ignore_case:
+            return filename
+
+        dirpath = os.path.dirname(filename)
+        basename = os.path.basename(filename)
+        pattern = re.compile(re.escape(basename), re.IGNORECASE)
+
+        for item in os.listdir(dirpath):
+            if os.path.isfile(os.path.join(dirpath, item)) and pattern.fullmatch(item):
+                return os.path.join(dirpath, item)
+        return filename
+
     def _process(self, audio):
         tags = {
             'title': audio.title,
@@ -231,10 +278,14 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             'year': audio.get_year(),
         }
         audio.meta_tags = tags
+
+        filedir = filepath_parse_pattern(self.folder_hierarchy, tags)
+        filepath = self._create_dirs(self.library_location, filedir)
         file_ext = audio.get_file_ext()
-        filename = filepath_parse_pattern(
-            "%s/%s%s" % (self.folder_hierarchy, self.filename_template, f'.{file_ext}' if len(file_ext) else ''), tags)
-        filename = "%s/%s" % (self.library_location, filename)
+        extension = f'.{file_ext}' if len(file_ext) else ''
+        basename = filepath_parse_pattern(self.filename_template, tags)
+        filename = '%s/%s%s' % (filepath, basename, extension)
+        filename = self._get_filename(filename)
 
         if self.conflict_resolve == CONFLICT_ACTION_ASK:
             if os.path.exists(filename):

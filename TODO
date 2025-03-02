@@ -1,3 +1,2 @@
 * update state for entries after deleting temp files
-* detect existing directories in a case-insensitive manner
 * allow re-download downloaded songs
