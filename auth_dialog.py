@@ -27,7 +27,7 @@ class AuthDialog:
         self._on_cancel_cb = on_cancel
 
         builder = Gtk.Builder()
-        builder.add_from_file(rb.find_plugin_file(config.plugin, "ui/dialog-code.ui"))
+        builder.add_from_file(rb.find_plugin_file(config.plugin, "ui/auth-dialog.ui"))
 
         self.window = builder.get_object('window')
         self.code_entry = builder.get_object('code_entry')
