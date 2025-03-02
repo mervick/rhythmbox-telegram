@@ -199,17 +199,26 @@ def get_audio_tags(file_path):
     tags = {}
     metadata = RB.MetaData()
     uri = GLib.filename_to_uri(file_path, None)
-    metadata.load(uri)
 
-    for tag_name in META_TAGS:
-        tags[tag_name] = None
-        try:
-            tag = metadata.get(META_TAGS[tag_name])
-            tags[tag_name] = tag[1] if tag[0] else None
-            if tag_name == 'date':
-                tags['year'] = GLib.Date.new_julian(tag[1]).get_year() if tag[0] else None
-        except TypeError:
-            pass
+    try:
+        metadata.load(uri)
+        for tag_name in META_TAGS:
+            tags[tag_name] = None
+            try:
+                tag = metadata.get(META_TAGS[tag_name])
+                tags[tag_name] = tag[1] if tag[0] else None
+                if tag_name == 'date':
+                    tags['year'] = GLib.Date.new_julian(tag[1]).get_year() if tag[0] else None
+            except TypeError:
+                pass
+
+    except GLib.GError:
+        for tag_name in META_TAGS:
+            tags[tag_name] = 'Unknown'
+        tags['date'] = 0
+        tags['year'] = 0
+        tags['duration'] = 0
+        tags['track_number'] = 0
 
     return tags
 
