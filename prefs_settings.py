@@ -24,6 +24,7 @@ from common import filepath_parse_pattern, show_error
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
 from account import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
 from account import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
+from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -84,6 +85,12 @@ class PrefsSettingsPage(PrefsPageBase):
         self.dir_hierarchy_combo = self.ui.get_object('dir_hierarchy_combo')
         self.name_template_combo = self.ui.get_object('name_template_combo')
         self.template_example_label = self.ui.get_object('template_example_label')
+
+        self.detect_dirs_ignore_case_check = self.ui.get_object('detect_dirs_ignore_case')
+        self.detect_files_ignore_case_check = self.ui.get_object('detect_files_ignore_case')
+
+        self._init_check(self.detect_dirs_ignore_case_check, KEY_DETECT_DIRS_IGNORE_CASE)
+        self._init_check(self.detect_files_ignore_case_check, KEY_DETECT_FILES_IGNORE_CASE)
 
         self.preload_prev_check = self.ui.get_object('preload_prev_check')
         self.preload_next_check = self.ui.get_object('preload_next_check')
