@@ -121,7 +121,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="row-spacing">25</property>
                     <property name="column-spacing">25</property>
                     <child>
-                      <object class="GtkImage">
+                      <object class="GtkImage" id="file_icon_new">
                         <property name="can-focus">False</property>
                         <property name="valign">start</property>
                         <property name="margin-top">5</property>
@@ -279,7 +279,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkImage">
+                      <object class="GtkImage" id="file_icon_old">
                         <property name="can-focus">False</property>
                         <property name="valign">start</property>
                         <property name="margin-top">5</property>

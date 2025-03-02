@@ -24,16 +24,6 @@ from storage import Audio
 from common import get_audio_tags, format_time, pretty_file_size, get_file_size, file_uri, move_window_center
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_IGNORE
 
-# def parse_stream_info(data):
-#     result = {}
-#     for line in data.strip().splitlines():
-#         line = line.strip()
-#         if '=' in line:
-#             key, value = line.split('=', 1)
-#             if key not in result:
-#                 result[key] = value.strip()
-#     return result
-
 
 class ConcurrentResolveError(Exception):
     pass
@@ -45,7 +35,7 @@ class FileInfo:
         info = FileInfo()
         info.file_path = file_path
         info.meta_tags = get_audio_tags(file_path)
-        info.file_size = get_file_size(info.file_path )
+        info.file_size = get_file_size(info.file_path)
         return info
 
     @staticmethod
@@ -63,34 +53,21 @@ class FileInfo:
         self.file_size = 0
         self.meta_tags = {}
 
-        # self.file_path = file_path
-        # self.meta_tags = get_audio_tags(file_path)
-        # self.stream_info = {}
-        # self._update
-    #     try:
-    #         args = ['ffprobe', '-v', 'quiet', '-show_streams', '-select_streams', 'a', file_path]
-    #         result = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    #         GLib.io_add_watch(result.stdout, GLib.IO_IN, self._subprocess_out_cb, result)
-    #     except:
-    #         pass
-    #
-    # def _subprocess_out_cb(self, source, condition, process):
-    #     if condition == GLib.IO_IN:
-    #         output = source.read()
-    #         process.stdout.close()
-    #         process.stderr.close()
-    #         process.terminate()
-    #         info = parse_stream_info(output)
-    #         if info:
-    #             self.stream_info = info
-    #             self._update()
-    #         return False
-    #     return True
-
     def browse_in_file_manager(self):
         app_info = Gio.AppInfo.get_default_for_type('inode/directory', True)
         if app_info:
             app_info.launch_uris([file_uri(self.file_path)], None)
+
+    def get_icon_name(self):
+        file = Gio.File.new_for_path(self.file_path)
+        info = file.query_info(Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE, 0, None)
+        if info:
+            content_type = info.get_content_type()
+            icon = Gio.content_type_get_icon(content_type)
+            if isinstance(icon, Gio.ThemedIcon):
+                names = icon.get_names()
+                return names[0] if names else "text-x-generic"
+        return "text-x-generic"
 
 
 def set_small_label(widget, label):
@@ -145,6 +122,7 @@ class ConflictDialog:
         self.builder.get_object('title').set_label(
             '<span font_desc=\'14\' weight=\'bold\'>%s</span>' % (_('Replace file "%s"?') % basename))
 
+        self.builder.get_object('file_icon_new').set_from_icon_name(self.new_file.get_icon_name(), 6)
         set_small_label(self.builder.get_object('artist_new_lbl'), _('Artist:'))
         set_small_label(self.builder.get_object('artist_new_val'), self.new_file.meta_tags.get('artist', 'Unknown'))
         set_small_label(self.builder.get_object('title_new_lbl'), _('Title:'))
@@ -154,6 +132,7 @@ class ConflictDialog:
         set_small_label(self.builder.get_object('filesize_new_lbl'), _('File size:'))
         set_small_label(self.builder.get_object('filesize_new_val'), pretty_file_size(self.new_file.file_size))
 
+        self.builder.get_object('file_icon_old').set_from_icon_name(self.old_file.get_icon_name(), 6)
         set_small_label(self.builder.get_object('artist_old_lbl'), _('Artist:'))
         set_small_label(self.builder.get_object('artist_old_val'), self.old_file.meta_tags.get('artist', 'Unknown'))
         set_small_label(self.builder.get_object('title_old_lbl'), _('Title:'))
