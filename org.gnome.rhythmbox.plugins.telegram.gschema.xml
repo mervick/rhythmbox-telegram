@@ -84,6 +84,18 @@
       <description>File name template to downloading music into your library</description>
     </key>
 
+    <key name="detect-dirs-ignore-case" type="b">
+      <default>true</default>
+      <summary>Detect existing dirs case-insensitive</summary>
+      <description>Detect existing directories regardless of case sensitivity</description>
+    </key>
+
+    <key name="detect-files-ignore-case" type="b">
+      <default>false</default>
+      <summary>Detect existing files case-insensitive</summary>
+      <description>Detect existing files regardless of case sensitivity</description>
+    </key>
+
     <key name="page-group" type="s">
       <default>'library'</default>
       <choices>

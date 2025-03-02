@@ -50,6 +50,9 @@ KEY_PRELOAD_NEXT_TRACK = "preload-next-track"
 KEY_PRELOAD_PREV_TRACK = "preload-prev-track"
 KEY_PRELOAD_HIDDEN_TRACK = "preload-hidden-track"
 
+KEY_DETECT_DIRS_IGNORE_CASE = "detect-dirs-ignore-case"
+KEY_DETECT_FILES_IGNORE_CASE = "detect-files-ignore-case"
+
 
 Secret = None
 if rbconfig.libsecret_enabled:
