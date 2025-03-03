@@ -30,7 +30,7 @@ from common import get_location_data, show_error
 from columns import TopPicks
 from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
-VERSION = "1.0.15"
+VERSION = "1.1.0"
 
 def show_source(source_list):
     for source in source_list:

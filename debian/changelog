@@ -1,3 +1,13 @@
+rhythmbox-telegram-plugin (1.1.0) stable; urgency=medium
+
+  * Detect and show real content-type icon
+  * Add detect-dirs-ignore-case, detect-files-ignore-case settings
+  * Improve get_audio_tags(), fill empty result in case GLib.GError
+  * Add Existing Files and Directories settings
+  * Detect existing directories and files in a case-insensitive manner (depends on settings)
+
+ -- izman <izmanw@gmail.com>  Mon, 03 Mar 2025 14:38:14 +0200
+
 rhythmbox-telegram-plugin (1.0.14) unstable; urgency=medium
 
   * Improve loaders, store uris in queue instead of entries
