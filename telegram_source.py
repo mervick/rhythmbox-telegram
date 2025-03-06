@@ -29,6 +29,9 @@ gettext.install('rhythmbox', RB.locale_dir())
 
 
 class DownloadBar(metaclass=SingletonMeta):
+    """
+    DownloadBar class is responsible for managing the download progress bar UI
+    """
     def __init__(self, plugin):
         self.plugin = plugin
         self.source = None
@@ -38,9 +41,11 @@ class DownloadBar(metaclass=SingletonMeta):
         plugin.connect('update_download_info', self.update_download_info)
 
     def deactivate(self, source):
+        """ Deactivate the download bar """
         self.active = False
 
     def activate(self, source):
+        """ Activate the download bar and set up the UI """
         self.source = source
         if source.bar_ui is None:
             entry_view = source.get_entry_view()
@@ -56,11 +61,16 @@ class DownloadBar(metaclass=SingletonMeta):
             entry_view.pack_end(status_box, False, False, 0)
             status_box.show_all()
             status_box.props.visible = False
+            # builder.get_object('cancel_button').connect('clicked', self._cancel_clicked)
 
         self.active = True
         self._update_ui()
 
+    def _cancel_clicked(self, *_):
+        self.plugin.downloader.cancel()
+
     def _update_ui(self):
+        """ Update the UI based on the current download state """
         if not self.active:
             return
 
@@ -73,17 +83,22 @@ class DownloadBar(metaclass=SingletonMeta):
                 self.source.bar_ui["progress"].set_fraction(self.info.get('fraction', 0.0))
 
     def update_download_info(self, plugin,  info):
+        """ Update the download info and refresh the UI """
         self.info = info
         self._update_ui()
 
 
 class RefreshBtn:
+    """
+    RefreshBtn class is responsible for managing the refresh button in the UI
+    """
     activated = False
 
     def __init__(self, source):
         self.source = source
 
     def activate(self):
+        """ Activate the refresh button and set up the UI """
         if self.activated:
             return
 
@@ -130,16 +145,19 @@ class RefreshBtn:
             button.connect("clicked", self.clicked_cb)
 
     def clicked_cb(self, *obj):
+        """ Handle the refresh button click event """
         if self.source.loader:
             self.source.loader.fetch()
 
     def fetch_started_cb(self, *obj):
+        """ Handle the playlist fetch started event """
         self.button.props.visible = False
         self.spinner.props.visible = True
         self.label.props.visible = True
         self.spinner.start()
 
     def fetch_end_cb(self, *obj):
+        """ Handle the playlist fetch end event """
         self.spinner.stop()
         self.button.props.visible = True
         self.spinner.props.visible = False
@@ -147,6 +165,9 @@ class RefreshBtn:
 
 
 class TelegramSource(RB.BrowserSource):
+    """
+    TelegramSource class represents a source for Telegram audio files in Rhythmbox
+    """
     __gsignals__ = {
         'playlist_fetch_started': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'playlist_fetch_end': (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -179,6 +200,7 @@ class TelegramSource(RB.BrowserSource):
         self.state_column = None
 
     def setup(self, plugin, chat_id, chat_title, visibility):
+        """ Set up the TelegramSource with the given parameters """
         self.initialised = False
         shell = self.props.shell
         self.shell = shell
@@ -196,6 +218,7 @@ class TelegramSource(RB.BrowserSource):
         self.set_property("playlist-menu", self.shell.props.application.get_shared_menu("playlist-page-menu"))
 
     def init_columns(self):
+        """ Initialize the columns in the entry view based on user settings """
         entry_view = self.get_entry_view() # noqa
 
         if self.plugin.account.settings[KEY_RATING_COLUMN]:
@@ -212,6 +235,7 @@ class TelegramSource(RB.BrowserSource):
         self.state_column = StateColumn(self)
 
     def activate(self):
+        """ Activate the TelegramSource """
         if self.activated:
             return
         if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
@@ -221,6 +245,7 @@ class TelegramSource(RB.BrowserSource):
         self.props.entry_type.activate()
 
     def deactivate(self):
+        """ Deactivate the TelegramSource """
         if self.activated:
             self.activated = False
             if self.loader is not None:
@@ -230,27 +255,57 @@ class TelegramSource(RB.BrowserSource):
             self.props.entry_type.deactivate()
 
     def on_entry_changed(self, db, entry, changes):
+        """
+        Handles changes to telegram entries if play count or rating changes.
+        Updates the corresponding song entries (already downloaded).
+        Together with the TelegramPlugin:on_entry_changed() method,
+        they enable synchronization of ratings and play counts between
+        standard song-type entries and Telegram-type entries.
+        """
+        # watch only for current Telegram entry type
         if self.entry_type != entry.get_entry_type():
             return
 
+        audio_changes = {}
         for change in changes:
             if change.prop == RB.RhythmDBPropType.PLAY_COUNT:
-                play_count = entry.get_ulong(RB.RhythmDBPropType.PLAY_COUNT)
-                audio = self.plugin.storage.get_entry_audio(entry)
-                audio.save({"play_count": play_count})
+                audio_changes['play_count'] = entry.get_ulong(RB.RhythmDBPropType.PLAY_COUNT)
             elif change.prop == RB.RhythmDBPropType.RATING:
-                rating = entry.get_double(RB.RhythmDBPropType.RATING)
-                audio = self.plugin.storage.get_entry_audio(entry)
-                audio.save({"rating": round(rating)})
+                audio_changes['rating'] = int(entry.get_double(RB.RhythmDBPropType.RATING))
+
+        if audio_changes:
+            audio = self.plugin.storage.get_entry_audio(entry)
+
+            if not (('play_count' in audio_changes and audio_changes['play_count'] > audio.play_count) or
+                    ('rating' in audio_changes and audio_changes['rating'] != audio.rating)):
+                return
+
+            # update audio in db
+            audio.save(audio_changes)
+
+            if audio.is_moved:
+                # update song entry on entry view
+                song_entry = db.entry_lookup_by_location(file_uri(audio.local_path))
+                if song_entry:
+                    if 'play_count' in audio_changes:
+                        db.entry_set(song_entry, RB.RhythmDBPropType.PLAY_COUNT, audio_changes['play_count'])
+                    if 'rating' in audio_changes:
+                        db.entry_set(song_entry, RB.RhythmDBPropType.RATING, audio_changes['rating'])
 
     def hide_thyself(self):
+        """ Hides the source by setting its visibility property to False """
         self.set_property('visibility', False)
 
     def show_thyself(self):
+        """ Activates the source and sets its visibility property to True """
         self.activate()
         self.set_property('visibility', True)
 
     def do_deselected(self):
+        """
+        Handles actions when the source is deselected, such as deactivating the download bar
+        and stopping the loader.
+        """
         self.bar.deactivate(self)
         self.state_column.deactivate()
         if self.loader is not None:
@@ -259,6 +314,10 @@ class TelegramSource(RB.BrowserSource):
         self.plugin.remove_plugin_menu()
 
     def do_selected(self):
+        """
+        Handles actions when the source is selected, such as activating the download bar,
+        initializing the loader, and adding entries.
+        """
         self.plugin.source = self
         self.state_column.activate()
         self.get_entry_view().set_sorting_order("FirstSeen", Gtk.SortType.DESCENDING)
@@ -278,9 +337,12 @@ class TelegramSource(RB.BrowserSource):
             self.loader.start()
 
     def add_entries(self):
-        self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.visibility)
+        """ Loads and adds entries from the plugin's storage to the source """
+        if self.plugin.storage:
+            self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.visibility)
 
     def add_entry(self, audio):
+        """ Adds a single audio entry to the source if it hasn't been loaded already """
         if audio.id not in self.loaded_entries:
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, self.chat_id, audio.message_id, audio.id)
@@ -291,9 +353,14 @@ class TelegramSource(RB.BrowserSource):
                 audio.update_entry(entry, self.db)
 
     def get_custom_model(self, idx):
+        """ Returns the custom model data for the specified index """
         return self.custom_model[idx]
 
     def do_copy(self):
+        """
+        Copies selected entries to a new list, sorting them by album, track number, and index.
+        Used when adding downloaded entries to the rhythmbox playlists
+        """
         tg_entries = self.get_entry_view().get_selected_entries()
         if len(tg_entries) == 0:
             return None
@@ -332,25 +399,8 @@ class TelegramSource(RB.BrowserSource):
             song_entries.append(entry)
         return song_entries
 
-    def do_can_delete(self):
-        return True
-
-    def do_can_copy(self):
-        return False
-
-    def do_can_paste(self):
-        return False
-
-    def do_can_pause(self):
-        return True
-
-    def do_can_add_to_queue(self):
-        return True
-
-    def do_can_move_to_trash(self):
-        return False
-
     def browse_action(self):
+        """ Opens the selected entry's link in the default web browser """
         screen = self.props.shell.props.window.get_screen()
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
@@ -370,6 +420,7 @@ class TelegramSource(RB.BrowserSource):
             Gtk.show_uri(screen, link, Gdk.CURRENT_TIME)
 
     def file_manager_action(self):
+        """Opens the selected entry's file location in the default file manager """
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
@@ -383,6 +434,7 @@ class TelegramSource(RB.BrowserSource):
                 return
 
     def download_action(self):
+        """ Initiates the download of selected entries using the plugin's downloader """
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
@@ -392,6 +444,7 @@ class TelegramSource(RB.BrowserSource):
         downloader.start()
 
     def hide_action(self):
+        """ Marks selected entries as hidden in the database """
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
@@ -403,6 +456,7 @@ class TelegramSource(RB.BrowserSource):
         self.db.commit()
 
     def unhide_action(self):
+        """ Marks selected entries as unhidden in the database """
         entries = self.get_entry_view().get_selected_entries()
         if len(entries) == 0:
             return
@@ -413,5 +467,23 @@ class TelegramSource(RB.BrowserSource):
             set_entry_state(self.db, entry, audio.get_state())
         self.db.commit()
 
+    def do_can_delete(self):
+        """ Actually does not delete but hides (marks as hidden) """
+        return True
+
+    def do_can_copy(self):
+        return False
+
+    def do_can_paste(self):
+        return False
+
+    def do_can_pause(self):
+        return True
+
+    def do_can_add_to_queue(self):
+        return True
+
+    def do_can_move_to_trash(self):
+        return False
 
 GObject.type_register(TelegramSource)
