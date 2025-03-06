@@ -403,7 +403,7 @@ class Storage:
         if limit and limit > 0:
             sql = f'{sql} LIMIT {limit}'
         cursor = self.db.execute(sql, tuple(set_values))
-        if limit and limit > 1:
+        if not limit or limit > 1:
             return cursor.fetchall()
         return cursor.fetchone()
 
