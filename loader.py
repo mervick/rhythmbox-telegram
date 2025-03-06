@@ -30,6 +30,9 @@ from typing import Tuple
 
 
 class AbsAudioLoader:
+    """
+    Abstract base class for audio loaders. Provides common functionality for managing a queue of audio files to be loaded.
+    """
     def __init__(self, plugin):
         self.plugin = plugin
         self._queue = []
@@ -37,11 +40,13 @@ class AbsAudioLoader:
         self._idx = 0
 
     def stop(self):
+        """ Stops the loader and resets the queue and index. """
         self._running = False
         self._queue = []
         self._idx = 0
 
     def get_entry(self, idx):
+        """ Retrieves an entry from the Rhythmbox database using its URI. """
         uri = self._queue[idx]
         return self.plugin.db.entry_lookup_by_location(uri)
 
@@ -57,6 +62,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
         self._is_hidden = False
 
     def add_entry(self, entry):
+        """ Adds an entry to the queue if it is not already in the library or being loaded. """
         state = get_entry_state(entry)
         if state != Audio.STATE_IN_LIBRARY and state != Audio.STATE_LOADING:
             uri = get_entry_location(entry)
@@ -67,6 +73,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
         return self
 
     def start(self):
+        """ Starts the loader if there are items in the queue. """
         if len(self._queue) > 0:
             if not self._running:
                 self._running = True
@@ -77,6 +84,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
         return self
 
     def _process(self, audio):
+        """ Processes the downloaded audio file and updates the entry in the database. """
         entry = self.get_entry(self._idx)
         if not entry:
             self._next(20)
@@ -89,6 +97,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
         self._next(1000)
 
     def _next(self, delay=1000):
+        """ Moves to the next entry in the queue after a delay. """
         self._is_hidden = False
         del self._queue[self._idx]
         self._idx = len(self._queue) - 1
@@ -98,6 +107,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
         GLib.timeout_add(delay, self._load)
 
     def _load(self):
+        """ Loads the next audio file in the queue. """
         if self._running:
             entry = self.get_entry(self._idx)
             if not entry:
@@ -123,19 +133,21 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
     The first entries added to the queue are downloaded first.
     The downloading process is assigned a medium priority level.
     """
-    library_location: str
-    folder_hierarchy: str
-    conflict_resolve: str
-    filename_template: str
-    detect_dirs_ignore_case: bool
-    detect_files_ignore_case: bool
+    library_location: str           # Path to the music library
+    folder_hierarchy: str           # Folder structure template
+    conflict_resolve: str           # Conflict resolution strategy
+    filename_template: str          # Filename template
+    detect_dirs_ignore_case: bool   # Whether to ignore case when detecting directories
+    detect_files_ignore_case: bool  # Whether to ignore case when detecting files
 
     def __init__(self, plugin):
         AbsAudioLoader.__init__(self, plugin)
-        self._info = {}
+        self._info = {}             # Information about the current download progress
+        self.processing_uri = None  # URI of the currently processing entry
         self.setup()
 
     def setup(self):
+        """ Initializes the downloader settings from the plugin's configuration. """
         self.library_location = self.plugin.account.get_library_path().rstrip('/')
         self.folder_hierarchy = self.plugin.settings[KEY_FOLDER_HIERARCHY]
         self.conflict_resolve = self.plugin.settings[KEY_CONFLICT_RESOLVE]
@@ -144,6 +156,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         self.detect_files_ignore_case = self.plugin.settings[KEY_DETECT_FILES_IGNORE_CASE]
 
     def add_entries(self, entries):
+        """ Adds multiple entries to the queue if they are not already in the library. """
         commit = False
         for entry in entries:
             state = get_entry_state(entry)
@@ -155,12 +168,28 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
                     commit = True
         if commit:
             self.plugin.db.commit()
+            set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
+
+    def cancel(self):
+        """ Cancels the current download process and resets the state of entries in the queue. """
+        if self._running:
+            self._running = False
+            for uri in self._queue:
+                if self.processing_uri != uri:
+                    entry = self.plugin.db.entry_lookup_by_location(uri)
+                    if entry:
+                        audio = self.plugin.storage.get_entry_audio(entry)
+                        if audio:
+                            set_entry_state(self.plugin.db, entry, audio.get_state())
+            self.stop()
 
     def stop(self):
+        """ Stops the downloader and updates the progress information. """
         AbsAudioLoader.stop(self)
         self._update_progress()
 
     def start(self):
+        """ Starts the downloader if there are items in the queue. """
         if len(self._queue) > 0:
             if not self._running:
                 self._info = {}
@@ -174,6 +203,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         return self
 
     def _update_progress(self, audio=None):
+        """ Updates the download progress information. """
         filename = ''
         if audio is not None:
             if len(audio.title) and len(audio.artist):
@@ -192,6 +222,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         self.plugin.emit('update_download_info', info)
 
     def _move_file(self, action, src, dst):
+        """ Moves a file from the source to the destination, handling conflicts based on the specified action. """
         dst_dir = str(os.path.dirname(dst)).rstrip('/')
         os.makedirs(dst_dir, exist_ok=True)
 
@@ -218,6 +249,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         return dst
 
     def _move_audio_and_update(self, action, audio, filename):
+        """ Moves the audio file to the library and updates the entry in the database. """
         entry = self.get_entry(self._idx)
         if not entry:
             self._next(20)
@@ -230,6 +262,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         self._next(1000)
 
     def _create_dirs(self, root, directory):
+        """ Creates directories based on the folder hierarchy, optionally ignoring case. """
         if not self.detect_dirs_ignore_case:
             path = os.path.join(root, directory)
             os.makedirs(path, exist_ok=True)
@@ -253,6 +286,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         return current_path
 
     def _get_filename(self, filename):
+        """ Retrieves the filename, optionally ignoring case when detecting existing files. """
         if not self.detect_files_ignore_case:
             return filename
 
@@ -266,6 +300,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         return filename
 
     def _process(self, audio):
+        """ Processes the downloaded audio file, moving it to the library and updating the database. """
         tags = {
             'title': audio.title,
             'artist': audio.artist,
@@ -296,6 +331,8 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             self._move_audio_and_update(self.conflict_resolve, audio, filename)
 
     def _next(self, delay=1000):
+        """ Moves to the next entry in the queue after a delay """
+        self.processing_uri = None
         self._queue[self._idx] = None
         self._idx = self._idx + 1
         if self._idx >= len(self._queue):
@@ -304,6 +341,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         GLib.timeout_add(delay, self._load)
 
     def _load(self):
+        """ Loads the next audio file in the queue """
         if self._running:
             entry = self.get_entry(self._idx)
             if not entry:
@@ -319,6 +357,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
                 self.plugin.db.commit()
                 self._next(20)
                 return
+            self.processing_uri = self._queue[self._idx]
             file_path = audio.get_path()
             if file_path:
                 self._process(audio)
@@ -326,18 +365,18 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
                 audio.download(success=self._process, fail=self._next)
 
 
-MAX_PAGES_SHORT_INTERVAL = 10
+MAX_PAGES_SHORT_INTERVAL = 10  # Maximum number of pages to load with a short interval
+SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'  # Signal for reaching the next segment
 
-INTERVAL_SHORT  = 5000    # 5 sec
-INTERVAL_MEDIUM = 20000   # 20 sec
-INTERVAL_LONG   = 120000  # 2 min
-
-SIGNAL_REACHED_START = 'SIGNAL_REACHED_START'
-SIGNAL_REACHED_END   = 'SIGNAL_REACHED_END'
-SIGNAL_REACHED_NEXT  = 'SIGNAL_REACHED_NEXT'
+INTERVAL_SHORT  = 5000    # 5 seconds
+INTERVAL_MEDIUM = 20000   # 20 seconds
+INTERVAL_LONG   = 120000  # 2 minutes
 
 
 class PlaylistTimer(metaclass=SingletonMeta):
+    """
+    A singleton class for managing a timer used in playlist loading.
+    """
     _props: Tuple[any, any] | None
     _timer_id: int | None
 
@@ -346,11 +385,13 @@ class PlaylistTimer(metaclass=SingletonMeta):
         self._timer_id = None
 
     def add(self, interval, callback, *args):
+        """ Adds a timer with the specified interval, callback, and arguments """
         self.remove()
         self._props = (callback, args)
         self._timer_id = GLib.timeout_add(interval, self.callback)
 
     def remove(self):
+        """ Removes the timer if it exists """
         ret = False
         if self._timer_id:
             ret = GLib.source_remove(self._timer_id)
@@ -358,6 +399,7 @@ class PlaylistTimer(metaclass=SingletonMeta):
         return ret
 
     def callback(self):
+        """ Executes the callback when the timer triggers """
         self._timer_id = None
         if self._props:
             callback, args = self._props
@@ -366,11 +408,15 @@ class PlaylistTimer(metaclass=SingletonMeta):
         return False
 
     def clear(self):
+        """ Clears the timer and its properties """
         self._timer_id = None
         self._props = None
 
 
 class PlaylistLoader:
+    """
+    A class for loading and managing playlists from Telegram.
+    """
     api: TelegramApi
     playlist: Playlist
     timer: PlaylistTimer | None
