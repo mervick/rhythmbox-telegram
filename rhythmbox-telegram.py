@@ -26,11 +26,12 @@ from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing 
 from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
-from common import get_location_data, show_error
+from common import get_location_data, show_error, to_location
 from columns import TopPicks
-from storage import VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
+from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
-VERSION = "1.1.0"
+
+VERSION = "1.1.1"
 
 def show_source(source_list):
     for source in source_list:
@@ -47,6 +48,11 @@ def delete_source(source_list):
 
 
 class TelegramPlugin(GObject.GObject, Peas.Activatable):
+    """
+    The main plugin class for integrating Telegram with Rhythmbox.
+    This class handles the activation, deactivation, and management of Telegram sources within Rhythmbox.
+    """
+
     __gtype_name__ = 'Telegram'
     object = GObject.Property(type=GObject.GObject)
 
@@ -56,6 +62,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
     }
 
     def __init__(self):
+        """
+        Initializes the TelegramPlugin class.
+        Sets up the necessary properties, signals, and initializes the account and other components.
+        """
         super(TelegramPlugin, self).__init__()
         TelegramApi.application_version = VERSION
         self.account = Account(self)
@@ -79,10 +89,14 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.toolbar = None
         self.display_pages = {}
         self.sources = {}
+        self.signals = {}
         self._created_group = False
         self._context_menu = []
 
     def _add_plugin_menu_item(self, action, label):
+        """
+        Adds a menu item to the plugin's context menu.
+        """
         item = Gio.MenuItem()
         item.set_label(label)
         action_name = action.get_name()
@@ -90,14 +104,24 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self._context_menu.append([action_name, item])
 
     def add_plugin_menu(self):
+        """
+        Adds the plugin's context menu items to the application's menu.
+        """
         for item in self._context_menu:
-            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])  # noqa
+            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])
 
     def remove_plugin_menu(self):
+        """
+        Removes the plugin's context menu items from the application's menu.
+        """
         for item in self._context_menu:
-            self.app.remove_plugin_menu_item("browser-popup", item[0])  # noqa
+            self.app.remove_plugin_menu_item("browser-popup", item[0])
 
     def do_activate(self):
+        """
+        Activates the plugin. This method is called when the plugin is loaded.
+        Initializes the necessary components, connects to the Telegram API, and sets up the UI.
+        """
         print('Telegram plugin activating')
         self.require_restart_plugin = False
         self.shell = self.object
@@ -113,15 +137,40 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.group_id = None
         self.display_pages = {}
         self.sources = {}
+        self.signals = {}
+        self._context_menu = []
         self.init_actions()
         self.connect_api()
         self.top_picks = TopPicks(self.shell)
         if self.account.settings[KEY_TOP_PICKS_COLUMN]:
             GLib.timeout_add(2000, self.top_picks.collect)
 
+    def do_deactivate(self):
+        """
+        Deactivates the plugin. This method is called when the plugin is unloaded.
+        Cleans up resources, disconnects signals, and removes the plugin's UI components.
+        """
+        print('Telegram plugin deactivating')
+        self.delete_display_pages(True)
+
+        for signal in self.signals.get('db', []):
+            self.db.disconnect(signal)
+
+        self.db = None
+        self.storage = None
+        self.signals = None
+
     def init_actions(self):
+        """
+        Initializes the actions and context menu items for the plugin.
+        Connects signals for database changes and sets up the toolbar.
+        """
+        db_signals = list()
+        db_signals.append(self.db.connect('entry-deleted', self.on_entry_deleted))
+        db_signals.append(self.db.connect('entry-changed', self.on_entry_changed))
+        self.signals['db'] = tuple(db_signals)
+
         app = Gio.Application.get_default()
-        self.db.connect('entry-deleted', self.on_entry_deleted)
 
         action = Gio.SimpleAction(name="tg-hide")
         action.connect("activate", self.hide_action_cb)
@@ -159,6 +208,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         app.link_shared_menus(self.toolbar)  # noqa
 
     def connect_api(self):
+        """
+        Connects to the Telegram API using the credentials stored in the account.
+        If successful, it reloads the display pages to show the Telegram sources.
+        """
         api_id, api_hash, phone_number, self.connected = self.account.get_secure()
         if self.connected:
             try:
@@ -171,19 +224,64 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         else:
             self.delete_display_pages()
 
+    def on_entry_changed(self, db, entry, changes):
+        """
+        Handles changes to song entries in the Rhythmbox database.
+        Updates the corresponding entries in the Telegram database if play count or rating changes.
+        """
+        # watch only for song entry type
+        if entry.get_entry_type() != db.entry_type_get_by_name('song') or not self.storage or not self.api:
+            return
+
+        audio_changes = {}
+        for change in changes:
+            if change.prop == RB.RhythmDBPropType.PLAY_COUNT:
+                audio_changes['play_count'] = entry.get_ulong(RB.RhythmDBPropType.PLAY_COUNT)
+            elif change.prop == RB.RhythmDBPropType.RATING:
+                audio_changes['rating'] = int(entry.get_double(RB.RhythmDBPropType.RATING))
+
+        if audio_changes:
+            uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            file_path = GLib.filename_from_uri(uri)[0]
+            data = self.storage.select('audio', {'is_moved': 1, 'local_path': file_path}, limit=None) or list()
+
+            for item in data:
+                audio = Audio(item)
+
+                if not (('play_count' in audio_changes and audio_changes['play_count'] > audio.play_count) or
+                        ('rating' in audio_changes and audio_changes['rating'] != audio.rating)):
+                    continue
+
+                # update audio in db
+                audio.save(audio_changes)
+
+                # update tg entry on entry view
+                tg_uri = to_location(self.api.hash, audio.chat_id, audio.message_id, audio.id)
+                tg_entry = db.entry_lookup_by_location(tg_uri)
+                if tg_entry:
+                    if 'play_count' in audio_changes:
+                        db.entry_set(tg_entry, RB.RhythmDBPropType.PLAY_COUNT, audio_changes['play_count'])
+                    if 'rating' in audio_changes:
+                        db.entry_set(tg_entry, RB.RhythmDBPropType.RATING, audio_changes['rating'])
+
     def on_entry_deleted(self, db, entry):
-        loc = entry.get_string(RB.RhythmDBPropType.LOCATION)
-        print(f'on_entry_deleted({loc})')
-        try:
-            chat_id, message_id = get_location_data(loc)
+        """
+        Handles the deletion of entries from the Rhythmbox database.
+        If the deleted entry is a Telegram entry, it marks the corresponding audio as hidden in the Telegram database.
+        """
+        if str(entry.get_entry_type()).startswith('TelegramEntryType'):
+            uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
+            chat_id, message_id = get_location_data(uri)
             if chat_id and message_id:
                 audio = self.storage.get_audio(chat_id, message_id)
-                if audio:
-                    audio.save({"is_hidden": True})
-        except:  # noqa
-            pass
+                if audio and audio.is_hidden != 1:
+                    audio.save({"is_hidden": 1})
 
     def get_display_group(self):
+        """
+        Retrieves or creates the display group for the Telegram sources.
+        The display group is used to organize the sources in the Rhythmbox UI.
+        """
         if self.group_id:
             return RB.DisplayPageGroup.get_by_id(self.group_id)
 
@@ -201,6 +299,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         return group
 
     def delete_display_pages(self, permanent=False):
+        """
+        Deletes or hides the display pages for the Telegram sources.
+        If `permanent` is True, the sources are permanently removed; otherwise, they are just hidden.
+        """
         for idx in self.sources:
             if permanent:
                 delete_source(self.sources[idx])
@@ -210,6 +312,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
             self.sources = {}
 
     def do_reload_display_pages(self):
+        """
+        Reloads the display pages for the Telegram sources based on the selected channels.
+        This method is called when the plugin is activated or when the selected channels change.
+        """
         selected = json.loads(self.settings[KEY_CHANNELS]) if self.connected else []
 
         if self.connected and selected:
@@ -230,6 +336,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
                 hide_source(self.sources[idx])
 
     def add_page(self, chat_id, name, group):
+        """
+        Adds a new display page for a Telegram chat.
+        The page is added to the specified group and is displayed in the Rhythmbox UI.
+        """
         av = self.settings[KEY_AUDIO_VISIBILITY]
         sources = []
 
@@ -253,6 +363,10 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.sources[chat_id] = tuple(sources)
 
     def register_source(self, chat_id, name, visibility):
+        """
+        Registers a new source for a Telegram chat.
+        The source is used to display the chat's audio entries in the Rhythmbox UI.
+        """
         entry_type = TelegramEntryType(self)
         source = GObject.new(TelegramSource, shell=self.shell, entry_type=entry_type, icon=self.display_icon,
             plugin=self, settings=self.settings.get_child("source"), name=name, toolbar_menu=self.toolbar)
@@ -261,38 +375,58 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.shell.register_entry_type_for_source(source, entry_type)
         return source
 
-    def do_deactivate(self):
-        print('Telegram plugin deactivating')
-        self.delete_display_pages(True)
-        self.db = None
-
     def playing_entry_changed(self, sp, entry):
+        """
+        Handles changes to the currently playing entry.
+        This method is called when the playing entry changes in Rhythmbox.
+        """
         self.source.playing_entry_changed(entry)
 
-    def file_manager_action_cb(self, action, parameter):
+    def file_manager_action_cb(self, *_):
+        """
+        Callback for the "View in File Manager" action.
+        Opens the selected entry in the file manager.
+        """
         shell = self.object
         shell.props.selected_page.file_manager_action()
 
-    def browse_action_cb(self, action, parameter):
+    def browse_action_cb(self, *_):
+        """
+        Callback for the "View in Telegram" action.
+        Opens the selected entry in Telegram.
+        """
         shell = self.object
         shell.props.selected_page.browse_action()
 
-    def download_action_cb(self, action, parameter):
+    def download_action_cb(self, *_):
+        """
+        Callback for the "Download to Library" action.
+        Downloads the selected entry to the local library.
+        """
         shell = self.object
         shell.props.selected_page.download_action()
 
-    def hide_action_cb(self, action, parameter):
+    def hide_action_cb(self, *_):
+        """
+        Callback for the "Hide selected" action.
+        Hides the selected entries from the Telegram source.
+        """
         shell = self.object
         shell.props.selected_page.hide_action()
 
-    def unhide_action_cb(self, action, parameter):
+    def unhide_action_cb(self, *_):
+        """
+        Callback for the "Unhide selected" action.
+        Unhides the selected entries in the Telegram source.
+        """
         shell = self.object
         shell.props.selected_page.unhide_action()
 
-    def show_settings_action_cb(self, action, parameter):
-        self.show_settings_dialog()
-
-    def show_settings_dialog(self):
+    def show_settings_action_cb(self, *_):
+        """
+        Callback for the "Telegram Settings" action.
+        Opens the settings dialog for the Telegram plugin.
+        """
         dialog = Gtk.Dialog(title="Telegram Settings", parent=self.shell.props.window, flags=0)
         dialog.add_button("Close", Gtk.ResponseType.CLOSE)
         prefs = TelegramPrefs()
