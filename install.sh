@@ -5,7 +5,7 @@ PLUGIN_PATH="${HOME}/.local/share/rhythmbox/plugins/rhythmbox-telegram"
 GLIB_SCHEME="org.gnome.rhythmbox.plugins.telegram.gschema.xml"
 GLIB_DIR="/usr/share/glib-2.0/schemas"
 
-
+# Function to uninstall the plugin
 function uninstall {
     rm -rf "${PLUGIN_PATH}"
     sudo rm "${GLIB_DIR}/${GLIB_SCHEME}"
@@ -14,79 +14,69 @@ function uninstall {
     exit 0
 }
 
-
-################################ USAGE #######################################
-
-usage=$(
-cat <<EOF
+# Help message
+usage() {
+    cat <<EOF
 Usage:
 $0 [OPTION]
 -h, --help      show this message.
 -u, --uninstall uninstall the plugin
-
 EOF
-)
+}
 
-########################### OPTIONS PARSING #################################
 
-#parse options
-TMP=`getopt --name=$0 -a --longoptions=help,uninstall -o u,h -- $@`
+# Parse command-line options
+TMP=$(getopt --name=$0 -a --longoptions=help,uninstall -o u,h -- "$@")
 
-if [[ $? == 1 ]]
-then
-    echo
-    echo "$usage"
-    exit
+if [[ $? != 0 ]]; then
+    usage
+    exit 1
 fi
 
-eval set -- $TMP
+eval set -- "$TMP"
 
 until [[ $1 == -- ]]; do
     case $1 in
         -h|--help)
-            echo "$usage"
-            exit
+            usage
+            exit 0
             ;;
         -u|--uninstall)
             uninstall
-            exit
             ;;
     esac
     shift
 done
-shift # remove the '--', now $1 positioned at first argument if any
+shift # remove the '--'
 
+# Installation process
+install_plugin() {
+    # Create plugin directory
+    mkdir -p "${PLUGIN_PATH}"
 
-########################## INSTALLATION ################################
+    # Copy plugin files
+    cp -r "${SCRIPT_PATH}/"* "${PLUGIN_PATH}"
 
-# build the dirs
-mkdir -p "${PLUGIN_PATH}"
+    # Install Python requirements
+    pip3 install -r "${PLUGIN_PATH}/requirements.txt" -t "${PLUGIN_PATH}/lib"
 
-# copy the files
-cp -r "${SCRIPT_PATH}/"* "$PLUGIN_PATH"
+    # Install GLIB schema
+    echo "Installing the GLIB schema (password needed)"
+    sudo cp "${PLUGIN_PATH}/${GLIB_SCHEME}" "${GLIB_DIR}/"
+    sudo glib-compile-schemas "${GLIB_DIR}"
 
-# install requirements
-pip3 install -r "$PLUGIN_PATH/requirements.txt" -t "$PLUGIN_PATH/lib"
-
-# install the glib schema
-echo "Installing the glib schema (password needed)"
-sudo cp "${PLUGIN_PATH}/${GLIB_SCHEME}" "$GLIB_DIR/"
-sudo glib-compile-schemas "$GLIB_DIR/"
-
-arch=$(uname -m)
-
-case "$arch" in
-    x86_64) ;;
-    *)
-      if [[ "$(ldconfig -p | grep tdjson)" == "" ]]; then
+    # Check for TDLib library
+    arch=$(uname -m)
+    if [[ "$arch" != "x86_64" ]] && [[ -z "$(ldconfig -p | grep tdjson)" ]]; then
         echo "TDLib library is required to run this application." >&2
         echo "Installation instructions are available on GitHub: https://github.com/tdlib/td" >&2
         exit 127
-      fi
-    ;;
-esac
+    fi
 
-echo "Installation completed."
-echo "Please restart Rhythmbox and enable the plugin in the settings."
+    echo "Installation completed."
+    echo "Please restart Rhythmbox and enable the plugin in the settings."
+}
 
+# Execute installation
+install_plugin
 exit 0
