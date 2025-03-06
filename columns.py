@@ -23,6 +23,10 @@ from typing import Dict
 
 
 class FormatColumn:
+    """
+    A class for creating the "Format" column in the entry view.
+    Displays the audio file format (e.g., mp3, flac) for each entry.
+    """
     def __init__(self, source):
         self.source = source
 
@@ -49,12 +53,20 @@ class FormatColumn:
             entry_view.set_property("visible-columns", visible_columns)
 
     def data_func(self, column, cell, model, iter, *data): # noqa
+        """
+        Callback function to set the text for the "Format" column.
+        Retrieves the format of the audio file from the source's custom model.
+        """
         entry = model.get_value(iter, 0)
         idx = get_location_audio_id(get_entry_location(entry))
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[1])
 
 
 class SizeColumn:
+    """
+    A class for creating the "Size" column in the entry view.
+    Displays the size of the audio file for each entry.
+    """
     def __init__(self, source):
         self.source = source
 
@@ -81,11 +93,17 @@ class SizeColumn:
             entry_view.set_property("visible-columns", visible_columns)
 
     def data_func(self, column, cell, model, iter, *data): # noqa
+        """
+        Callback function to set the text for the "Size" column.
+        Retrieves the size of the audio file from the source's custom model.
+        """
         entry = model.get_value(iter, 0)
         idx = get_location_audio_id(get_entry_location(entry))
         cell.set_property("text", "%s" % self.source.get_custom_model(idx)[0])
 
 
+# A dictionary mapping audio states to their corresponding icon names.
+# These icons are used to visually represent the state of an audio file in the UI.
 STATE_ICONS = {
     Audio.STATE_DEFAULT : 'tg-state-download-symbolic',
     Audio.STATE_ERROR : 'tg-state-error',
@@ -96,6 +114,10 @@ STATE_ICONS = {
 
 
 class StateColumn:
+    """
+    A class for creating the "State" column in the entry view.
+    Displays the state of the audio file (e.g., downloading, downloaded, hidden) using icons or a spinner.
+    """
     _icon_cache = {}
 
     def __init__(self, source):
@@ -131,15 +153,24 @@ class StateColumn:
             entry_view.set_property("visible-columns", visible_columns)
 
     def activate(self):
+        """
+        Activates the spinner animation for entries that are in the loading state.
+        """
         if not self.timeout_id:
             self.timeout_id = GLib.timeout_add(100, self.spinner_pulse)
 
     def deactivate(self):
+        """
+        Deactivates the spinner animation.
+        """
         if self.timeout_id:
             GLib.source_remove(self.timeout_id)
             self.timeout_id = None
 
     def spinner_pulse(self):
+        """
+        Updates the spinner animation for entries in the loading state.
+        """
         self._pulse = 0 if self._pulse == 999999 else self._pulse + 1
 
         for idx in self._models.keys():
@@ -151,6 +182,10 @@ class StateColumn:
         return True
 
     def data_func(self, column, cell, model, iter, cell_type): # noqa
+        """
+        Callback function to set the icon or spinner for the "State" column.
+        Displays an icon or spinner based on the state of the audio file.
+        """
         entry = model.get_value(iter, 0)
         idx = model.get_value(iter, 1)
         state = get_entry_state(entry)
@@ -179,6 +214,10 @@ class StateColumn:
 
 
 class TopPicks:
+    """
+    A class for tracking and ranking artists based on the ratings of their songs.
+    Used to identify top-rated artists and assign them levels (e.g., low, medium, high, top).
+    """
     LEVEL_NONE = 0
     LEVEL_LOW = 1
     LEVEL_MEDIUM = 2
@@ -190,6 +229,10 @@ class TopPicks:
         self.artists: Dict[str, Dict[int | str, int] | int] = {}
 
     def collect(self):
+        """
+        Collects and ranks artists based on the ratings of their songs.
+        Identifies the top 10% of artists and assigns them the "top" level.
+        """
         self.artists = {}
         db = self.shell.props.db
         entry_type = db.entry_type_get_by_name('song')
@@ -217,6 +260,9 @@ class TopPicks:
             self.artists[artist] = level
 
     def _add_rating(self, artist: str, rating: int):
+        """
+        Adds a rating for an artist to the internal dictionary.
+        """
         artist = artist.lower()
         if artist not in self.artists:
             self.artists[artist] = {
@@ -226,6 +272,9 @@ class TopPicks:
         self.artists[artist][rating] += 1
 
     def _comp_rated_level(self, artist: str):
+        """
+        Computes the level of an artist based on their ratings.
+        """
         artist = get_first_artist(artist.lower())
         artist_level = self.artists.get(artist)
 
@@ -246,6 +295,9 @@ class TopPicks:
         return TopPicks.LEVEL_NONE
 
     def get_level(self, artist: str):
+        """
+        Retrieves the level of an artist based on their ratings.
+        """
         artist = get_first_artist(artist.lower())
         artist_level = self.artists.get(artist)
 
@@ -256,6 +308,8 @@ class TopPicks:
         return artist_level if artist_level else TopPicks.LEVEL_NONE
 
 
+# A dictionary mapping artist rating levels to their corresponding emojis.
+# These emojis are used to visually represent the popularity or rating level of an artist in the UI.
 TOP_PICKS_EMOJI = {
     TopPicks.LEVEL_NONE: '',
     TopPicks.LEVEL_LOW: '⭐',  # star
@@ -267,6 +321,10 @@ TOP_PICKS_EMOJI = {
 
 
 class TopPicksColumn:
+    """
+    A class for creating the "Top Picks" column in the entry view.
+    Displays an emoji (e.g., star, heart, fire) based on the artist's level.
+    """
     def __init__(self, source):
         self.plugin = source.plugin
 
@@ -298,7 +356,11 @@ class TopPicksColumn:
             tree_view.remove_column(column)
             tree_view.insert_column(column, 1)
 
-    def data_func(self, column, cell, model, iter, *data):
+    def data_func(self, column, cell, model, iter, *_):
+        """
+        Callback function to set the emoji for the "Top Picks" column.
+        Retrieves the artist's level and displays the corresponding emoji.
+        """
         entry = model.get_value(iter, 0)
         artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
 
