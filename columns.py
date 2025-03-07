@@ -16,8 +16,9 @@
 
 import gi
 gi.require_version('Gio', '2.0')
-from gi.repository import GObject, RB, GLib, Gio, Gtk
+from gi.repository import RB, GLib, Gio, Gtk
 from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist
+from common import get_tree_view_from_entry_view
 from storage import Audio
 from typing import Dict
 
@@ -121,12 +122,17 @@ class StateColumn:
     _icon_cache = {}
 
     def __init__(self, source):
+        self.plugin = source.plugin
         self._pulse = 0
         self._models = {}
         self.timeout_id = None
+        self.connect_id = None
 
         column = Gtk.TreeViewColumn()
+        self.column = column
+        column.set_name("state_column")
         pixbuf_renderer = Gtk.CellRendererPixbuf()
+        pixbuf_renderer.set_property("mode", Gtk.CellRendererMode.ACTIVATABLE)
         spinner_renderer = Gtk.CellRendererSpinner()
 
         column.set_title(" ")
@@ -143,6 +149,7 @@ class StateColumn:
         column.set_fixed_width(36)
 
         entry_view = source.get_entry_view() # noqa
+        self.tree_view = get_tree_view_from_entry_view(entry_view)
         self.entry_view = entry_view
 
         entry_view.append_column_custom(column, ' ', "tg-state", empty_cb, None, None)
@@ -152,29 +159,44 @@ class StateColumn:
             visible_columns.append('tg-state')
             entry_view.set_property("visible-columns", visible_columns)
 
+    def on_click_pressed(self, treeview, event):
+        """ Handles the click event on a state column. Checks the state and triggers the loading process """
+        if event.button == 1:
+            path_info = treeview.get_path_at_pos(int(event.x), int(event.y))
+            if path_info is not None:
+                path, column, cell_x, cell_y = path_info
+                if column == self.column:
+                    model = treeview.get_model()
+                    iter = model.get_iter(path)
+                    if iter is not None:
+                        entry = model.get_value(iter, 0)
+                        state = get_entry_state(entry)
+                        if state == Audio.STATE_DEFAULT:
+                            self.plugin.loader.add_entry(entry).start()
+        return False
+
     def activate(self):
-        """
-        Activates the spinner animation for entries that are in the loading state.
-        """
+        """ Activates the spinner animation and connects the button-release event. """
         if not self.timeout_id:
             self.timeout_id = GLib.timeout_add(100, self.spinner_pulse)
+        if not self.connect_id:
+            self.connect_id = self.tree_view.connect("button-release-event", self.on_click_pressed)
 
     def deactivate(self):
-        """
-        Deactivates the spinner animation.
-        """
+        """ Deactivates the spinner animation and disconnects the button-release event. """
         if self.timeout_id:
             GLib.source_remove(self.timeout_id)
             self.timeout_id = None
+        if self.connect_id:
+            self.tree_view.disconnect(self.connect_id)
+            self.connect_id = None
 
     def spinner_pulse(self):
-        """
-        Updates the spinner animation for entries in the loading state.
-        """
+        """ Updates the spinner animation for entries in the loading state. """
         self._pulse = 0 if self._pulse == 999999 else self._pulse + 1
 
-        for idx in self._models.keys():
-            model, iter = self._models[idx]
+        for idx in list(self._models.keys()):
+            model, iter = self._models.get(idx, (None, None))
             if model and iter:
                 model.emit("row_changed", model.get_path(iter), iter)
             else:
@@ -260,9 +282,7 @@ class TopPicks:
             self.artists[artist] = level
 
     def _add_rating(self, artist: str, rating: int):
-        """
-        Adds a rating for an artist to the internal dictionary.
-        """
+        """ Adds a rating for an artist to the internal dictionary. """
         artist = artist.lower()
         if artist not in self.artists:
             self.artists[artist] = {
@@ -272,9 +292,7 @@ class TopPicks:
         self.artists[artist][rating] += 1
 
     def _comp_rated_level(self, artist: str):
-        """
-        Computes the level of an artist based on their ratings.
-        """
+        """ Computes the level of an artist based on their ratings. """
         artist = get_first_artist(artist.lower())
         artist_level = self.artists.get(artist)
 
@@ -295,9 +313,7 @@ class TopPicks:
         return TopPicks.LEVEL_NONE
 
     def get_level(self, artist: str):
-        """
-        Retrieves the level of an artist based on their ratings.
-        """
+        """ Retrieves the level of an artist based on their ratings. """
         artist = get_first_artist(artist.lower())
         artist_level = self.artists.get(artist)
 
