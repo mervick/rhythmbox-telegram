@@ -228,6 +228,9 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         """
         Handles changes to song entries in the Rhythmbox database.
         Updates the corresponding entries in the Telegram database if play count or rating changes.
+        Together with the TelegramSource:on_entry_changed() method,
+        they enable synchronization of ratings and play counts between
+        standard song-type entries and Telegram-type entries.
         """
         # watch only for song entry type
         if entry.get_entry_type() != db.entry_type_get_by_name('song') or not self.storage or not self.api:
