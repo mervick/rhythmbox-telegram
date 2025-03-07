@@ -21,7 +21,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GLib
 from typing import Callable
 from storage import Audio
-from common import get_audio_tags, format_time, pretty_file_size, get_file_size, file_uri, move_window_center
+from common import get_audio_tags, format_time, pretty_file_size, get_file_size, file_uri
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_IGNORE
 
 

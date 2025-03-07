@@ -17,7 +17,7 @@
 from gi.repository import RB, GLib, GObject
 from storage import Audio
 from account import KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_HIDDEN_TRACK
-from common import file_uri, get_location_data, is_same_entry, get_entry_state
+from common import file_uri, get_location_data, get_entry_state
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
