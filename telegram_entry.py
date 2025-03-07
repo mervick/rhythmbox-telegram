@@ -21,9 +21,18 @@ from common import file_uri, get_location_data, is_same_entry, get_entry_state
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
+    """
+    An entry type for handling Telegram audio entries in Rhythmbox.
+    This class extends RB.RhythmDBEntryType to manage playback, preloading,
+    and handling of audio entries from Telegram.
+    """
     __gsignals__ = {
         'entry_downloaded': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
     }
+
+    def __str__(self) -> str:
+        obj_id = hex(id(self))
+        return f'TelegramEntryType <{obj_id}>'
 
     def __init__(self, plugin):
         RB.RhythmDBEntryType.__init__(self, name='TelegramEntry', save_to_disk=False)
@@ -37,14 +46,26 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self._entry_downloaded_id = None
 
     def activate(self):
+        """
+        Activates the entry type by connecting to the player's error signal
+        and the entry_downloaded signal.
+        """
         self._entry_error_id = self.shell_player.props.player.connect('error', self._on_player_error)
         self._entry_downloaded_id = self.connect('entry_downloaded', self._on_entry_downloaded)
 
     def deactivate(self):
+        """
+        Deactivates the entry type by disconnecting from the player's error signal
+        and the entry_downloaded signal.
+        """
         self.shell_player.props.player.disconnect(self._entry_error_id)
         self.disconnect(self._entry_downloaded_id)
 
     def _on_entry_downloaded(self, entry_type, entry):
+        """
+        Handles the 'entry_downloaded' signal. If the downloaded entry matches
+        the pending playback entry, it starts playback.
+        """
         if not self._pending_playback:
             return
 
@@ -55,6 +76,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
             # GLib.timeout_add(100, self.shell.props.shell_player.emit, "playing-changed", True)
 
     def _on_player_error(self, *args):
+        """ Handles the player's error signal by stopping playback. """
         self.shell.props.shell_player.stop()
 
     def setup(self, source):
@@ -62,12 +84,14 @@ class TelegramEntryType(RB.RhythmDBEntryType):
 
     @staticmethod
     def entry_view_iter_prev(model, iter):
+        """ Gets the previous iterator in the model. """
         path = model.get_path(iter)
         if path.prev():
             return model.get_iter(path)
         return None
 
     def get_prev_entry(self, current_entry):
+        """ Gets the previous entry in the entry view relative to the current entry. """
         entry_view = self.source.props.query_model
         iter = entry_view.get_iter_first()
         found = False
@@ -84,6 +108,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         return None
 
     def get_next_entry(self, current_entry):
+        """ Gets the next entry in the entry view relative to the current entry. """
         entry_view = self.source.props.query_model
         iter = entry_view.get_iter_first()
         found = False
@@ -98,9 +123,18 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         return None
 
     def _load_entry_audio(self, entry):
+        """ Loads the audio for the given entry. """
         self.plugin.loader.add_entry(entry).start()
 
     def do_get_playback_uri(self, entry):
+        """
+        Gets the playback URI for the given entry. If the  audio is not yet downloaded,
+        it triggers the download and returns None or an invalid URI for the currently playing entry.
+        When an invalid URI is returned, the player causes an error in which the
+        _on_player_error() handler is called and this stops playback.
+        Also, when an invalid uri is returned the audio is saved in _pending_playback
+        for the next playback after the download is complete
+        """
         location = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(location)
         audio = self.plugin.storage.get_audio(chat_id, message_id)
@@ -147,7 +181,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         self._load_entry_audio(entry)
         return return_uri
 
-    def do_can_sync_metadata(self, entry): # noqa
+    def do_can_sync_metadata(self, *_):
         return True
 
 
