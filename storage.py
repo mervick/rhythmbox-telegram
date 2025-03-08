@@ -109,7 +109,7 @@ class Playlist:
             "original_title": self.original_title,
             "segments": json.dumps(self.segments)
         }
-        print('Saving playlist')
+        # print('Saving playlist')
         self.has_changed = False
         if self.id != 0:
             return Storage.loaded().update('playlist', playlist, {"chat_id": self.chat_id}, 1)
@@ -531,7 +531,7 @@ class Storage:
             tg_audio.is_reloaded = True
             if d['local_path']:
                 # update audio only if it was downloaded
-                print('Update audio %s' % tg_audio.id)
+                # print('Update audio %s' % tg_audio.id)
                 tg_audio.save({
                     'size': d['size'],
                     'local_path': d['local_path'],
