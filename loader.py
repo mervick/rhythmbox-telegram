@@ -48,7 +48,7 @@ class AbsAudioLoader:
     def get_entry(self, idx):
         """ Retrieves an entry from the Rhythmbox database using its URI. """
         uri = self._queue[idx]
-        return self.plugin.db.entry_lookup_by_location(uri)
+        return self.plugin.db.entry_lookup_by_location(uri) if uri else None
 
 
 class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
@@ -144,6 +144,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         AbsAudioLoader.__init__(self, plugin)
         self._info = {}             # Information about the current download progress
         self.processing_uri = None  # URI of the currently processing entry
+        self.is_canceled = False
         self.setup()
 
     def setup(self):
@@ -172,20 +173,20 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
 
     def cancel(self):
         """ Cancels the current download process and resets the state of entries in the queue. """
-        if self._running:
-            self._running = False
+        if not self.is_canceled:
+            self.is_canceled = True
             for uri in self._queue:
-                if self.processing_uri != uri:
+                if self.processing_uri != uri and uri is not None:
                     entry = self.plugin.db.entry_lookup_by_location(uri)
                     if entry:
                         audio = self.plugin.storage.get_entry_audio(entry)
                         if audio:
                             set_entry_state(self.plugin.db, entry, audio.get_state())
-            self.stop()
 
     def stop(self):
         """ Stops the downloader and updates the progress information. """
         AbsAudioLoader.stop(self)
+        self.is_canceled = False
         self._update_progress()
 
     def start(self):
@@ -259,7 +260,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             audio.save({"local_path": filename, "is_moved": True})
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next(1000)
+        self._next(500)
 
     def _create_dirs(self, root, directory):
         """ Creates directories based on the folder hierarchy, optionally ignoring case. """
@@ -335,7 +336,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
         self.processing_uri = None
         self._queue[self._idx] = None
         self._idx = self._idx + 1
-        if self._idx >= len(self._queue):
+        if self._idx >= len(self._queue) or self.is_canceled:
             self.stop()
             return
         GLib.timeout_add(delay, self._load)
@@ -343,6 +344,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
     def _load(self):
         """ Loads the next audio file in the queue """
         if self._running:
+            self.processing_uri = self._queue[self._idx]
             entry = self.get_entry(self._idx)
             if not entry:
                 self._next(20)
@@ -357,7 +359,6 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
                 self.plugin.db.commit()
                 self._next(20)
                 return
-            self.processing_uri = self._queue[self._idx]
             file_path = audio.get_path()
             if file_path:
                 self._process(audio)
