@@ -20,96 +20,129 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
+  <object class="GtkImage" id="cancel_image">
+    <property name="visible">True</property>
+    <property name="icon_name">window-close-symbolic</property>
+    <property name="icon_size">1</property>
+  </object>
   <object class="GtkBox" id="status_box">
     <property name="can_focus">False</property>
-    <property name="border_width">11</property>
+    <property name="border_width">3</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="orientation">vertical</property>
+        <property name="orientation">horizontal</property>
         <child>
-          <object class="GtkGrid" id="status_grid">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="row_spacing">14</property>
-            <property name="column_spacing">12</property>
+            <property name="border_width">8</property>
             <child>
-              <object class="GtkBox">
+              <!-- n-columns=2 n-rows=1 -->
+              <object class="GtkGrid" id="status_grid">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="hexpand">True</property>
-                <property name="spacing">12</property>
+                <property name="row_spacing">14</property>
+                <property name="column_spacing">12</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Downloading...</property>
-                    <property name="ellipsize">end</property>
-                    <property name="hexpand">false</property>
-                    <property name="xalign">0</property>
+                    <property name="hexpand">True</property>
+                    <property name="spacing">12</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Downloading...</property>
+                        <property name="ellipsize">end</property>
+                        <property name="hexpand">false</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="counter_label">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="no">File 6 of 143</property>
+                        <property name="ellipsize">end</property>
+                        <property name="hexpand">false</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="filename_label">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="no">Filename.mp3</property>
+                        <property name="ellipsize">end</property>
+                        <property name="hexpand">true</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="counter_label">
+                  <object class="GtkProgressBar" id="progress_bar">
+                    <property name="width-request">120</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="no">File 6 of 143</property>
-                    <property name="ellipsize">end</property>
-                    <property name="hexpand">false</property>
-                    <property name="xalign">0</property>
+                    <property name="fraction">0.33</property>
+                    <property name="show-text">True</property>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="filename_label">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="label" translatable="no">Filename.mp3</property>
-                    <property name="ellipsize">end</property>
-                    <property name="hexpand">true</property>
-                    <property name="xalign">0</property>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
                   </packing>
                 </child>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkProgressBar" id="progress_bar">
-                <property name="width-request">120</property>
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="fraction">0.33</property>
-                <property name="show-text">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
-            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="cancel_button">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="relief">none</property>
+            <property name="focus_on_click">False</property>
+            <property name="image">cancel_image</property>
+            <property name="width_request">16</property>
+            <property name="height_request">16</property>
+            <property name="tooltip-text">Cancel</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
           </packing>
         </child>
       </object>
