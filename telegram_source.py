@@ -61,7 +61,7 @@ class DownloadBar(metaclass=SingletonMeta):
             entry_view.pack_end(status_box, False, False, 0)
             status_box.show_all()
             status_box.props.visible = False
-            # builder.get_object('cancel_button').connect('clicked', self._cancel_clicked)
+            builder.get_object('cancel_button').connect('clicked', self._cancel_clicked)
 
         self.active = True
         self._update_ui()
