@@ -94,7 +94,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
             audio.save({"is_hidden": True})
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next(1000)
+        self._next(500)
 
     def _next(self, delay=1000):
         """ Moves to the next entry in the queue after a delay. """
@@ -260,7 +260,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             audio.save({"local_path": filename, "is_moved": True})
         audio.update_entry(entry)
         GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
-        self._next(500)
+        self._next(300)
 
     def _create_dirs(self, root, directory):
         """ Creates directories based on the folder hierarchy, optionally ignoring case. """
