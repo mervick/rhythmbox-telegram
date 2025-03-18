@@ -1,3 +1,20 @@
+rhythmbox-telegram-plugin (1.1.1) unstable; urgency=medium
+
+  * Improved installation script
+  * Handles changes to song entries and updates corresponding telegram entries
+  * Fix on_entry_deleted handler: check entry type
+  * Fix Storage.select() limit
+  * Sync ratings and play counts between song and Telegram entries
+  * Remove unused functions
+  * Add get_tree_view_from_entry_view()
+  * Added the ability to preload audio by clicking the load icon in the state column
+  * AudioDownloader: add cancel() functionality
+  * DownloadBar: Add cancel button
+  * Reduced the delay between downloads
+  * Add doc blocks
+
+ -- izman <izmanw@gmail.com>  Tue, 18 Mar 2025 16:38:12 +0200
+
 rhythmbox-telegram-plugin (1.1.0) stable; urgency=medium
 
   * Detect and show real content-type icon
