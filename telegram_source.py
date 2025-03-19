@@ -144,24 +144,108 @@ class RefreshBtn:
             self.activated = True
             button.connect("clicked", self.clicked_cb)
 
-    def clicked_cb(self, *obj):
+    def clicked_cb(self, *_):
         """ Handle the refresh button click event """
         if self.source.loader:
             self.source.loader.fetch()
 
-    def fetch_started_cb(self, *obj):
+    def fetch_started_cb(self, *_):
         """ Handle the playlist fetch started event """
         self.button.props.visible = False
         self.spinner.props.visible = True
         self.label.props.visible = True
         self.spinner.start()
 
-    def fetch_end_cb(self, *obj):
+    def fetch_end_cb(self, *_):
         """ Handle the playlist fetch end event """
         self.spinner.stop()
         self.button.props.visible = True
         self.spinner.props.visible = False
         self.label.props.visible = False
+
+
+class AltHeaderRefreshBtn:
+    """
+    AltHeaderRefreshBtn class is responsible for managing the refresh button in the header UI (alternative toolbar)
+    """
+    activated = False
+
+    def __init__(self, source):
+        self.source = source
+        self.box = None
+        self.spinner = None
+        self.button = None
+        self.signals = []
+
+    def _set_btn_icon(self):
+        download_icon = Gtk.Image.new_from_icon_name("emblem-synchronizing-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+        self.button.set_image(download_icon)
+
+    def _find_alt_header_box(self):
+        header_bar = self.source.plugin.shell.props.window.get_titlebar()
+        header_bar = header_bar if isinstance(header_bar, Gtk.HeaderBar) else None
+
+        if header_bar:
+            for box in header_bar.get_children():
+                if isinstance(box, Gtk.Box):
+                    for widget in box.get_children():
+                        if isinstance(widget, Gtk.ToggleButton) and widget.get_action_name() == 'app.ToggleSourceMediaToolbar':
+                            return box
+        return None
+
+    def activate(self):
+        """ Detect alternative toolbar's header, add button, connect signals """
+        if self.activated:
+            return
+
+        self.box = self._find_alt_header_box()
+        if self.box:
+            self.button = Gtk.Button.new()
+            self.button.connect("clicked", self.clicked_cb)
+            self.button.set_sensitive(True)
+            self.button.set_margin_end(6)
+            self._set_btn_icon()
+            self.box.pack_start(self.button, False, False, 0)
+            self.box.reorder_child(self.button, 0)
+            self.box.show_all()
+
+            self.signals = [
+                self.source.connect("playlist-fetch-started", self.fetch_started_cb),
+                self.source.connect("playlist-fetch-end", self.fetch_end_cb)
+            ]
+            self.activated = True
+
+    def deactivate(self):
+        """ Remove button, disconnect signals """
+        if self.activated:
+            for signal in self.signals:
+                self.source.disconnect(signal)
+            self.box.remove(self.button)
+            self.button = None
+            self.activated = False
+
+    def clicked_cb(self, *_):
+        """ Handle the refresh button click event """
+        if self.source.loader:
+            self.source.loader.fetch()
+
+    def fetch_started_cb(self, *_):
+        """ Handle the playlist fetch started event """
+        if self.activated:
+            self.button.set_sensitive(False)
+            self.button.set_image(None)
+            self.spinner = Gtk.Spinner()
+            self.button.set_image(self.spinner)
+            self.spinner.start()
+
+    def fetch_end_cb(self, *_):
+        """ Handle the playlist fetch end event """
+        if self.activated:
+            self.button.set_sensitive(True)
+            self._set_btn_icon()
+            if self.spinner:
+                self.spinner.stop()
+                self.spinner = None
 
 
 class TelegramSource(RB.BrowserSource):
@@ -191,6 +275,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_title = None
         self.visibility = None
         self.refresh_btn = RefreshBtn(self)
+        self.alt_refresh_btn = AltHeaderRefreshBtn(self)
         self.bar = None
         self.bar_ui = None
         self.has_reached_end = False
@@ -307,6 +392,7 @@ class TelegramSource(RB.BrowserSource):
         and stopping the loader.
         """
         self.bar.deactivate(self)
+        self.alt_refresh_btn.deactivate()
         self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
@@ -331,6 +417,7 @@ class TelegramSource(RB.BrowserSource):
         self.plugin.add_plugin_menu()
 
         if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
+            self.alt_refresh_btn.activate()
             if self.loader is not None:
                 self.loader.stop()
             self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)
