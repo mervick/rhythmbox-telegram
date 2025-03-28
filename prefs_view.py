@@ -44,6 +44,10 @@ audio_visibility_variants = [
     [_('Split Playlists by Visibility'), VAL_AV_DUAL],
 ]
 
+def to_ascii_lower(s):
+    return ''.join(char.lower() if ord(char) < 128 else char for char in s)
+
+
 class PrefsViewPage(PrefsPageBase):
     name = _('View')
     main_box = 'view_vbox'
@@ -134,7 +138,7 @@ class PrefsViewPage(PrefsPageBase):
             query = f"""
                 UPDATE audio
                 SET is_hidden = 1
-                WHERE is_hidden = 0 AND (artist, title, duration) IN ({placeholders})
+                WHERE is_hidden = 0 AND (LOWER(artist), LOWER(title), duration) IN ({placeholders})
             """
             db_cur = db.cursor()
             db_cur.execute(query, values)
@@ -164,11 +168,13 @@ class PrefsViewPage(PrefsPageBase):
         def update():
             if len(album) > 2:
                 for audio in album:
-                    key = (audio.artist, audio.title, audio.duration)
+                    lower_title = to_ascii_lower(audio.title)
+                    lower_artist = to_ascii_lower(audio.artist)
+                    key = (lower_artist, lower_title, audio.duration)
                     if key not in keys:
                         keys.add(key)
                         data.append(list(key))
-                    key = (get_first_artist(audio.artist), audio.title, audio.duration)
+                    key = (get_first_artist(lower_artist), lower_title, audio.duration)
                     if key not in keys:
                         keys.add(key)
                         data.append(list(key))
