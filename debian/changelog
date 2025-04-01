@@ -1,3 +1,10 @@
+rhythmbox-telegram-plugin (1.2.0) stable; urgency=medium
+
+  * Add AltHeaderRefreshBtn: refresh button on alternative-toolbar's header bar
+  * Improve sync_hidden_chats: now updates  case-insensitively
+
+ -- izman <izmanw@gmail.com>  Tue, 01 Apr 2025 09:28:10 +0300
+
 rhythmbox-telegram-plugin (1.1.1) unstable; urgency=medium
 
   * Improved installation script
