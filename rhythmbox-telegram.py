@@ -20,6 +20,7 @@ from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, GLib
 from gi.repository import Peas, PeasGtk # noqa
 from loader import AudioDownloader, AudioTempLoader
+from telegram_search import TelegramSearchEntryType, TelegramSearchSource
 from telegram_source import TelegramSource
 from telegram_client import TelegramApi, TelegramAuthError
 from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page  # noqa
@@ -88,12 +89,13 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.source = None
         self.toolbar = None
         self.display_pages = {}
+        self.search_source = None
         self.sources = {}
         self.signals = {}
         self._created_group = False
         self._context_menu = []
 
-    def _add_plugin_menu_item(self, action, label):
+    def _add_plugin_menu_item(self, action, label, add_to_playlist_popup=False):
         """
         Adds a menu item to the plugin's context menu.
         """
@@ -101,21 +103,31 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         item.set_label(label)
         action_name = action.get_name()
         item.set_detailed_action('app.%s' % action_name)
-        self._context_menu.append([action_name, item])
+        self._context_menu.append([action_name, item, add_to_playlist_popup])
 
-    def add_plugin_menu(self):
+    def add_plugin_menu(self, playlist_popup=False):
         """
         Adds the plugin's context menu items to the application's menu.
         """
         for item in self._context_menu:
-            self.app.add_plugin_menu_item("browser-popup", item[0], item[1])
+            if not playlist_popup or item[2]:
+                if playlist_popup:
+                    self.app.add_plugin_menu_item("playlist-popup", item[0], item[1])
+                    self.app.add_plugin_menu_item("queue-popup", item[0], item[1])
+                else:
+                    self.app.add_plugin_menu_item("browser-popup", item[0], item[1])
 
-    def remove_plugin_menu(self):
+    def remove_plugin_menu(self, playlist_popup=False):
         """
         Removes the plugin's context menu items from the application's menu.
         """
         for item in self._context_menu:
-            self.app.remove_plugin_menu_item("browser-popup", item[0])
+            if playlist_popup:
+                if item[2]:
+                    self.app.remove_plugin_menu_item("playlist-popup", item[0])
+                    self.app.remove_plugin_menu_item("queue-popup", item[0])
+            else:
+                self.app.remove_plugin_menu_item("browser-popup", item[0])
 
     def do_activate(self):
         """
@@ -136,10 +148,12 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.loader = AudioTempLoader(self)
         self.group_id = None
         self.display_pages = {}
+        self.search_source = None
         self.sources = {}
         self.signals = {}
         self._context_menu = []
         self.init_actions()
+        self.add_plugin_menu(True)
         self.connect_api()
         self.top_picks = TopPicks(self.shell)
         if self.account.settings[KEY_TOP_PICKS_COLUMN]:
@@ -152,6 +166,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         """
         print('Telegram plugin deactivating')
         self.delete_display_pages(True)
+        self.remove_plugin_menu(True)
 
         for signal in self.signals.get('db', []):
             self.db.disconnect(signal)
@@ -197,10 +212,15 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         app.add_action(action)
         self._add_plugin_menu_item(action, _("Download to Library"))
 
+        action = Gio.SimpleAction(name="tg-search-artist")
+        action.connect("activate", self.search_artist_action_cb)
+        app.add_action(action)
+        self._add_plugin_menu_item(action, _("Search this Artist"), True)
+
         action = Gio.SimpleAction(name="tg-prefs")
         action.connect("activate", self.show_settings_action_cb)
         app.add_action(action)
-        self._add_plugin_menu_item(action, _("Telegram Settings"))
+        self._add_plugin_menu_item(action, _("Telegram Settings"), True)
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
@@ -334,9 +354,21 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
             for idx in self.sources:
                 if idx not in ids:
                     hide_source(self.sources[idx])
+            self.add_search_page(group)
         else:
             for idx in self.sources:
                 hide_source(self.sources[idx])
+
+    def add_search_page(self, group):
+        entry_type = TelegramSearchEntryType(self)
+        source = GObject.new(TelegramSearchSource, shell=self.shell, entry_type=entry_type, icon=self.display_icon,
+                             plugin=self, settings=self.settings.get_child("source"), name='Search', toolbar_menu=self.toolbar)
+        source.setup(self)
+        entry_type.setup(source)
+        self.shell.register_entry_type_for_source(source, entry_type)
+        self.shell.append_display_page(source, group)
+        self.sources['search'] = (source,)
+        self.search_source = source
 
     def add_page(self, chat_id, name, group):
         """
@@ -438,3 +470,13 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         dialog.show_all()
         dialog.run()
         dialog.destroy()
+
+    def search_artist_action_cb(self, *_):
+        display_page = self.shell.get_property("selected-page")
+        entries = display_page.get_entry_view().get_selected_entries()
+        if len(entries) == 0:
+            return
+        artist = entries[0].get_string(RB.RhythmDBPropType.ARTIST)
+        self.shell.activate_source(self.search_source, 0)  # RB_SHELL_ACTIVATION_SELECT
+        self.search_source.emit('tg_search', artist, 'artist')
+        self.search_source.search_bar.set_search_text(artist)
