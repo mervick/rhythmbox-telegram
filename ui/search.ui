@@ -14,7 +14,7 @@
             <property name="visible">True</property>
             <property name="hexpand">True</property>
             <property name="width_chars">35</property>
-            <property name="placeholder_text">Search artist</property>
+            <property name="placeholder_text">Search by artist or title</property>
           </object>
         </child>
 
