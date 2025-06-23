@@ -20,7 +20,7 @@ import shutil
 from gi.repository import GLib, RB
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
-from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
+from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, idle_add_once
 from common import get_entry_location, CONFLICT_ACTION_IGNORE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from conflict_dialog import ConflictDialog
@@ -93,7 +93,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
             self._is_hidden = False
             audio.save({"is_hidden": True})
         audio.update_entry(entry)
-        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
+        idle_add_once(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next(500)
 
     def _next(self, delay=1000):

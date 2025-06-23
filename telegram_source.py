@@ -17,7 +17,7 @@
 import rb
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
-from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size
+from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size, idle_add_once
 from common import file_uri, set_entry_state
 from columns import StateColumn, SizeColumn, FormatColumn, TopPicksColumn
 from loader import PlaylistLoader
@@ -412,7 +412,7 @@ class TelegramSource(RB.BrowserSource):
 
         if not self.initialised:
             self.initialised = True
-            GLib.idle_add(self.add_entries)
+            idle_add_once(self.add_entries)
 
         self.plugin.add_plugin_menu()
 
@@ -432,7 +432,7 @@ class TelegramSource(RB.BrowserSource):
         """ Adds a single audio entry to the source if it hasn't been loaded already """
         if audio.id not in self.loaded_entries:
             self.loaded_entries.append(audio.id)
-            location = to_location(self.plugin.api.hash, self.chat_id, audio.message_id, audio.id)
+            location = to_location(self.plugin.api.hash, audio.chat_id, audio.message_id, audio.id)
             self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:

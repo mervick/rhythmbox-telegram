@@ -420,3 +420,9 @@ def get_tree_view_from_entry_view(entry_view):
                     return result
         return None
     return find_tree_view(entry_view)
+
+def idle_add_once(func, *args):
+    def wrapper(*wrapper_args):
+        func(*wrapper_args)
+        return False
+    GLib.idle_add(wrapper, *args)
