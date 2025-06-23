@@ -28,11 +28,15 @@ gettext.install('rhythmbox', RB.locale_dir())
 
 
 class TelegramSearchEntryType(TelegramEntryType):
+    """ Custom entry type for Telegram search results in Rhythmbox. """
+
     def __str__(self) -> str:
+        """ Return string representation of the entry type. """
         obj_id = hex(id(self))
         return f'TelegramSearchEntryType <{obj_id}>'
 
     def __init__(self, plugin):
+        """ Initialize the Telegram search entry type. """
         RB.RhythmDBEntryType.__init__(self, name='TelegramSearchEntryType', save_to_disk=False)
         self.source = None
         self.plugin = plugin
@@ -47,11 +51,14 @@ GObject.type_register(TelegramSearchEntryType)
 
 
 class SearchBar(GObject.GObject):
+    """ Search bar widget for Telegram search functionality. """
+
     __gsignals__ = {
         'set_search_text': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_STRING,)),
     }
 
     def __init__(self, shell, plugin, source):
+        """ Initialize the search bar. """
         self.shell = shell
         self.plugin = plugin
         self.source = source
@@ -66,17 +73,20 @@ class SearchBar(GObject.GObject):
         self.prev_action = None
 
     def on_set_search_text_cb(self, widget, text):
+        """ Callback for setting search text. """
         self.search_entry.set_text(text)
 
     def set_search_text(self, text):
+        """ Set the search text in the entry field. """
         self.search_entry.set_text(text)
 
     def deactivate(self):
-        """ Deactivate the download bar """
+        """ Deactivate the search bar by disabling its action. """
         self.disable_action()
         self.active = False
 
     def activate(self):
+        """ Activate the search bar and initialize UI if needed. """
         if not self.active:
             if not self.search_bar:
                 self.init_ui()
@@ -85,12 +95,14 @@ class SearchBar(GObject.GObject):
         self.active = True
 
     def disable_action(self):
+        """ Disable the search action and restore previous action. """
         app = Gio.Application.get_default()
         app.remove_action("TelegramSearch")
         if self.prev_action:
             self.prev_action.set_enabled(True)
 
     def apply_action(self):
+        """ Apply the search action by replacing the default Ctrl-F behavior. """
         # Disable alt-toolbar search action (Ctrl-F)
         self.prev_action = self.shell.props.application.lookup_action("Search")
         if self.prev_action:
@@ -107,6 +119,7 @@ class SearchBar(GObject.GObject):
 
     @staticmethod
     def find_search_icon(widget):
+        """ Find search icon in widget hierarchy. """
         for child in widget.get_children():
             if isinstance(child, Gtk.Image):
                 icon_name = child.get_icon_name()
@@ -120,6 +133,7 @@ class SearchBar(GObject.GObject):
 
     @staticmethod
     def find_alt_search_button(widget):
+        """ Find alternative search button in widget hierarchy. """
         if isinstance(widget, Gtk.Box):
             for child in widget.get_children():
                 if isinstance(child, Gtk.Box):
@@ -132,6 +146,7 @@ class SearchBar(GObject.GObject):
         return None
 
     def find_alt_header_search_btn(self):
+        """ Find alternative search button in header bar. """
         header_bar = self.source.plugin.shell.props.window.get_titlebar()
         if isinstance(header_bar, Gtk.HeaderBar):
             for box in header_bar.get_children():
@@ -139,12 +154,14 @@ class SearchBar(GObject.GObject):
         return None
 
     def disable_alt_search(self):
+        """ Disable alternative search button if found. """
         self.find_alt_header_search_btn()
         if self.alt_search_btn:
             self.alt_search_btn.set_sensitive(False)
         return False
 
     def activate_search(self, *args):
+        """ Activate search mode and focus the search entry. """
         self.search_bar.set_search_mode(True)
 
         def idle_focus_entry():
@@ -154,6 +171,7 @@ class SearchBar(GObject.GObject):
         idle_add_once(self.disable_alt_search)
 
     def init_ui(self):
+        """ Initialize the search bar UI components. """
         entry_view = self.source.get_entry_view()
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self.plugin, "ui/search.ui"))
@@ -171,6 +189,7 @@ class SearchBar(GObject.GObject):
         self.search_entry.connect("activate", self._find_clicked_cb)
 
     def _find_clicked_cb(self, *_):
+        """ Callback for search button click or entry activation. """
         search_query = self.search_entry.get_text()
         self.source.emit("tg_search", search_query, 'any')
 
@@ -182,15 +201,16 @@ class TelegramSearchSource(TelegramSource):
     TelegramSearchSource class represents a source for Telegram Search in Rhythmbox
     """
     __gsignals__ = {
-        # 'tg_search': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
-        'tg_search': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_STRING,GObject.TYPE_STRING,)),
+        'tg_search': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_STRING, GObject.TYPE_STRING,)),
         'tg_clear': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __str__(self) -> str:
+        """ Return string representation of the source. """
         return f'TelegramSearchSource'
 
     def __init__(self):
+        """ Initialize the Telegram search source. """
         TelegramSource.__init__(self)
         self.refresh_btn = None
         self.alt_refresh_btn = None
@@ -199,7 +219,7 @@ class TelegramSearchSource(TelegramSource):
         self.search_query = ''
 
     def search_cb(self, search_bar, search_query, search_column, *_):
-        print('search_query', search_query)
+        """ Callback for search signal. """
         self.search_query = search_query
         self.clear_entries()
         idle_add_once(self.add_entries, search_column)
@@ -214,7 +234,8 @@ class TelegramSearchSource(TelegramSource):
 
     def do_selected(self):
         """
-        Handles actions when the source is selected, such as activating the download bar, search bar, adding entries.
+        Handles actions when the source is selected, such as activating the download bar,
+        search bar, and adding entries.
         """
         self.initialised = True
         TelegramSource.do_selected(self)
@@ -231,7 +252,7 @@ class TelegramSearchSource(TelegramSource):
         self.plugin.remove_plugin_menu()
 
     def clear_entries(self):
-        print('clear_entries')
+        """ Clear all search result entries from the database. """
         playing_entry = self.shell.props.shell_player.get_playing_entry()
         if playing_entry:
             if str(playing_entry.get_entry_type()).startswith('TelegramSearchEntryType'):
@@ -259,7 +280,6 @@ class TelegramSearchSource(TelegramSource):
         self.hash_append = base64.b64encode(b).decode('ascii')
 
         if self.plugin.storage and len(self.search_query) >= 3:
-            self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.visibility)
             cursor = self.plugin.storage.db.cursor()
             if search_column == 'artist':
                 sql = 'SELECT * FROM `audio` WHERE artist LIKE ?'
@@ -276,7 +296,7 @@ class TelegramSearchSource(TelegramSource):
             cursor.close()
 
     def add_entry(self, audio):
-        """ Adds a single audio entry to the source if it hasn't been loaded already """
+        """ Adds a single audio entry to the source """
         if audio.id:
             location = to_location("%s.%s" % (self.plugin.api.hash, self.hash_append), audio.chat_id, audio.message_id, audio.id)
             self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
