@@ -32,8 +32,7 @@ class TelegramSearchEntryType(TelegramEntryType):
 
     def __str__(self) -> str:
         """ Return string representation of the entry type. """
-        obj_id = hex(id(self))
-        return f'TelegramSearchEntryType <{obj_id}>'
+        return 'TelegramSearchEntryType'
 
     def __init__(self, plugin):
         """ Initialize the Telegram search entry type. """
@@ -218,19 +217,13 @@ class TelegramSearchSource(TelegramSource):
         self.hash_append = None
         self.search_query = ''
 
-    def search_cb(self, search_bar, search_query, search_column, *_):
-        """ Callback for search signal. """
-        self.search_query = search_query
-        self.clear_entries()
-        idle_add_once(self.add_entries, search_column)
-        # self.add_entries()
-
     def setup(self, plugin):
         """ Set up the TelegramSource with the given parameters """
         TelegramSource.setup(self, plugin, None, None, VISIBILITY_HIDDEN)
 
         self.search_bar = SearchBar(self.shell, plugin, self)
         self.connect("tg_search", self.search_cb)
+        self.plugin.connect('audio-stats-changed', self.on_audio_stats_changed)
 
     def do_selected(self):
         """
@@ -304,5 +297,20 @@ class TelegramSearchSource(TelegramSource):
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
                 audio.update_entry(entry, self.db)
+
+    def on_audio_stats_changed(self, plugin, entry, audio, audio_changes):
+        """ Sync changes in entry state (rating, play count) and updates corresponding entries. """
+        if str(entry.get_entry_type()) == 'TelegramSearchEntryType':
+            uri = to_location(self.plugin.api.hash, audio.chat_id, audio.message_id, audio.id)
+        else:
+            uri = to_location("%s.%s" % (self.plugin.api.hash, self.hash_append), audio.chat_id, audio.message_id, audio.id)
+        tg_entry = self.db.entry_lookup_by_location(uri)
+        self.set_entry_metadata(tg_entry, audio_changes)
+
+    def search_cb(self, search_bar, search_query, search_column, *_):
+        """ Callback for search signal. """
+        self.search_query = search_query
+        self.clear_entries()
+        idle_add_once(self.add_entries, search_column)
 
 GObject.type_register(TelegramSearchSource)
