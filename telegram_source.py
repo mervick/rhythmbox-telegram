@@ -339,6 +339,14 @@ class TelegramSource(RB.BrowserSource):
             self.db.disconnect(self.entry_updated_id)
             self.props.entry_type.deactivate()
 
+    def set_entry_metadata(self, entry, meta):
+        """ Applies play count and rating metadata to the entry """
+        if entry:
+            if 'play_count' in meta:
+                self.db.entry_set(entry, RB.RhythmDBPropType.PLAY_COUNT, meta['play_count'])
+            if 'rating' in meta:
+                self.db.entry_set(entry, RB.RhythmDBPropType.RATING, meta['rating'])
+
     def on_entry_changed(self, db, entry, changes):
         """
         Handles changes to telegram entries if play count or rating changes.
@@ -347,7 +355,6 @@ class TelegramSource(RB.BrowserSource):
         they enable synchronization of ratings and play counts between
         standard song-type entries and Telegram-type entries.
         """
-        # watch only for current Telegram entry type
         if self.entry_type != entry.get_entry_type():
             return
 
@@ -365,17 +372,12 @@ class TelegramSource(RB.BrowserSource):
                     ('rating' in audio_changes and audio_changes['rating'] != audio.rating)):
                 return
 
-            # update audio in db
             audio.save(audio_changes)
 
             if audio.is_moved:
-                # update song entry on entry view
+                self.plugin.emit('audio-stats-changed', entry, audio, audio_changes)
                 song_entry = db.entry_lookup_by_location(file_uri(audio.local_path))
-                if song_entry:
-                    if 'play_count' in audio_changes:
-                        db.entry_set(song_entry, RB.RhythmDBPropType.PLAY_COUNT, audio_changes['play_count'])
-                    if 'rating' in audio_changes:
-                        db.entry_set(song_entry, RB.RhythmDBPropType.RATING, audio_changes['rating'])
+                self.set_entry_metadata(song_entry, audio_changes)
 
     def hide_thyself(self):
         """ Hides the source by setting its visibility property to False """
