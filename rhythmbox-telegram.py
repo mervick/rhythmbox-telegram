@@ -60,6 +60,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
     __gsignals__ = {
         'reload_display_pages': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'update_download_info': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT,)),
+        'audio_stats_changed': (GObject.SignalFlags.RUN_FIRST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)),
     }
 
     def __init__(self):
@@ -277,6 +278,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
 
                 # update audio in db
                 audio.save(audio_changes)
+                self.emit('audio-stats-changed', entry, audio, audio_changes)
 
                 # update tg entry on entry view
                 tg_uri = to_location(self.api.hash, audio.chat_id, audio.message_id, audio.id)
