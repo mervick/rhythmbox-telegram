@@ -45,6 +45,7 @@ KEY_RATING_COLUMN = "rating-column"
 KEY_DATE_ADDED_COLUMN = "date-added-column"
 KEY_FILE_SIZE_COLUMN = "file-size-column"
 KEY_AUDIO_FORMAT_COLUMN = "audio-format-column"
+KEY_IN_LIBRARY_COLUMN = "in-library-column"
 
 KEY_PRELOAD_NEXT_TRACK = "preload-next-track"
 KEY_PRELOAD_PREV_TRACK = "preload-prev-track"

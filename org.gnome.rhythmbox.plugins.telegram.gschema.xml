@@ -152,6 +152,12 @@
       <description>Displays the rating column for tracks in the playlist.</description>
     </key>
 
+    <key name="in-library-column" type="b">
+      <default>false</default>
+      <summary>Show In-library Presence column</summary>
+      <description>Displays icon for tracks already in your music library.</description>
+    </key>
+
     <key name="preload-next-track" type="b">
       <default>true</default>
       <summary>Preload next audio</summary>

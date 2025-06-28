@@ -19,8 +19,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import RB
 from gi.repository import Gtk, GLib
 from prefs_base import PrefsPageBase, set_combo_text_column
-from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN, KEY_TOP_PICKS_COLUMN
-from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY
+from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
+from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY, KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
 from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
 from storage import Audio
 from common import get_first_artist
@@ -68,12 +68,14 @@ class PrefsViewPage(PrefsPageBase):
         self.date_added_check = self.ui.get_object('date_added_check')
         self.size_check = self.ui.get_object('size_check')
         self.format_check = self.ui.get_object('format_check')
+        self.in_library_check = self.ui.get_object('in_library_check')
 
         self._init_check(self.top_picks_check, KEY_TOP_PICKS_COLUMN)
         self._init_check(self.rating_check, KEY_RATING_COLUMN)
         self._init_check(self.date_added_check, KEY_DATE_ADDED_COLUMN)
         self._init_check(self.size_check, KEY_FILE_SIZE_COLUMN)
         self._init_check(self.format_check, KEY_AUDIO_FORMAT_COLUMN)
+        self._init_check(self.in_library_check, KEY_IN_LIBRARY_COLUMN)
 
         self._init_combo(self.page_group_combo, page_groups, KEY_PAGE_GROUP)
         self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
