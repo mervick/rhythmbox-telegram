@@ -313,4 +313,7 @@ class TelegramSearchSource(TelegramSource):
         self.clear_entries()
         idle_add_once(self.add_entries, search_column)
 
+    def do_can_delete(self):
+        return False
+
 GObject.type_register(TelegramSearchSource)
