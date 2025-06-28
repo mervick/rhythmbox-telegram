@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from gi.repository import RB, GLib, GObject
+from gi.repository import RB, GObject
 from storage import Audio
 from account import KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_HIDDEN_TRACK
-from common import file_uri, get_location_data, get_entry_state
+from account import KEY_PRELOAD_MAX_FILE_SIZE, KEY_PRELOAD_FILE_FORMATS, AUDIO_FORMAT_ALL
+from common import file_uri, get_location_data, get_entry_state, idle_add_once
 
 
 class TelegramEntryType(RB.RhythmDBEntryType):
@@ -126,6 +127,17 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         """ Loads the audio for the given entry. """
         self.plugin.loader.add_entry(entry).start()
 
+    def _is_preload_enabled_for_audio(self, audio):
+        """ Determine whether preloading should be enabled for a given audio """
+        max_file_size = self.plugin.account.settings[KEY_PRELOAD_MAX_FILE_SIZE]
+        allowed_format = self.plugin.account.settings[KEY_PRELOAD_FILE_FORMATS]
+
+        if 0 < max_file_size < audio.size / 1000000:
+            return False
+        if allowed_format != AUDIO_FORMAT_ALL and audio.get_file_ext() not in allowed_format:
+            return False
+        return True
+
     def do_get_playback_uri(self, entry):
         """
         Gets the playback URI for the given entry. If the  audio is not yet downloaded,
@@ -149,7 +161,8 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 prev_audio = self.plugin.storage.get_entry_audio(prev_entry) if prev_entry else None
 
                 if prev_audio and not prev_audio.is_file_exists():
-                    GLib.idle_add(self._load_entry_audio, prev_entry)
+                    if self._is_preload_enabled_for_audio(prev_audio):
+                        idle_add_once(self._load_entry_audio, prev_entry)
 
         # The preloader loads first what was sent last
         if self.plugin.account.settings[KEY_PRELOAD_NEXT_TRACK]:
@@ -158,7 +171,8 @@ class TelegramEntryType(RB.RhythmDBEntryType):
                 next_audio = self.plugin.storage.get_entry_audio(next_entry) if next_entry else None
 
                 if next_audio and not next_audio.is_file_exists():
-                    GLib.idle_add(self._load_entry_audio, next_entry)
+                    if self._is_preload_enabled_for_audio(next_audio):
+                        idle_add_once(self._load_entry_audio, next_entry)
 
         if audio.is_file_exists():
             self._pending_playback = None
@@ -170,7 +184,7 @@ class TelegramEntryType(RB.RhythmDBEntryType):
         if playing_entry:
             playing_location = playing_entry.get_string(RB.RhythmDBPropType.LOCATION)
             if playing_location == location:
-                GLib.idle_add(self.shell.props.shell_player.stop)
+                idle_add_once(self.shell.props.shell_player.stop)
                 return_uri = 'invalid'
 
         state = get_entry_state(entry)
