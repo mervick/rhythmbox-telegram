@@ -17,7 +17,7 @@
 import gi
 gi.require_version('Gio', '2.0')
 from gi.repository import RB, GLib, Gio, Gtk
-from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist
+from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist, idle_add_once
 from common import get_tree_view_from_entry_view
 from storage import Audio
 from typing import Dict
@@ -136,6 +136,11 @@ class StateColumn:
         spinner_renderer = Gtk.CellRendererSpinner()
 
         column.set_title(" ")
+        # icon = Gio.ThemedIcon.new("tg-state-download-symbolic")
+        # image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.MENU)
+        # column.set_widget(image)
+        # image.show()
+
         column.set_cell_data_func(pixbuf_renderer, self.data_func, "pixbuf") # noqa
         column.set_cell_data_func(spinner_renderer, self.data_func, "spinner") # noqa
 
@@ -233,6 +238,101 @@ class StateColumn:
                     gicon = Gio.ThemedIcon.new(icon_name) if icon_name is not None else None
                     StateColumn._icon_cache[state] = gicon
                 cell.props.gicon = gicon
+
+
+class VisualMarker:
+    """
+    A class that provides visual markers for entries in the library view with icons
+    to indicate their presence in the library.
+    """
+    _initialized = False
+    library_map = set()
+
+    @staticmethod
+    def init_once(plugin):
+        """
+        Sets up the library map by loading existing entries and connects to the
+        'entry_added_to_library' signal to keep the map updated.
+        """
+        if not VisualMarker._initialized:
+            VisualMarker._initialized = True
+
+        plugin.connect('entry_added_to_library', VisualMarker.on_entry_added_to_library)
+        shell = plugin.shell
+        db = shell.props.db
+        entry_type = db.entry_type_get_by_name('song')
+        source = shell.get_source_by_entry_type(entry_type)
+        model = source.get_property('query-model')
+        iter = model.get_iter_first()
+
+        while iter:
+            entry = model.get_value(iter, 0)
+            VisualMarker.library_map.add(VisualMarker.entry_to_data(entry))
+            iter = model.iter_next(iter)
+
+    def __init__(self, source):
+        """
+        Creates and configures a column in the entry view to display visual markers
+        indicating whether entries are in the library.
+        """
+        self.shell = source.plugin.shell
+
+        column = Gtk.TreeViewColumn()
+        renderer = Gtk.CellRendererPixbuf()
+
+        column.set_title(" ")
+        # image = Gtk.Image.new_from_icon_name("audio-x-generic-symbolic", Gtk.IconSize.MENU)
+        # column.set_widget(image)
+        # image.show()
+
+        column.set_reorderable(False)
+        column.set_cell_data_func(renderer, self.data_func, None)  # noqa
+        column.pack_start(renderer, expand=True)
+
+        column.set_expand(False)
+        column.set_resizable(False)
+
+        column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+        column.set_fixed_width(28)
+
+        entry_view = source.get_entry_view()
+        entry_view.append_column_custom(column, ' ', 'tg-in-library', empty_cb, None, None)
+        visible_columns = entry_view.get_property('visible-columns')
+
+        if 'tg-in-library' not in visible_columns:
+            visible_columns.append('tg-in-library')
+            entry_view.set_property('visible-columns', visible_columns)
+
+        tree_view = column.get_tree_view()
+        columns = tree_view.get_columns()
+        if column in columns:
+            tree_view.remove_column(column)
+            tree_view.insert_column(column, -2)
+
+    def data_func(self, column, cell, model, iter, *_):
+        """ Cell data function for the visual marker column. """
+        gicon = None
+        entry = model.get_value(iter, 0)
+        if VisualMarker.entry_to_data(entry) in VisualMarker.library_map:
+            gicon = Gio.ThemedIcon.new('audio-x-generic-symbolic')
+        cell.props.gicon = gicon
+
+    @staticmethod
+    def entry_to_data(entry):
+        """ Convert an entry to normalized artist/title data. """
+        artist = VisualMarker.normalize(get_first_artist(entry.get_string(RB.RhythmDBPropType.ARTIST)))
+        title = VisualMarker.normalize(entry.get_string(RB.RhythmDBPropType.TITLE))
+        return artist, title
+
+    @staticmethod
+    def normalize(s):
+        """ Normalize a string by stripping whitespace and converting to lowercase. """
+        return s.strip().casefold()
+
+    @staticmethod
+    def on_entry_added_to_library(plugin, entry):
+        """ Callback for when an entry is added to the library. Adds the entry's normalized data to the library map. """
+        VisualMarker.library_map.add(VisualMarker.entry_to_data(entry))
 
 
 class TopPicks:
@@ -348,6 +448,10 @@ class TopPicksColumn:
         renderer = Gtk.CellRendererText()
 
         column.set_title(" ")
+        # image = Gtk.Image.new_from_icon_name("emblem-favorite-symbolic", Gtk.IconSize.MENU)
+        # column.set_widget(image)
+        # image.show()
+
         column.set_reorderable(False)
         column.set_cell_data_func(renderer, self.data_func, None)  # noqa
         column.pack_start(renderer, expand=True)
