@@ -240,7 +240,7 @@ class StateColumn:
                 cell.props.gicon = gicon
 
 
-class VisualMarker:
+class InLibraryColumn:
     """
     A class that provides visual markers for entries in the library view with icons
     to indicate their presence in the library.
@@ -254,10 +254,10 @@ class VisualMarker:
         Sets up the library map by loading existing entries and connects to the
         'entry_added_to_library' signal to keep the map updated.
         """
-        if not VisualMarker._initialized:
-            VisualMarker._initialized = True
+        if not InLibraryColumn._initialized:
+            InLibraryColumn._initialized = True
 
-        plugin.connect('entry_added_to_library', VisualMarker.on_entry_added_to_library)
+        plugin.connect('entry_added_to_library', InLibraryColumn.on_entry_added_to_library)
         shell = plugin.shell
         db = shell.props.db
         entry_type = db.entry_type_get_by_name('song')
@@ -267,7 +267,7 @@ class VisualMarker:
 
         while iter:
             entry = model.get_value(iter, 0)
-            VisualMarker.library_map.add(VisualMarker.entry_to_data(entry))
+            InLibraryColumn.library_map.add(InLibraryColumn.entry_to_data(entry))
             iter = model.iter_next(iter)
 
     def __init__(self, source):
@@ -313,15 +313,15 @@ class VisualMarker:
         """ Cell data function for the visual marker column. """
         gicon = None
         entry = model.get_value(iter, 0)
-        if VisualMarker.entry_to_data(entry) in VisualMarker.library_map:
+        if InLibraryColumn.entry_to_data(entry) in InLibraryColumn.library_map:
             gicon = Gio.ThemedIcon.new('audio-x-generic-symbolic')
         cell.props.gicon = gicon
 
     @staticmethod
     def entry_to_data(entry):
         """ Convert an entry to normalized artist/title data. """
-        artist = VisualMarker.normalize(get_first_artist(entry.get_string(RB.RhythmDBPropType.ARTIST)))
-        title = VisualMarker.normalize(entry.get_string(RB.RhythmDBPropType.TITLE))
+        artist = InLibraryColumn.normalize(get_first_artist(entry.get_string(RB.RhythmDBPropType.ARTIST)))
+        title = InLibraryColumn.normalize(entry.get_string(RB.RhythmDBPropType.TITLE))
         return artist, title
 
     @staticmethod
@@ -332,7 +332,7 @@ class VisualMarker:
     @staticmethod
     def on_entry_added_to_library(plugin, entry):
         """ Callback for when an entry is added to the library. Adds the entry's normalized data to the library map. """
-        VisualMarker.library_map.add(VisualMarker.entry_to_data(entry))
+        InLibraryColumn.library_map.add(InLibraryColumn.entry_to_data(entry))
 
 
 class TopPicks:

@@ -28,7 +28,7 @@ from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN
 from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error, to_location
-from columns import TopPicks, VisualMarker
+from columns import TopPicks, InLibraryColumn
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
 
@@ -160,7 +160,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.top_picks = TopPicks(self.shell)
         if self.account.settings[KEY_TOP_PICKS_COLUMN]:
             GLib.timeout_add(4000, self.top_picks.collect)
-        GLib.timeout_add(4000, VisualMarker.init_once, self)
+        GLib.timeout_add(4000, InLibraryColumn.init_once, self)
 
     def do_deactivate(self):
         """
