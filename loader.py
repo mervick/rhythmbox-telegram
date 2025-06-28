@@ -259,7 +259,8 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             filename = self._move_file(action, audio.local_path, filename)
             audio.save({"local_path": filename, "is_moved": True})
         audio.update_entry(entry)
-        GLib.idle_add(entry.get_entry_type().emit, 'entry_downloaded', entry)
+        idle_add_once(self.plugin.emit, 'entry_added_to_library', entry)
+        idle_add_once(entry.get_entry_type().emit, 'entry_downloaded', entry)
         self._next(300)
 
     def _create_dirs(self, root, directory):
