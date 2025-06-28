@@ -176,6 +176,22 @@
       <description>Preload tracks even if it was hidden in the playlist.</description>
     </key>
 
+    <key name="preload-max-file-size" type="i">
+      <default>0</default>
+      <summary>Preload file size limit</summary>
+      <description>Files larger than the specified size (in MB) will be excluded from preloading. Set to 0 to disable size limits.</description>
+    </key>
+
+    <key name="preload-file-formats" type="s">
+      <default>'any'</default>
+      <choices>
+        <choice value='any'/>
+        <choice value='mp3'/>
+      </choices>
+      <summary>Preload audio formats</summary>
+      <description>Restrict preloading to specific audio formats. Select "any" to disable filtering.</description>
+    </key>
+
     <child name="source" schema="org.gnome.rhythmbox.plugins.telegram.source"/>
   </schema>
 </schemalist>

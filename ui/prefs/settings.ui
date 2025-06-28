@@ -601,7 +601,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           </packing>
                         </child>
                         <child>
-                          <!-- n-columns=3 n-rows=2 -->
+                          <!-- n-columns=3 n-rows=3 -->
                           <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
@@ -621,7 +621,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                               </object>
                               <packing>
                                 <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
+                                <property name="top-attach">1</property>
                               </packing>
                             </child>
                             <child>
@@ -638,7 +638,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                               </object>
                               <packing>
                                 <property name="left-attach">0</property>
-                                <property name="top-attach">1</property>
+                                <property name="top-attach">0</property>
                               </packing>
                             </child>
                             <child>
@@ -656,6 +656,77 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                               <packing>
                                 <property name="left-attach">0</property>
                                 <property name="top-attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="height-request">30</property>
+                                <property name="width-request">100</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="spacing">3</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="height-request">30</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="spacing">3</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">Max preload file size:</property>
+                                    <property name="use-underline">True</property>
+                                    <property name="xalign">0</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBox" id="preload_max_file_size_combo">
+                                    <property name="width-request">80</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="height-request">30</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="spacing">3</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">Preload file formats:</property>
+                                    <property name="use-underline">True</property>
+                                    <property name="xalign">0</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBox" id="preload_file_formats_combo">
+                                    <property name="width-request">80</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">1</property>
                               </packing>
                             </child>
                           </object>

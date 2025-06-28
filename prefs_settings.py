@@ -23,6 +23,7 @@ from prefs_base import PrefsPageBase, set_combo_text_column
 from common import filepath_parse_pattern, show_error
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK
 from account import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY, KEY_FILENAME_TEMPLATE
+from account import KEY_PRELOAD_MAX_FILE_SIZE, KEY_PRELOAD_FILE_FORMATS, AUDIO_FORMAT_ALL
 from account import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
 
@@ -57,6 +58,25 @@ conflict_resolve_variants = [
     [_('Replace'), CONFLICT_ACTION_REPLACE],
     [_('Skip'), CONFLICT_ACTION_SKIP],
     [_('Ask for Action'), CONFLICT_ACTION_ASK],
+]
+
+preload_max_size_variants = [
+    [_('No size limit'), 0],
+    [_('10 MB'), 10],
+    [_('20 MB'), 20],
+    [_('30 MB'), 30],
+    [_('40 MB'), 40],
+    [_('50 MB'), 50],
+    [_('60 MB'), 60],
+    [_('70 MB'), 70],
+    [_('80 MB'), 80],
+    [_('90 MB'), 90],
+    [_('100 MB'), 100],
+]
+
+preload_file_formats_variants = [
+    [_('All formats'), AUDIO_FORMAT_ALL],
+    [_('mp3'), 'mp3'],
 ]
 
 example_tags = {
@@ -96,6 +116,9 @@ class PrefsSettingsPage(PrefsPageBase):
         self.preload_next_check = self.ui.get_object('preload_next_check')
         self.preload_hidden_check = self.ui.get_object('preload_hidden_check')
 
+        self.preload_max_file_size_combo = self.ui.get_object('preload_max_file_size_combo')
+        self.preload_file_formats_combo = self.ui.get_object('preload_file_formats_combo')
+
         self._init_check(self.preload_prev_check, KEY_PRELOAD_PREV_TRACK)
         self._init_check(self.preload_next_check, KEY_PRELOAD_NEXT_TRACK)
         self._init_check(self.preload_hidden_check, KEY_PRELOAD_HIDDEN_TRACK)
@@ -107,6 +130,9 @@ class PrefsSettingsPage(PrefsPageBase):
         self._init_combo(self.conflict_resolve_combo, conflict_resolve_variants, KEY_CONFLICT_RESOLVE)
         self._init_combo(self.dir_hierarchy_combo, library_layout_paths, KEY_FOLDER_HIERARCHY)
         self._init_combo(self.name_template_combo, library_layout_filenames, KEY_FILENAME_TEMPLATE)
+
+        self._init_combo(self.preload_max_file_size_combo, preload_max_size_variants, KEY_PRELOAD_MAX_FILE_SIZE, True)
+        self._init_combo(self.preload_file_formats_combo, preload_file_formats_variants, KEY_PRELOAD_FILE_FORMATS)
 
         self._update(KEY_FILENAME_TEMPLATE, self.settings[KEY_FILENAME_TEMPLATE])
         self._update_check_sensitive()
@@ -126,10 +152,10 @@ class PrefsSettingsPage(PrefsPageBase):
         self.on_change(name, is_checked)
         self._update_check_sensitive()
 
-    def _init_combo(self, combo, variants, name):
+    def _init_combo(self, combo, variants, name, variant_int=False):
         idx = 0
         value = self.settings[name]
-        store = Gtk.ListStore(str, str) # noqa
+        store = Gtk.ListStore(int if variant_int else str, str)
         for i, o in enumerate(variants):
             if value == o[1]:
                 idx = i
@@ -137,14 +163,17 @@ class PrefsSettingsPage(PrefsPageBase):
         combo.set_model(store)
         combo.set_active(idx)
         set_combo_text_column(combo, 1)
-        combo.connect('changed', self._on_combo_changed, name)
+        combo.connect('changed', self._on_combo_changed, name, variant_int)
 
-    def _on_combo_changed(self, combo, name):
+    def _on_combo_changed(self, combo, name, variant_int=False):
         tree_iter = combo.get_active_iter()
         if tree_iter is not None:
             model = combo.get_model()
             value = model[tree_iter][0]
-            self.settings.set_string(name, value)
+            if variant_int:
+                self.settings.set_int(name, value)
+            else:
+                self.settings.set_string(name, value)
             self._update(name, value)
             self.on_change(name, value)
 

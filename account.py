@@ -50,6 +50,10 @@ KEY_IN_LIBRARY_COLUMN = "in-library-column"
 KEY_PRELOAD_NEXT_TRACK = "preload-next-track"
 KEY_PRELOAD_PREV_TRACK = "preload-prev-track"
 KEY_PRELOAD_HIDDEN_TRACK = "preload-hidden-track"
+KEY_PRELOAD_MAX_FILE_SIZE = "preload-max-file-size"
+KEY_PRELOAD_FILE_FORMATS = "preload-file-formats"
+
+AUDIO_FORMAT_ALL = 'any'
 
 KEY_DETECT_DIRS_IGNORE_CASE = "detect-dirs-ignore-case"
 KEY_DETECT_FILES_IGNORE_CASE = "detect-files-ignore-case"
