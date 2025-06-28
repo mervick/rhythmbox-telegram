@@ -66,18 +66,34 @@ if rbconfig.libsecret_enabled:
 
 
 class Account(metaclass=SingletonMeta):
+    """
+    Singleton class managing Telegram account credentials and settings.
+
+    Provides methods to securely store and retrieve API keys, phone numbers,
+    and connection status. Handles integration with GNOME keyring via libsecret
+    with fallback to plaintext storage when unavailable.
+    """
+
     def __init__(self, plugin=None):
+        """ Initialize instance """
         self.plugin = plugin
         self.activated = False
         self.settings = None
         self.secret = None
 
     def unlock_keyring(self):
+        """ Attempt to unlock the system keyring for credential storage. """
         schema_test = Secret.Schema.new('org.gnome.rhythmbox.plugins.telegram-test', Secret.SchemaFlags.DONT_MATCH_NAME,
                                         {"test": Secret.SchemaAttributeType.STRING})
         return Secret.password_store_sync(schema_test, {"test": "test"}, Secret.COLLECTION_DEFAULT, "test", 'test', None)
 
     def init(self):
+        """
+        Initialize the account manager.
+
+        Sets up GSettings schema and attempts to initialize libsecret integration.
+        Shows error if libsecret is not available.
+        """
         if self.activated:
             return
         self.activated = True
@@ -104,6 +120,12 @@ class Account(metaclass=SingletonMeta):
             self.secret = items[0].get_secret().get().decode("utf-8")
 
     def get_secure(self, key=None):
+        """
+        Retrieve secure credentials from storage.
+
+        Returns either from libsecret or fallback plaintext storage based on availability.
+        Can return individual values or all credentials as a tuple.
+        """
         def _get_all():
             if self.secret is None:
                 connected = self.settings[KEY_CONNECTED]
@@ -130,6 +152,12 @@ class Account(metaclass=SingletonMeta):
         return props
 
     def get_library_path(self):
+        """
+        Get the configured music library path.
+
+        Checks plugin settings first, falls back to Rhythmbox's configured locations,
+        and ultimately defaults to ~/Music if no other path is set.
+        """
         # from settings
         if KEY_LIBRARY_PATH in self.settings and self.settings[KEY_LIBRARY_PATH]:
             return self.settings[KEY_LIBRARY_PATH]
@@ -143,6 +171,7 @@ class Account(metaclass=SingletonMeta):
         return re.sub(r'^file://', '', path)
 
     def update(self, api_id, api_hash, phone, connected=False):
+        """ Update stored account credentials. """
         if not api_id or not api_hash or not phone:
             connected = False
         connected = connected is True or connected == 'True'
@@ -163,5 +192,6 @@ class Account(metaclass=SingletonMeta):
             print("Couldn't create keyring item!")
 
     def set_connected(self, connected):
+        """ Update connection status without changing credentials. """
         api_id, api_hash, phone, connected_ = self.get_secure()
         self.update(api_id, api_hash, phone, connected)
