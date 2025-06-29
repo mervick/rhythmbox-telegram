@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramClient(Telegram):
+    """ Extended Telegram client with custom authorization handling """
     error = None
 
     def _wait_authorization_result(self, result: AsyncResult) -> AuthorizationState:
@@ -55,6 +56,7 @@ class TelegramClient(Telegram):
 
 
 class TelegramAuthError(Exception):
+    """ Exception for Telegram authorization errors """
     def __init__(self, message, info):
         super().__init__(message)
         self.info = info
@@ -67,10 +69,12 @@ class TelegramAuthError(Exception):
 
 
 class TelegramAuthStateError(Exception):
+    """ Exception for invalid Telegram authorization states """
     pass
 
 
 def inst_key(api_id, phone):
+    """ Generate instance key from API ID and phone number """
     return '|'.join([phone.strip('+'), api_id])
 
 
@@ -90,6 +94,7 @@ TDLIB_VERB_DEBUG = 4
 
 
 class TelegramApi(GObject.Object):
+    """ Main Telegram API wrapper for Rhythmbox integration """
     object = GObject.Property(type=GObject.Object)
     application_version = '1.0.0'
 
@@ -101,10 +106,12 @@ class TelegramApi(GObject.Object):
 
     @staticmethod
     def loaded():
+        """ Check if any Telegram instance is currently loaded """
         return TelegramApi.__current
 
     @staticmethod
     def api(api_id, api_hash, phone):
+        """ Get or create Telegram API instance """
         key = inst_key(api_id, phone)
         if key not in TelegramApi.__instances or not TelegramApi.__instances[key]:
             TelegramApi.__instances[key] = TelegramApi(int(api_id), api_hash, phone)
@@ -143,6 +150,11 @@ class TelegramApi(GObject.Object):
     # Authorization and state management
     ############################################################
     def login(self, code=None):
+        """
+        Authenticate with Telegram.
+        If called without a code, initiates login and requests a verification code
+        to be sent to the user's device.
+        """
         if code and self.state == self.tg.authorization_state.WAIT_CODE:
             self.tg.send_code(code=code)
 
@@ -158,31 +170,37 @@ class TelegramApi(GObject.Object):
         return self.state
 
     def get_error(self):
+        """ Get last error message """
         err = self.tg.error.get('message') if self.tg.error else None
         return API_ERRORS[err] if err in API_ERRORS else err
 
     def is_ready(self):
+        """ Check if API is ready for operations """
         return self.state == AuthorizationState.READY
 
     ############################################################
     # Managing chats
     ############################################################
     def start_chat_updates(self):
+        """ Start listening for new chat updates """
         if not self.is_chat_updates_started:
             self.is_chat_updates_started = True
             self.tg.add_update_handler('updateNewChat', self._update_new_chat_cb)
 
     def stop_chat_updates(self):
+        """ Stop chat updates listener """
         self.is_chat_updates_started = False
         self.tg.remove_update_handler('updateNewChat', self._update_new_chat_cb)
 
     def _update_new_chat_cb(self, update):
+        """ Callback for handling new chat updates from Telegram """
         chat = update.get('chat', {})
         chat_id = chat.get('id')
         if chat_id:
             self.chats[chat_id] = get_chat_info(chat)
 
     def _chats_idle_cb(self, data):
+        """ Idle callback for loading chats asynchronously """
         r = data.get('result')
         if not r:
             r = data['result'] = self.tg.call_method('loadChats', {'limit': 100})
@@ -201,16 +219,19 @@ class TelegramApi(GObject.Object):
         return True
 
     def reset_chats(self):
+        """ Clear cached chats data """
         self.chats_count = 0
         self.chats = {}
 
     def get_chats_idle(self, update):
+        """ Load chats asynchronously """
         Gdk.threads_add_idle(0, self._chats_idle_cb, {'update': update})
 
     ############################################################
     # Managing messages
     ############################################################
     def load_message_idle(self, chat_id, message_id, on_success=empty_cb, on_error=empty_cb):
+        """ Load single message asynchronously """
         logger.debug('%s %s' % (chat_id, message_id))
         blob = {
             "chat_id": chat_id,
@@ -222,6 +243,7 @@ class TelegramApi(GObject.Object):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, _wait_cb, blob)
 
     def load_messages_idle(self, chat_id, update=None, each=None, on_success=None, blob=None, limit=100, offset=0):
+        """ Load multiple messages asynchronously """
         blob = {
             **(blob if blob else {}),
             "limit": limit,
@@ -234,6 +256,7 @@ class TelegramApi(GObject.Object):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_messages_idle_cb, blob)
 
     def _load_messages_idle_cb(self, blob):
+        """ Idle callback for loading messages asynchronously """
         offset_msg_id = blob.get('offset_msg_id', 0)
         last_msg_id = blob.get('last_msg_id', 0)
         limit = blob.get('limit', 100)
@@ -284,6 +307,7 @@ class TelegramApi(GObject.Object):
         return False
 
     def get_message_link(self, chat_id, message_id):
+        """ Get shareable link for a message """
         r = self.tg.call_method('getMessageLink', {
             'chat_id': int(chat_id),
             'message_id': int(message_id),
@@ -294,6 +318,7 @@ class TelegramApi(GObject.Object):
         return r.update.get('link') if r.update else None
 
     def get_message_direct_link(self, link):
+        """ Convert public link to direct Telegram URI """
         if not link:
             return None
         m = REGEX_TME_LINK.match(link)
@@ -309,6 +334,7 @@ class TelegramApi(GObject.Object):
     # Managing files
     ############################################################
     def download_audio_idle(self, chat_id, message_id, priority=1, on_success=empty_cb, on_error=empty_cb):
+        """ Download audio message asynchronously """
         def download(data, *arg):
             if not data:
                 on_error()
@@ -323,6 +349,7 @@ class TelegramApi(GObject.Object):
         self.load_message_idle(chat_id, message_id, on_success=download, on_error=on_error)
 
     def _download_audio_idle_cb(self, data, priority=1, on_success=empty_cb, on_error=empty_cb):
+        """ Idle callback for downloading audio files from Telegram """
         content = data.get('content', {})
         audio = content.get('audio')
 
@@ -343,6 +370,7 @@ class TelegramApi(GObject.Object):
         self.download_file_idle(audio_id, priority=priority, on_success=on_success, on_error=on_error)
 
     def download_file_idle(self, file_id, priority=1, on_success=empty_cb, on_error=empty_cb):
+        """ Download any file asynchronously """
         logger.debug('download_file_idle')
         blob = {
             "result": self.tg.call_method('downloadFile', {
@@ -358,6 +386,7 @@ class TelegramApi(GObject.Object):
 
 
 def _wait_cb(blob):
+    """ Callback handler for async operations """
     r = blob.get('result', None)
     if not r.ok_received and r.error:
         show_error(_('Error: Telegram API request failed'), format_error(r))
@@ -371,6 +400,7 @@ def _wait_cb(blob):
     return False
 
 def format_error(r: AsyncResult) -> str | None:
+    """ Format Telegram API error message """
     info = r.error_info if r.error_info else {}
     message = info.get('message')
     if message:

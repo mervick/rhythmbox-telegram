@@ -35,6 +35,7 @@ VISIBILITY_VISIBLE = 1
 VISIBILITY_HIDDEN = 0
 
 class Playlist:
+    """ Represents a playlist with segments and metadata """
     id: int
     chat_id: int
     title: str
@@ -47,12 +48,15 @@ class Playlist:
         return f'Playlist <{self.chat_id}>'
 
     def __init__(self, data):
+        """ Initialize playlist with data """
         self.update(data)
 
     def is_changed_segments(self):
+        """ Check if segments have changed """
         return json.dumps(self.segments) != self.snapshot
 
     def update(self, data):
+        """ Update playlist data """
         id_, chat_id, title, original_title, segments = data
         self.id = id_
         self.chat_id = chat_id
@@ -62,15 +66,19 @@ class Playlist:
         self.segments = json.loads(segments)
 
     def insert_empty(self):
+        """ Insert empty segment at current position """
         self.segments.insert(CURRENT_SEGMENT, [0, 0])
 
     def set_current(self, segment_type, value):
+        """ Set value for current segment """
         self.segments[CURRENT_SEGMENT][segment_type] = value
 
     def current(self, segment_type):
+        """ Get current segment value """
         return self.segments[CURRENT_SEGMENT][segment_type] if len(self.segments) else 0
 
     def search(self, value):
+        """ Search for value in segments """
         for num, segment in enumerate(self.segments):
             if num == CURRENT_SEGMENT:
                 continue
@@ -80,11 +88,13 @@ class Playlist:
 
     @staticmethod
     def read(chat_id):
+        """ Read playlist from storage by chat_id """
         playlist = Storage.loaded().select('playlist', {"chat_id": chat_id})
         data = playlist if playlist else tuple([0, chat_id, '', '', '[]'])
         return Playlist(data)
 
     def join_segments(self, value):
+        """ Join segments around specified value """
         segments = [self.segments[CURRENT_SEGMENT].copy()]
         segments_old = self.segments.copy()
         for num, segment in enumerate(segments_old):
@@ -101,6 +111,7 @@ class Playlist:
         self.segments = segments
 
     def save(self):
+        """ Save playlist to storage """
         if not self.is_changed_segments():
             return False
         playlist = {
@@ -117,6 +128,7 @@ class Playlist:
 
 
 class Audio:
+    """ Represents an audio track with metadata and state """
     STATE_DEFAULT = 0
     STATE_DOWNLOADED = 1
     STATE_IN_LIBRARY = 2
@@ -157,6 +169,7 @@ class Audio:
         self.update(data)
 
     def update(self, data):
+        """ Update audio data """
         if type(data) == tuple:
             id_, chat_id, message_id, mime_type, track_number, title, artist, album, genre, file_name, created_at, \
                 date, size, duration, is_downloaded, is_moved, is_hidden, local_path, play_count, rating = data
@@ -205,18 +218,22 @@ class Audio:
             self.rating = data.get('rating', 0)
 
     def get_album_artist(self):
+        """ Get album artist or fallback to artist """
         return self.album_artist if self.album_artist and len(self.album_artist) else self.artist
 
     def get_year(self):
+        """ Get year from date """
         return get_year(self.date)
 
     def is_file_exists(self):
+        """ Check if audio file exists """
         isfile = self.is_downloaded and self.local_path and len(self.local_path) > 1 and os.path.isfile(self.local_path)
         if not isfile:
             self.is_downloaded = 0
         return isfile
 
     def get_state(self):
+        """ Get current state of audio """
         if self.is_error:
             return Audio.STATE_ERROR
         if self.is_hidden:
@@ -228,6 +245,7 @@ class Audio:
         return Audio.STATE_DEFAULT
 
     def _upd_and_move(self):
+        """ Update tags and move file to organized location """
         if len(self.local_path or ''):
             # read tags
             tags = get_audio_tags(self.local_path)
@@ -252,6 +270,7 @@ class Audio:
             self.save({**tags, "local_path": new_path})
 
     def download(self, success=empty_cb, fail=empty_cb):
+        """ Download audio file """
         storage = Storage.loaded()
         api = storage.api
 
@@ -267,12 +286,14 @@ class Audio:
         api.download_audio_idle(self.chat_id, self.message_id, priority=1, on_success=on_success, on_error=on_fail)
 
     def get_path(self):
+        """ Get file path if exists """
         if not self.is_file_exists():
             self.local_path = None # noqa
             return None
         return self.local_path
 
     def save(self, data):
+        """ Save audio data to storage """
         res = Storage.loaded().update('audio', data, {"id": self.id}, limit=1)
         if res:
             for k in data.keys():
@@ -280,14 +301,17 @@ class Audio:
         return res
 
     def get_link(self):
-       return Storage.loaded().api.get_message_link(self.chat_id, self.message_id)
+        """ Get message link from Telegram """
+        return Storage.loaded().api.get_message_link(self.chat_id, self.message_id)
 
     def get_file_ext(self):
+        """ Get file extension from mime type or filename """
         if self.mime_type in mime_types.keys():
             return mime_types[self.mime_type]
         return os.path.splitext(self.file_name)[1][1:]
 
     def update_entry(self, entry, db=None, commit=True, state=True):
+        """ Update Rhythmbox entry with audio data """
         if db is None:
             db = entry.get_entry_type().db
         db.entry_set(entry, RB.RhythmDBPropType.TRACK_NUMBER, self.track_number)
@@ -309,7 +333,10 @@ class Audio:
 
 
 class Migration:
+    """ Handles migrations """
+
     def __init__(self, db, migrations: Dict[str, str]):
+        """ Initialize with db and migration scripts """
         self.db = db
         self.migrations: Dict[int, str] = {}
 
@@ -317,9 +344,11 @@ class Migration:
             self.add_migration(version, sql)
 
     def add_migration(self, version: str, sql: str):
+        """ Add migration script for version """
         self.migrations[version_to_number(version)] = sql
 
     def _get_current_version(self) -> int:
+        """ Get current database version """
         cursor = self.db.cursor()
         cursor.execute("PRAGMA table_info(migrations);")
         if not cursor.fetchall():
@@ -333,11 +362,12 @@ class Migration:
         return int(cursor.fetchone()[0])
 
     def apply(self):
+        """ Apply pending migrations """
         cursor = self.db.cursor()
         current_version = self._get_current_version()
 
         for version, migration in sorted(self.migrations.items(), key=lambda item: item[0]):
-            if version > current_version or True:
+            if version > current_version:
                 print(f"Running migration for version {version}")
                 try:
                     if isinstance(migration, str):  # SQL query
@@ -365,12 +395,14 @@ class Migration:
                     raise
 
 class Storage:
+    """ Manages database storage and operations """
     _instance = None
 
     def __str__(self) -> str:
         return f'Storage <{self.api.hash}>'
 
     def __init__(self, api, files_dir):
+        """ Initialize storage """
         self.api = api
         self.files_dir = files_dir
         self.db_file = os.path.join(self.files_dir, 'data.sqlite')
@@ -390,9 +422,11 @@ class Storage:
 
     @staticmethod
     def loaded():
+        """ Get loaded storage instance """
         return Storage._instance
 
     def select(self, table, where, limit=1):
+        """ Select rows from table """
         set_where = []
         set_values = []
         for k in where.keys():
@@ -408,6 +442,7 @@ class Storage:
         return cursor.fetchone()
 
     def update(self, table, data, where, limit=0):
+        """ Update rows in table """
         set_keys, set_values = self._prepare(data)
         set_where = []
         for k in where.keys():
@@ -423,6 +458,7 @@ class Storage:
         return result
 
     def insert(self, table, data):
+        """ Insert row into table """
         set_keys = []
         set_place = []
         set_values = []
@@ -438,7 +474,8 @@ class Storage:
         self.db.commit()
         return result
 
-    def _prepare(self, data): # noqa
+    def _prepare(self, data):
+        """ Prepare data for SQL operations """
         if not data:
             return None
         set_keys = []
@@ -450,11 +487,13 @@ class Storage:
         return set_keys, set_values
 
     def get_entry_audio(self, entry):
+        """ Get Audio instance from Rhythmbox entry """
         uri = entry.get_string(RB.RhythmDBPropType.LOCATION)
         chat_id, message_id = get_location_data(uri)
         return self.get_audio(chat_id, message_id, True)
 
     def get_audio(self, chat_id, message_id, convert=True):
+        """ Get audio by chat and message ID """
         audio = self.db.execute(
             "SELECT * FROM `audio` WHERE chat_id = '%s' and message_id = '%s' LIMIT 1" % (chat_id, message_id))
         result = audio.fetchone()
@@ -463,6 +502,7 @@ class Storage:
         return result
 
     def load_entries(self, chat_id, each, visibility=VISIBILITY_ALL):
+        """ Load entries for chat with visibility filter """
         sql = 'SELECT * FROM `audio` WHERE chat_id = ?' # noqa
         data = (chat_id,)
         if visibility == VISIBILITY_VISIBLE:
@@ -478,6 +518,7 @@ class Storage:
         cursor.close()
 
     def each(self, callback, table, where, order=None):
+        """ Iterate through table rows """
         set_where = []
         set_values = []
         for k in where.keys():
@@ -494,6 +535,7 @@ class Storage:
         cursor.close()
 
     def add_audio(self, data, convert=True):
+        """ Add new audio to storage """
         content = data.get('content', {})
         audio = content.get('audio')
 
