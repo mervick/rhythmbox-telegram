@@ -21,20 +21,30 @@ from gi.repository import Gtk, GLib
 from prefs_base import PrefsPageBase, set_combo_text_column
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 from account import KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY, KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
-from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL
+from account import VAL_AV_VISIBLE, VAL_AV_HIDDEN, VAL_AV_ALL, VAL_AV_DUAL, AUDIO_FORMAT_ALL, KEY_DISPLAY_AUDIO_FORMATS
 from storage import Audio
 from common import get_first_artist
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
 
-page_groups = [
+page_group_variants = [
     [_('Telegram'), 'telegram'],
     [_('Library'), 'library'],
     [_('Shared'), 'shared'],
     [_('Stores'), 'stores'],
     [_('Devices'), 'devices'],
     [_('Playlists'), 'playlists'],
+]
+
+display_format_variants = [
+    [_('All'), AUDIO_FORMAT_ALL],
+    ['mp3', 'mp3'],
+    ['flac', 'flac'],
+    ['ogg', 'ogg'],
+    ['aac', 'aac'],
+    ['m4a', 'm4a'],
+    ['opus', 'opus'],
 ]
 
 audio_visibility_variants = [
@@ -70,6 +80,9 @@ class PrefsViewPage(PrefsPageBase):
         self.format_check = self.ui.get_object('format_check')
         self.in_library_check = self.ui.get_object('in_library_check')
 
+        self.display_formats_flowbox = self.ui.get_object('display_formats_flow_box')
+        self.setup_format_selection()
+
         self._init_check(self.top_picks_check, KEY_TOP_PICKS_COLUMN)
         self._init_check(self.rating_check, KEY_RATING_COLUMN)
         self._init_check(self.date_added_check, KEY_DATE_ADDED_COLUMN)
@@ -77,13 +90,85 @@ class PrefsViewPage(PrefsPageBase):
         self._init_check(self.format_check, KEY_AUDIO_FORMAT_COLUMN)
         self._init_check(self.in_library_check, KEY_IN_LIBRARY_COLUMN)
 
-        self._init_combo(self.page_group_combo, page_groups, KEY_PAGE_GROUP)
+        self._init_combo(self.page_group_combo, page_group_variants, KEY_PAGE_GROUP)
         self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
 
         GLib.timeout_add(600, self._update_box)
 
     def _update_box(self):
         self.restart_warning_box.set_visible(self.plugin.require_restart_plugin)
+
+    def load_selected_formats(self):
+        formats_variant = self.settings.get_value(KEY_DISPLAY_AUDIO_FORMATS)
+        formats_list = list(formats_variant)
+        self.selected_formats = set(formats_list)
+        self.changed_formats = False
+
+    def save_selected_formats(self):
+        if self.changed_formats:
+            self.settings.set_value(KEY_DISPLAY_AUDIO_FORMATS,
+                                    GLib.Variant('as', list(self.selected_formats)))
+            self.settings.apply()
+            self.changed_formats = False
+            self.plugin.require_restart_plugin = True
+            self.restart_warning_box.set_visible(True)
+
+    def setup_format_selection(self):
+        self.load_selected_formats()
+        flowbox = self.display_formats_flowbox
+        flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
+
+        for name, fmt_id in display_format_variants:
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+            box.set_margin_start(5)
+            box.set_margin_end(5)
+
+            checkbox = Gtk.CheckButton()
+            checkbox.set_active(False)
+            checkbox.set_property("label", name)
+            checkbox.connect("toggled", self.on_format_toggled, fmt_id)
+            box.pack_start(checkbox, False, False, 0)
+            flowbox.add(box)
+
+        flowbox.show_all()
+        self.update_all_checkboxes()
+
+    def on_format_toggled(self, checkbox, fmt_id):
+        self.changed_formats = True
+        if checkbox.get_active():
+            if fmt_id == AUDIO_FORMAT_ALL:
+                self.selected_formats = {AUDIO_FORMAT_ALL}
+                self.update_all_checkboxes()
+            else:
+                self.selected_formats.add(fmt_id)
+                if AUDIO_FORMAT_ALL in self.selected_formats:
+                    self.selected_formats.remove(AUDIO_FORMAT_ALL)
+                self.update_all_checkboxes()
+        else:
+            if fmt_id in self.selected_formats:
+                self.selected_formats.remove(fmt_id)
+            if not self.selected_formats:
+                self.selected_formats = {AUDIO_FORMAT_ALL}
+            self.update_all_checkboxes()
+
+    def update_all_checkboxes(self):
+        flowbox = self.display_formats_flowbox
+        for child in flowbox.get_children():
+            box = child.get_children()[0]
+            checkbox = box.get_children()[0]
+
+            fmt_id = None
+            for name, id_ in display_format_variants:
+                if name == checkbox.get_property("label"):
+                    fmt_id = id_
+                    break
+
+            if fmt_id:
+                checkbox.handler_block_by_func(self.on_format_toggled)
+                checkbox.set_active(fmt_id in self.selected_formats)
+                checkbox.handler_unblock_by_func(self.on_format_toggled)
+
+        self.save_selected_formats()
 
     def _init_check(self, checkbox, name):
         value = self.settings[name]

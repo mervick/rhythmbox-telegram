@@ -122,6 +122,12 @@
       <description>Choose which audio files to display: only visible, previously hidden, or all audio files.</description>
     </key>
 
+    <key name="display-audio-formats" type="as">
+      <default>['any']</default>
+      <summary>Visible audio formats</summary>
+      <description>Audio formats to show in the application interface.</description>
+    </key>
+
     <key name="top-picks-column" type="b">
       <default>true</default>
       <summary>A smart feature that predicts which tracks you might like based on your library</summary>

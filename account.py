@@ -34,6 +34,7 @@ KEY_FOLDER_HIERARCHY = "folder-hierarchy"
 KEY_FILENAME_TEMPLATE = "filename-template"
 KEY_PAGE_GROUP = "page-group"
 KEY_AUDIO_VISIBILITY = "audio-visibility"
+KEY_DISPLAY_AUDIO_FORMATS = "display-audio-formats"
 
 VAL_AV_VISIBLE = "visible"
 VAL_AV_HIDDEN = "hidden"
