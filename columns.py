@@ -247,6 +247,7 @@ class InLibraryColumn:
     """
     _initialized = False
     library_map = set()
+    hidden_map = set()
 
     @staticmethod
     def init_once(plugin):
@@ -270,12 +271,26 @@ class InLibraryColumn:
             InLibraryColumn.library_map.add(InLibraryColumn.entry_to_data(entry))
             iter = model.iter_next(iter)
 
+        def callback(row):
+            audio = Audio(row)
+            artist = InLibraryColumn.normalize(get_first_artist(audio.artist))
+            title = InLibraryColumn.normalize(audio.title)
+            item = (artist, title)
+
+            if item not in InLibraryColumn.library_map:
+                InLibraryColumn.hidden_map.add(item)
+
+        plugin.storage.each(callback, 'audio', {'is_moved': 0, 'is_hidden': 1})
+
     def __init__(self, source):
         """
         Creates and configures a column in the entry view to display visual markers
         indicating whether entries are in the library.
         """
         self.shell = source.plugin.shell
+
+        self.icon_in_library = Gio.ThemedIcon.new('audio-x-generic-symbolic')
+        self.icon_hidden = Gio.ThemedIcon.new('tg-state-visibility-off-symbolic')
 
         column = Gtk.TreeViewColumn()
         renderer = Gtk.CellRendererPixbuf()
@@ -314,7 +329,9 @@ class InLibraryColumn:
         gicon = None
         entry = model.get_value(iter, 0)
         if InLibraryColumn.entry_to_data(entry) in InLibraryColumn.library_map:
-            gicon = Gio.ThemedIcon.new('audio-x-generic-symbolic')
+            gicon = self.icon_in_library
+        elif InLibraryColumn.entry_to_data(entry) in InLibraryColumn.hidden_map:
+            gicon = self.icon_hidden
         cell.props.gicon = gicon
 
     @staticmethod
