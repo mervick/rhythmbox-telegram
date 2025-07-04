@@ -23,7 +23,7 @@ from columns import StateColumn, SizeColumn, FormatColumn, TopPicksColumn, InLib
 from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
-from account import KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
+from account import KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN, KEY_DISPLAY_AUDIO_FORMATS, AUDIO_FORMAT_ALL
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -284,6 +284,7 @@ class TelegramSource(RB.BrowserSource):
         self.loaded_entries = []
         self.custom_model = {}
         self.state_column = None
+        self.display_formats = ()
 
     def setup(self, plugin, chat_id, chat_title, visibility):
         """ Set up the TelegramSource with the given parameters """
@@ -300,6 +301,7 @@ class TelegramSource(RB.BrowserSource):
         self.loader = None
         self.init_columns()
         self.activate()
+        self.display_formats = list(self.plugin.settings[KEY_DISPLAY_AUDIO_FORMATS])
         # add shared menu (add to playlist)
         self.set_property("playlist-menu", self.shell.props.application.get_shared_menu("playlist-page-menu"))
 
@@ -435,7 +437,7 @@ class TelegramSource(RB.BrowserSource):
 
     def add_entry(self, audio):
         """ Adds a single audio entry to the source if it hasn't been loaded already """
-        if audio.id not in self.loaded_entries:
+        if audio.id not in self.loaded_entries and any(k in self.display_formats for k in (AUDIO_FORMAT_ALL, audio.get_file_ext())):
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, audio.chat_id, audio.message_id, audio.id)
             self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
