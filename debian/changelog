@@ -1,3 +1,24 @@
+rhythmbox-telegram-plugin (1.3.0) unstable; urgency=medium
+
+  * Add Telegram search functionality to rhythmbox-telegram
+  * Add idle_add_once()
+  * Add audio-stats-changed signal
+  * Add set_entry_metadata(), call audio-stats-changed signal
+  * Fix metadata sync (play count, rating) between TelegramEntry, TelegramSearchEntry, and song entries
+  * Implement InLibraryColumn class to show icons for entries present in library
+  * Add entry_added_to_library signal, init VisualMarker
+  * Disable deleting Telegram search entries
+  * Make in-library column configurable via settings, update prefs UI, update schema
+  * Add preload file size and format restrictions, update UI + schema
+  * Implement preload filtering by audio size and format
+  * Add hidden icon for similar hidden audio
+  * Add settings for filtering visible audio formats
+  * Add audio file filtering by selected formats
+  * Minor fixes
+  * Add doc blocks
+
+ -- izman <izmanw@gmail.com>  Mon, 07 Jul 2025 15:55:58 +0300
+
 rhythmbox-telegram-plugin (1.2.0) stable; urgency=medium
 
   * Add AltHeaderRefreshBtn: refresh button on alternative-toolbar's header bar

@@ -17,7 +17,7 @@
 from common import version_to_number
 
 
-INIT_VERSION = version_to_number('1.1.0')
+INIT_VERSION = version_to_number('1.3.0')
 
 INIT_SCHEMA = f'''
 CREATE TABLE playlist (
