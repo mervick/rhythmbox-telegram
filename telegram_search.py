@@ -240,7 +240,7 @@ class TelegramSearchSource(TelegramSource):
         and stopping the loader.
         """
         self.search_bar.deactivate()
-        self.bar.deactivate(self)
+        self.bar.deactivate()
         self.state_column.deactivate()
         self.plugin.remove_plugin_menu()
 

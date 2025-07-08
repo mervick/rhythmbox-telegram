@@ -477,6 +477,7 @@ class PlaylistLoader:
         if cmd == API_ALL_MESSAGES_LOADED or offset_msg_id in (0, self.last_msg_id, LAST_MESSAGE_ID):
             self.source.has_reached_end = True
             self.timer.add(INTERVAL_LONG, self.start)
+            idle_add_once(self.source.emit, 'playlist-reached-end')
             return
 
         if self.playlist.current(SEGMENT_START) == 0:
@@ -495,6 +496,7 @@ class PlaylistLoader:
         if (signal == SIGNAL_REACHED_NEXT and self.source.has_reached_end) or offset_msg_id == LAST_MESSAGE_ID:
             self.source.has_reached_end = True
             self.timer.add(INTERVAL_LONG, self.start)
+            idle_add_once(self.source.emit, 'playlist-reached-end')
             return
 
         if self.page <= MAX_PAGES_SHORT_INTERVAL:
@@ -502,6 +504,7 @@ class PlaylistLoader:
 
         self.last_msg_id = offset_msg_id
         self.timer.add(INTERVAL_MEDIUM if self.page > MAX_PAGES_SHORT_INTERVAL else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
+        idle_add_once(self.source.emit, 'playlist-segment-loading')
 
     def _load(self, blob, limit=50):
         """ Load messages """

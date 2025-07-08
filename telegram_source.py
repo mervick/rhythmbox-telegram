@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import rb
+import math
 from gi.repository import RB
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size, idle_add_once
@@ -25,8 +26,66 @@ from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 from account import KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN, KEY_DISPLAY_AUDIO_FORMATS, AUDIO_FORMAT_ALL
 
-import gettext
-gettext.install('rhythmbox', RB.locale_dir())
+
+class BlinkingIndicator(Gtk.DrawingArea):
+    def __init__(self, color=(0.0, 0.5, 1.0), size=20, radius=5, speed=0.05):
+        super().__init__()
+        self.set_size_request(size, size)
+
+        self.radius = radius
+        self.color = color  # RGB (0-1.0)
+        self.alpha = 0.0
+        self.fade_in = True
+        self.speed = speed
+        self.running = False
+        self.terminated = False
+        self.timeout_id = None
+
+    def start_animation(self):
+        if self.timeout_id is None:
+            self.timeout_id = GLib.timeout_add(20, self.animate)
+
+    def stop_animation(self):
+        if self.timeout_id is not None:
+            GLib.source_remove(self.timeout_id)
+            self.timeout_id = None
+
+    def do_draw(self, cr):
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+
+        width = self.get_allocated_width()
+        height = self.get_allocated_height()
+        cr.set_source_rgba(*self.color, self.alpha)
+        cr.arc(width // 2, height // 2, self.radius, 0, 2 * math.pi)
+        cr.fill()
+
+    def start(self):
+        self.terminated = False
+        self.start_animation()
+
+    def stop(self):
+        self.terminated = True
+
+    def animate(self):
+        ret = True
+        if self.fade_in:
+            self.alpha += self.speed
+            if self.alpha >= 1.0:
+                self.fade_in = False
+        else:
+            self.alpha -= self.speed
+            if self.alpha <= 0.0:
+                self.fade_in = True
+                if self.terminated:
+                    self.stop_animation()
+                    ret = False
+        self.queue_draw()
+        return ret
+
+    def do_dispose(self):
+        self.stop_animation()
+        Gtk.DrawingArea.do_dispose(self)
 
 
 class DownloadBar(metaclass=SingletonMeta):
@@ -41,7 +100,7 @@ class DownloadBar(metaclass=SingletonMeta):
         self.info = {}
         plugin.connect('update_download_info', self.update_download_info)
 
-    def deactivate(self, source):
+    def deactivate(self):
         """ Deactivate the download bar """
         self.active = False
 
@@ -97,6 +156,9 @@ class RefreshBtn:
 
     def __init__(self, source):
         self.source = source
+        self.button = None
+        self.spinner = None
+        self.label = None
 
     def activate(self):
         """ Activate the refresh button and set up the UI """
@@ -116,34 +178,29 @@ class RefreshBtn:
         if toolbar:
             toolbar.set_column_homogeneous(False)
 
-            button = Gtk.Button(label=_("Refresh"))
-            button.get_style_context().add_class("flat")
-            button.props.visible = True
+            self.button = Gtk.Button(label=_("Refresh"))
+            self.button.get_style_context().add_class("flat")
+            self.button.props.visible = True
 
             box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             box.props.visible = True
             toolbar.attach(box, 3, 0, 1, 1)
 
-            box.pack_start(button, False, False, 0)
+            box.pack_start(self.button, False, False, 0)
 
-            spinner = Gtk.Spinner()
-            spinner.props.visible = False
-            # spinner.start()
-            label = Gtk.Label(label="  %s" % _("Loading..."))
-            label.props.visible = False
+            self.spinner = Gtk.Spinner()
+            self.spinner.props.visible = False
+            self.label = Gtk.Label(label="  %s" % _("Loading..."))
+            self.label.props.visible = False
 
-            box.pack_start(spinner, False, False, 0)
-            box.pack_start(label, False, False, 0)
-
-            self.button = button
-            self.spinner = spinner
-            self.label = label
+            box.pack_start(self.spinner, False, False, 0)
+            box.pack_start(self.label, False, False, 0)
 
             self.source.connect("playlist-fetch-started", self.fetch_started_cb)
             self.source.connect("playlist-fetch-end", self.fetch_end_cb)
 
             self.activated = True
-            button.connect("clicked", self.clicked_cb)
+            self.button.connect("clicked", self.clicked_cb)
 
     def clicked_cb(self, *_):
         """ Handle the refresh button click event """
@@ -165,9 +222,9 @@ class RefreshBtn:
         self.label.props.visible = False
 
 
-class AltHeaderRefreshBtn:
+class AltToolbar:
     """
-    AltHeaderRefreshBtn class is responsible for managing the refresh button in the header UI (alternative toolbar)
+    AltToolbar class is responsible for managing custom UI in the header UI (alternative toolbar)
     """
     activated = False
 
@@ -176,6 +233,7 @@ class AltHeaderRefreshBtn:
         self.box = None
         self.spinner = None
         self.button = None
+        self.indicator = None
         self.signals = []
 
     def _set_btn_icon(self):
@@ -210,9 +268,17 @@ class AltHeaderRefreshBtn:
             self.box.reorder_child(self.button, 0)
             self.box.show_all()
 
+            self.indicator = BlinkingIndicator(color=(0.2, 0.8, 0.2), radius=3, speed=0.02)
+            self.indicator.set_margin_end(8)
+            self.box.pack_start(self.indicator, False, False, 0)
+            self.box.reorder_child(self.indicator, 0)
+            self.box.show_all()
+
             self.signals = [
                 self.source.connect("playlist-fetch-started", self.fetch_started_cb),
-                self.source.connect("playlist-fetch-end", self.fetch_end_cb)
+                self.source.connect("playlist-fetch-end", self.fetch_end_cb),
+                self.source.connect("playlist-reached-end", self.reached_end_cb),
+                self.source.connect("playlist-segment-loading", self.segment_loading_cb),
             ]
             self.activated = True
 
@@ -222,7 +288,9 @@ class AltHeaderRefreshBtn:
             for signal in self.signals:
                 self.source.disconnect(signal)
             self.box.remove(self.button)
+            self.box.remove(self.indicator)
             self.button = None
+            self.indicator = None
             self.activated = False
 
     def clicked_cb(self, *_):
@@ -238,6 +306,16 @@ class AltHeaderRefreshBtn:
             self.spinner = Gtk.Spinner()
             self.button.set_image(self.spinner)
             self.spinner.start()
+
+    def reached_end_cb(self, *_):
+        """ Handle the reach end event """
+        if self.activated:
+            self.indicator.stop()
+
+    def segment_loading_cb(self, *_):
+        """ Handle the segment loading event """
+        if self.activated:
+            self.indicator.start()
 
     def fetch_end_cb(self, *_):
         """ Handle the playlist fetch end event """
@@ -256,6 +334,8 @@ class TelegramSource(RB.BrowserSource):
     __gsignals__ = {
         'playlist_fetch_started': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'playlist_fetch_end': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'playlist_reached_end': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'playlist_segment_loading': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __str__(self) -> str:
@@ -276,7 +356,7 @@ class TelegramSource(RB.BrowserSource):
         self.chat_title = None
         self.visibility = None
         self.refresh_btn = RefreshBtn(self)
-        self.alt_refresh_btn = AltHeaderRefreshBtn(self)
+        self.alt_toolbar = AltToolbar(self)
         self.bar = None
         self.bar_ui = None
         self.has_reached_end = False
@@ -398,8 +478,8 @@ class TelegramSource(RB.BrowserSource):
         Handles actions when the source is deselected, such as deactivating the download bar
         and stopping the loader.
         """
-        self.bar.deactivate(self)
-        self.alt_refresh_btn.deactivate()
+        self.bar.deactivate()
+        self.alt_toolbar.deactivate()
         self.state_column.deactivate()
         if self.loader is not None:
             self.loader.stop()
@@ -424,7 +504,7 @@ class TelegramSource(RB.BrowserSource):
         self.plugin.add_plugin_menu()
 
         if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
-            self.alt_refresh_btn.activate()
+            self.alt_toolbar.activate()
             if self.loader is not None:
                 self.loader.stop()
             self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)
@@ -488,7 +568,6 @@ class TelegramSource(RB.BrowserSource):
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, entry_type, uri)
                 audio.update_entry(entry, self.db, commit=False, state=False)
-                # self.db.entry_set(entry, RB.RhythmDBPropType.COMMENT, f'Downloaded from {self.chat_title}')
                 self.db.commit()
             song_entries.append(entry)
         return song_entries
