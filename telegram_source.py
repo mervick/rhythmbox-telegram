@@ -232,13 +232,20 @@ class AltToolbar:
         self.source = source
         self.box = None
         self.spinner = None
-        self.button = None
+        self.refresh_button = None
+        self.visibility_button = None
         self.indicator = None
         self.signals = []
 
-    def _set_btn_icon(self):
-        download_icon = Gtk.Image.new_from_icon_name("emblem-synchronizing-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
-        self.button.set_image(download_icon)
+    def _set_refresh_button_icon(self):
+        icon = Gtk.Image.new_from_icon_name("emblem-synchronizing-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+        self.refresh_button.set_image(icon)
+
+    def _set_visibility_button_icon(self):
+        icon_name = 'tg-state-visibility-off-symbolic' if self.source.visibility == VISIBILITY_VISIBLE \
+            else 'tg-state-visibility-on-symbolic'
+        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)
+        self.visibility_button.set_image(icon)
 
     def _find_alt_header_box(self):
         header_bar = self.source.plugin.shell.props.window.get_titlebar()
@@ -257,29 +264,40 @@ class AltToolbar:
         if self.activated:
             return
 
+        if not str(self.source).startswith('TelegramSource'):
+            return
+
         self.box = self._find_alt_header_box()
         if self.box:
-            self.button = Gtk.Button.new()
-            self.button.connect("clicked", self.clicked_cb)
-            self.button.set_sensitive(True)
-            self.button.set_margin_end(6)
-            self._set_btn_icon()
-            self.box.pack_start(self.button, False, False, 0)
-            self.box.reorder_child(self.button, 0)
-            self.box.show_all()
+            self.visibility_button = Gtk.Button.new()
+            self.visibility_button.connect("clicked", self.visibility_button_clicked_cb)
+            self.visibility_button.set_sensitive(True)
+            self.visibility_button.set_margin_end(6)
+            self._set_visibility_button_icon()
+            self.box.pack_start(self.visibility_button, False, False, 0)
+            self.box.reorder_child(self.visibility_button, 0)
 
-            self.indicator = BlinkingIndicator(color=(0.2, 0.8, 0.2), radius=3, speed=0.02)
-            self.indicator.set_margin_end(8)
-            self.box.pack_start(self.indicator, False, False, 0)
-            self.box.reorder_child(self.indicator, 0)
-            self.box.show_all()
+            if self.source.visibility == VISIBILITY_VISIBLE:
+                self.refresh_button = Gtk.Button.new()
+                self.refresh_button.connect("clicked", self.refresh_button_clicked_cb)
+                self.refresh_button.set_sensitive(True)
+                self.refresh_button.set_margin_end(6)
+                self._set_refresh_button_icon()
+                self.box.pack_start(self.refresh_button, False, False, 0)
+                self.box.reorder_child(self.refresh_button, 0)
 
-            self.signals = [
-                self.source.connect("playlist-fetch-started", self.fetch_started_cb),
-                self.source.connect("playlist-fetch-end", self.fetch_end_cb),
-                self.source.connect("playlist-reached-end", self.reached_end_cb),
-                self.source.connect("playlist-segment-loading", self.segment_loading_cb),
-            ]
+                self.indicator = BlinkingIndicator(color=(0.2, 0.8, 0.2), radius=3, speed=0.02)
+                self.indicator.set_margin_end(8)
+                self.box.pack_start(self.indicator, False, False, 0)
+                self.box.reorder_child(self.indicator, 0)
+
+                self.signals = [
+                    self.source.connect("playlist-fetch-started", self.fetch_started_cb),
+                    self.source.connect("playlist-fetch-end", self.fetch_end_cb),
+                    self.source.connect("playlist-reached-end", self.reached_end_cb),
+                    self.source.connect("playlist-segment-loading", self.segment_loading_cb),
+                ]
+            self.box.show_all()
             self.activated = True
 
     def deactivate(self):
@@ -287,13 +305,22 @@ class AltToolbar:
         if self.activated:
             for signal in self.signals:
                 self.source.disconnect(signal)
-            self.box.remove(self.button)
-            self.box.remove(self.indicator)
-            self.button = None
+            if self.refresh_button:
+                self.box.remove(self.refresh_button)
+            if self.indicator:
+                self.box.remove(self.indicator)
+            if self.visibility_button:
+                self.box.remove(self.visibility_button)
+            self.signals = []
+            self.visibility_button = None
+            self.refresh_button = None
             self.indicator = None
             self.activated = False
 
-    def clicked_cb(self, *_):
+    def visibility_button_clicked_cb(self, *_):
+        self.source.plugin.playlist_show_opposite(self.source.visibility)
+
+    def refresh_button_clicked_cb(self, *_):
         """ Handle the refresh button click event """
         if self.source.loader:
             self.source.loader.fetch()
@@ -301,10 +328,10 @@ class AltToolbar:
     def fetch_started_cb(self, *_):
         """ Handle the playlist fetch started event """
         if self.activated:
-            self.button.set_sensitive(False)
-            self.button.set_image(None)
+            self.refresh_button.set_sensitive(False)
+            self.refresh_button.set_image(None)
             self.spinner = Gtk.Spinner()
-            self.button.set_image(self.spinner)
+            self.refresh_button.set_image(self.spinner)
             self.spinner.start()
 
     def reached_end_cb(self, *_):
@@ -320,8 +347,8 @@ class AltToolbar:
     def fetch_end_cb(self, *_):
         """ Handle the playlist fetch end event """
         if self.activated:
-            self.button.set_sensitive(True)
-            self._set_btn_icon()
+            self.refresh_button.set_sensitive(True)
+            self._set_refresh_button_icon()
             if self.spinner:
                 self.spinner.stop()
                 self.spinner = None
@@ -365,6 +392,7 @@ class TelegramSource(RB.BrowserSource):
         self.custom_model = {}
         self.state_column = None
         self.display_formats = ()
+        self.opposite_source = None
 
     def setup(self, plugin, chat_id, chat_title, visibility):
         """ Set up the TelegramSource with the given parameters """
@@ -502,9 +530,9 @@ class TelegramSource(RB.BrowserSource):
             idle_add_once(self.add_entries)
 
         self.plugin.add_plugin_menu()
+        self.alt_toolbar.activate()
 
         if self.visibility in (VISIBILITY_VISIBLE, VISIBILITY_ALL):
-            self.alt_toolbar.activate()
             if self.loader is not None:
                 self.loader.stop()
             self.loader = PlaylistLoader(self, self.chat_id, self.add_entry)

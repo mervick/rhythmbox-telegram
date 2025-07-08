@@ -23,20 +23,20 @@ from loader import AudioDownloader, AudioTempLoader
 from telegram_search import TelegramSearchEntryType, TelegramSearchSource
 from telegram_source import TelegramSource
 from telegram_client import TelegramApi, TelegramAuthError
-from prefs import TelegramPrefs  # import TelegramPrefs is REQUIRED for showing settings page  # noqa
+from prefs import TelegramPrefs
 from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
-from account import KEY_AUDIO_VISIBILITY, VAL_AV_ALL, VAL_AV_VISIBLE, VAL_AV_DUAL, VAL_AV_HIDDEN
 from telegram_entry import TelegramEntryType
-from common import get_location_data, show_error, to_location
+from common import get_location_data, show_error, to_location, idle_add_once
 from columns import TopPicks, InLibraryColumn
-from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
+from storage import Audio, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 def show_source(source_list):
     for source in source_list:
-        source.show_thyself()
+        if source.visibility is not VISIBILITY_HIDDEN:
+            source.show_thyself()
 
 def hide_source(source_list):
     for source in source_list:
@@ -90,6 +90,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.rhythmdb_settings = None
         self.source = None
         self.toolbar = None
+        self.toolbar_basic = None
         self.display_pages = {}
         self.search_source = None
         self.sources = {}
@@ -155,6 +156,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.signals = {}
         self._context_menu = []
         self.init_actions()
+        self.init_toolbars()
         self.add_plugin_menu(True)
         self.connect_api()
         self.top_picks = TopPicks(self.shell)
@@ -226,10 +228,36 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         app.add_action(action)
         self._add_plugin_menu_item(action, _("Telegram Settings"), True)
 
+        action = Gio.SimpleAction(name="tg-playlist-show-visible")
+        action.connect("activate", self.playlist_show_visible_action_cb)
+        app.add_action(action)
+
+        action = Gio.SimpleAction(name="tg-playlist-show-hidden")
+        action.connect("activate", self.playlist_show_hidden_action_cb)
+        app.add_action(action)
+
+    def init_toolbars(self):
+        """ Initializes toolbars """
+        builder = Gtk.Builder()
+        builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
+        self.toolbar_basic = builder.get_object("telegram-toolbar")
+
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
         self.toolbar = builder.get_object("telegram-toolbar")
-        app.link_shared_menus(self.toolbar)  # noqa
+
+        builder = Gtk.Builder()
+        builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar-visibility.ui"))
+        view_menu = builder.get_object("telegram-visibility-toolbar")
+
+        label = view_menu.get_item_attribute_value(0, "label", GLib.VariantType.new("s"))
+        label = label.get_string() if label is not None else _("Visibility")
+        submenu = view_menu.get_item_link(0, "submenu")
+        submenu_item = Gio.MenuItem.new_submenu(label, submenu)
+        self.toolbar.append_item(submenu_item)
+
+        app = Gio.Application.get_default()
+        app.link_shared_menus(self.toolbar_basic)
 
     def connect_api(self):
         """
@@ -367,7 +395,8 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
     def add_search_page(self, group):
         entry_type = TelegramSearchEntryType(self)
         source = GObject.new(TelegramSearchSource, shell=self.shell, entry_type=entry_type, icon=self.display_icon,
-                             plugin=self, settings=self.settings.get_child("source"), name='Search', toolbar_menu=self.toolbar)
+                             plugin=self, settings=self.settings.get_child("source"), name=_('Search'),
+                             toolbar_menu=self.toolbar_basic)
         source.setup(self)
         entry_type.setup(source)
         self.shell.register_entry_type_for_source(source, entry_type)
@@ -377,28 +406,22 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
 
     def add_page(self, chat_id, name, group):
         """
-        Adds a new display page for a Telegram chat.
+        Adds a new display page for a Telegram playlist.
         The page is added to the specified group and is displayed in the Rhythmbox UI.
         """
-        av = self.settings[KEY_AUDIO_VISIBILITY]
         sources = []
 
-        if av == VAL_AV_ALL:
-            source = self.register_source(chat_id, name, VISIBILITY_ALL)
-            self.shell.append_display_page(source, group)
-            self.sources[chat_id] = (source,)
-            return
+        visible_source = self.register_source(chat_id, name, VISIBILITY_VISIBLE)
+        self.shell.append_display_page(visible_source, group)
+        sources.append(visible_source)
 
-        if av in (VAL_AV_VISIBLE, VAL_AV_DUAL):
-            source = self.register_source(chat_id, name, VISIBILITY_VISIBLE)
-            self.shell.append_display_page(source, group)
-            sources.append(source)
+        hidden_source = self.register_source(chat_id, name, VISIBILITY_HIDDEN)
+        self.shell.append_display_page(hidden_source, group)
+        hidden_source.hide_thyself()
+        sources.append(hidden_source)
 
-        if av in (VAL_AV_HIDDEN, VAL_AV_DUAL):
-            hidden_name = "%s [%s]" % (name, _('Hidden'))
-            source = self.register_source(chat_id, hidden_name, VISIBILITY_HIDDEN)
-            self.shell.append_display_page(source, group)
-            sources.append(source)
+        visible_source.opposite_source = hidden_source
+        hidden_source.opposite_source = visible_source
 
         self.sources[chat_id] = tuple(sources)
 
@@ -427,8 +450,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         Callback for the "View in File Manager" action.
         Opens the selected entry in the file manager.
         """
-        shell = self.object
-        shell.props.selected_page.file_manager_action()
+        self.shell.props.selected_page.file_manager_action()
 
     def browse_action_cb(self, *_):
         """
@@ -443,16 +465,36 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         Callback for the "Download to Library" action.
         Downloads the selected entry to the local library.
         """
-        shell = self.object
-        shell.props.selected_page.download_action()
+        self.shell.props.selected_page.download_action()
 
     def hide_action_cb(self, *_):
         """
         Callback for the "Hide selected" action.
         Hides the selected entries from the Telegram source.
         """
-        shell = self.object
-        shell.props.selected_page.hide_action()
+        self.shell.props.selected_page.hide_action()
+
+    def playlist_show_opposite(self, visibility):
+        """ Used in callbacks for showing the visible or hidden playlists """
+        page: TelegramSource = self.shell.props.selected_page
+        if isinstance(page, TelegramSource) and not isinstance(page, TelegramSearchSource):
+            if page.visibility == visibility:
+                playing_entry = self.shell.props.shell_player.get_playing_entry()
+                if playing_entry:
+                    entry_type = playing_entry.get_entry_type()
+                    if str(entry_type).startswith('TelegramEntryType') and entry_type.source == page:
+                        idle_add_once(self.shell.props.shell_player.stop)
+                page.opposite_source.show_thyself()
+                self.shell.activate_source(page.opposite_source, 0)
+                page.hide_thyself()
+
+    def playlist_show_visible_action_cb(self, *_):
+        """ Callback for showing the visible playlist """
+        self.playlist_show_opposite(VISIBILITY_HIDDEN)
+
+    def playlist_show_hidden_action_cb(self, *_):
+        """ Callback for showing the hidden playlist """
+        self.playlist_show_opposite(VISIBILITY_VISIBLE)
 
     def unhide_action_cb(self, *_):
         """
