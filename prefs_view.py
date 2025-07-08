@@ -67,7 +67,7 @@ class PrefsViewPage(PrefsPageBase):
         self._combos_require_restart = [KEY_PAGE_GROUP, KEY_AUDIO_VISIBILITY]
 
         self.page_group_combo = self.ui.get_object('page_group_combo')
-        self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
+        # self.audio_visibility_combo = self.ui.get_object('audio_visibility_combo')
         self.sync_hidden_btn = self.ui.get_object('sync_hidden_btn')
         self.sync_hidden_btn.connect('clicked', self._sync_hidden_chats_cb)
 
@@ -91,7 +91,7 @@ class PrefsViewPage(PrefsPageBase):
         self._init_check(self.in_library_check, KEY_IN_LIBRARY_COLUMN)
 
         self._init_combo(self.page_group_combo, page_group_variants, KEY_PAGE_GROUP)
-        self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
+        # self._init_combo(self.audio_visibility_combo, audio_visibility_variants, KEY_AUDIO_VISIBILITY)
 
         GLib.timeout_add(600, self._update_box)
 

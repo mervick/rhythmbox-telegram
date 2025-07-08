@@ -106,32 +106,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="top-attach">0</property>
                       </packing>
                     </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="width-request">160</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="hexpand">True</property>
-                        <property name="label" translatable="yes">Audio visibility:</property>
-                        <property name="use-underline">True</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">0</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkComboBox" id="audio_visibility_combo">
-                        <property name="width-request">300</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                      </object>
-                      <packing>
-                        <property name="left-attach">1</property>
-                        <property name="top-attach">1</property>
-                      </packing>
-                    </child>
+<!--                    <child>-->
+<!--                      <object class="GtkLabel">-->
+<!--                        <property name="width-request">160</property>-->
+<!--                        <property name="visible">True</property>-->
+<!--                        <property name="can-focus">False</property>-->
+<!--                        <property name="hexpand">True</property>-->
+<!--                        <property name="label" translatable="yes">Audio visibility:</property>-->
+<!--                        <property name="use-underline">True</property>-->
+<!--                        <property name="xalign">0</property>-->
+<!--                      </object>-->
+<!--                      <packing>-->
+<!--                        <property name="left-attach">0</property>-->
+<!--                        <property name="top-attach">1</property>-->
+<!--                      </packing>-->
+<!--                    </child>-->
+<!--                    <child>-->
+<!--                      <object class="GtkComboBox" id="audio_visibility_combo">-->
+<!--                        <property name="width-request">300</property>-->
+<!--                        <property name="visible">True</property>-->
+<!--                        <property name="can-focus">True</property>-->
+<!--                      </object>-->
+<!--                      <packing>-->
+<!--                        <property name="left-attach">1</property>-->
+<!--                        <property name="top-attach">1</property>-->
+<!--                      </packing>-->
+<!--                    </child>-->
                     <child>
                       <object class="GtkLabel">
                         <property name="width-request">160</property>
@@ -144,7 +144,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </object>
                       <packing>
                         <property name="left-attach">0</property>
-                        <property name="top-attach">2</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
@@ -170,7 +170,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </object>
                       <packing>
                         <property name="left-attach">1</property>
-                        <property name="top-attach">2</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
@@ -186,7 +186,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </object>
                       <packing>
                         <property name="left-attach">0</property>
-                        <property name="top-attach">3</property>
+                        <property name="top-attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -202,7 +202,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </object>
                       <packing>
                         <property name="left-attach">1</property>
-                        <property name="top-attach">3</property>
+                        <property name="top-attach">2</property>
                       </packing>
                     </child>
                   </object>
