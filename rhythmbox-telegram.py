@@ -31,7 +31,7 @@ from columns import TopPicks, InLibraryColumn
 from storage import Audio, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
 
 
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 
 def show_source(source_list):
     for source in source_list:

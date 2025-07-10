@@ -1,3 +1,13 @@
+rhythmbox-telegram-plugin (1.4.0) unstable; urgency=medium
+
+  * Add blinking indicator to the alt toolbar when loading
+  * Visibility controls: add submenu to View
+  * Visibility controls: add toggle button to AltToolbar
+  * Remove old separated display pages separated by visibility
+  * Remove audio visibility settings
+
+ -- izman <izmanw@gmail.com>  Thu, 10 Jul 2025 19:57:46 +0300
+
 rhythmbox-telegram-plugin (1.3.0) unstable; urgency=medium
 
   * Add Telegram search functionality to rhythmbox-telegram
