@@ -106,6 +106,14 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
             return
         GLib.timeout_add(delay, self._load)
 
+    def _fail(self):
+        entry = self.get_entry(self._idx)
+        audio = self.plugin.storage.get_entry_audio(entry)
+        audio.is_error = True
+        set_entry_state(self.plugin.db, entry, audio.get_state())
+        self.plugin.db.commit()
+        self._next(20)
+
     def _load(self):
         """ Loads the next audio file in the queue. """
         if self._running:
@@ -124,7 +132,7 @@ class AudioTempLoader(AbsAudioLoader, metaclass=SingletonMeta):
                 self._next(20)
             else:
                 self._is_hidden = audio.is_hidden
-                audio.download(success=self._process, fail=self._next)
+                audio.download(success=self._process, fail=self._fail)
 
 
 class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
@@ -169,7 +177,6 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
                     commit = True
         if commit:
             self.plugin.db.commit()
-            set_entry_state(self.plugin.db, entry, Audio.STATE_LOADING)
 
     def cancel(self):
         """ Cancels the current download process and resets the state of entries in the queue. """
@@ -342,6 +349,14 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             return
         GLib.timeout_add(delay, self._load)
 
+    def _fail(self):
+        entry = self.get_entry(self._idx)
+        audio = self.plugin.storage.get_entry_audio(entry)
+        audio.is_error = True
+        set_entry_state(self.plugin.db, entry, audio.get_state())
+        self.plugin.db.commit()
+        self._next(20)
+
     def _load(self):
         """ Loads the next audio file in the queue """
         if self._running:
@@ -364,7 +379,7 @@ class AudioDownloader(AbsAudioLoader, metaclass=SingletonMeta):
             if file_path:
                 self._process(audio)
             else:
-                audio.download(success=self._process, fail=self._next)
+                audio.download(success=self._process, fail=self._fail)
 
 
 MAX_PAGES_SHORT_INTERVAL = 10  # Maximum number of pages to load with a short interval
@@ -421,7 +436,7 @@ class PlaylistLoader:
     """
     api: TelegramApi
     playlist: Playlist
-    timer: PlaylistTimer | None
+    timer: PlaylistTimer
     terminated: bool
     last_msg_id: int
 
