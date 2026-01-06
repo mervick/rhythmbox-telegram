@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import rb
+import rb # type: ignore
 import json
-from gi.repository import RB
+from gi.repository import RB # type: ignore
 from gi.repository import GObject, Gtk, Gio, GLib
-from gi.repository import Peas, PeasGtk # noqa
+from gi.repository import Peas, PeasGtk # type: ignore # noqa
 from loader import AudioDownloader, AudioTempLoader
 from telegram_search import TelegramSearchEntryType, TelegramSearchSource
 from telegram_source import TelegramSource

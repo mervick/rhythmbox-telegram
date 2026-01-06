@@ -16,9 +16,10 @@
 
 import os
 import re
-from rb import rbconfig # noqa
+from rb import rbconfig  # pyright: ignore[reportMissingImports] # noqa
 from gi.repository import Gio
 from common import SingletonMeta, show_error
+from typing import Tuple
 
 # settings keys
 KEY_API_ID = "api-id"
@@ -65,7 +66,7 @@ if rbconfig.libsecret_enabled:
     try:
         import gi
         gi.require_version('Secret', '1')
-        from gi.repository import Secret
+        from gi.repository import Secret  # pyright: ignore[reportAttributeAccessIssue]
     except ImportError:
         pass
 
@@ -81,9 +82,9 @@ class Account(metaclass=SingletonMeta):
 
     def __init__(self, plugin=None):
         """ Initialize instance """
+        self.settings: Gio.Settings
         self.plugin = plugin
         self.activated = False
-        self.settings = None
         self.secret = None
 
     def unlock_keyring(self):
@@ -104,7 +105,7 @@ class Account(metaclass=SingletonMeta):
         self.activated = True
 
         schema_source = Gio.SettingsSchemaSource.get_default()
-        schema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
+        schema: Gio.SettingsSchema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
         self.settings = Gio.Settings.new_full(schema, None, None)
 
         if Secret is None:
@@ -124,37 +125,24 @@ class Account(metaclass=SingletonMeta):
                 return
             self.secret = items[0].get_secret().get().decode("utf-8")
 
-    def get_secure(self, key=None):
+    def get_secure(self) -> Tuple[str, str, str, bool]:
         """
         Retrieve secure credentials from storage.
 
         Returns either from libsecret or fallback plaintext storage based on availability.
         Can return individual values or all credentials as a tuple.
         """
-        def _get_all():
-            if self.secret is None:
-                connected = self.settings[KEY_CONNECTED]
-                return self.settings[KEY_API_ID], self.settings[KEY_API_HASH], self.settings[KEY_PHONE], \
-                    connected is True or connected == 'True'
-            try:
-                (api_id, api_hash, phone, connected) = self.secret.split("\n")
-                if not api_id or not api_hash or not phone:
-                    connected = False
-                return api_id, api_hash, phone, connected is True or connected == 'True'
-            except ValueError:
-                return '', '', '', False
-
-        props = _get_all()
-        if key:
-            keys = {
-                KEY_API_ID: 0,
-                KEY_API_HASH: 1,
-                KEY_PHONE: 2,
-                KEY_CONNECTED: 3,
-            }
-            if key in keys:
-                return props[keys[key]]
-        return props
+        if self.secret is None:
+            connected = self.settings[KEY_CONNECTED]
+            return str(self.settings[KEY_API_ID]), str(self.settings[KEY_API_HASH]), str(self.settings[KEY_PHONE]), \
+                connected is True or connected == 'True'
+        try:
+            (api_id, api_hash, phone, connected) = self.secret.split("\n")
+            if not api_id or not api_hash or not phone:
+                connected = False
+            return api_id, api_hash, phone, connected is True or connected == 'True'
+        except ValueError:
+            return '', '', '', False
 
     def get_library_path(self):
         """
@@ -164,7 +152,7 @@ class Account(metaclass=SingletonMeta):
         and ultimately defaults to ~/Music if no other path is set.
         """
         # from settings
-        if KEY_LIBRARY_PATH in self.settings and self.settings[KEY_LIBRARY_PATH]:
+        if KEY_LIBRARY_PATH in self.settings and self.settings[KEY_LIBRARY_PATH]:  # pyright: ignore[reportOperatorIssue]
             return self.settings[KEY_LIBRARY_PATH]
         # from rhythmbox global settings
         locations = self.plugin.rhythmdb_settings.get_strv('locations')

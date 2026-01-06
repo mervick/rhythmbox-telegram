@@ -17,7 +17,8 @@
 import os
 import re
 import shutil
-from gi.repository import GLib, RB
+from gi.repository import RB # type: ignore
+from gi.repository import GLib
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, idle_add_once
@@ -26,7 +27,7 @@ from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_e
 from conflict_dialog import ConflictDialog
 from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
-from typing import Tuple
+from typing import Tuple, Any
 
 
 class AbsAudioLoader:
@@ -394,7 +395,7 @@ class PlaylistTimer(metaclass=SingletonMeta):
     """
     A singleton class for managing a timer used in playlist loading.
     """
-    _props: Tuple[any, any] | None
+    _props: Tuple[Any, Any] | None
     _timer_id: int | None
 
     def __init__(self):

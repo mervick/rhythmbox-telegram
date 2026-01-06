@@ -23,6 +23,7 @@ from gi.repository import RB, GLib, Gio, Gtk
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 
 class SingletonMeta(type):
@@ -408,7 +409,7 @@ def version_to_number(version: str) -> int:
         parts.append(0)
     return parts[0] * 10**6 + parts[1] * 10**3 + parts[2]
 
-def get_tree_view_from_entry_view(entry_view):
+def get_tree_view_from_entry_view(entry_view) -> Gtk.TreeView:
     """ Finds and returns the Gtk.TreeView widget within an entry view. """
     def find_tree_view(widget):
         if isinstance(widget, Gtk.TreeView):

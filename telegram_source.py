@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import rb
+from typing import Optional
+import rb # type: ignore
 import math
-from gi.repository import RB
+from gi.repository import RB # type: ignore
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size, idle_add_once
 from common import file_uri, set_entry_state
@@ -25,6 +26,10 @@ from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 from account import KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN, KEY_DISPLAY_AUDIO_FORMATS, AUDIO_FORMAT_ALL
+
+import gettext
+gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 
 class BlinkingIndicator(Gtk.DrawingArea):
@@ -111,7 +116,7 @@ class DownloadBar(metaclass=SingletonMeta):
             entry_view = source.get_entry_view()
             builder = Gtk.Builder()
             builder.add_from_file(rb.find_plugin_file(source.plugin, "ui/status.ui"))
-            status_box: Gtk.Box = builder.get_object('status_box')
+            status_box: Gtk.Box = builder.get_object('status_box') # pyright: ignore[reportAssignmentType]
             source.bar_ui = {
                 "box": status_box,
                 "counter": builder.get_object('counter_label'),
@@ -232,19 +237,19 @@ class AltToolbar:
         self.source = source
         self.box = None
         self.spinner = None
-        self.refresh_button = None
-        self.visibility_button = None
+        self.refresh_button: Optional[Gtk.Button] = None
+        self.visibility_button: Optional[Gtk.Button] = None
         self.indicator = None
         self.signals = []
 
     def _set_refresh_button_icon(self):
-        icon = Gtk.Image.new_from_icon_name("emblem-synchronizing-symbolic", Gtk.IconSize.SMALL_TOOLBAR)
+        icon = Gtk.Image.new_from_icon_name("emblem-synchronizing-symbolic", Gtk.IconSize.SMALL_TOOLBAR)  # type: ignore
         self.refresh_button.set_image(icon)
 
     def _set_visibility_button_icon(self):
         icon_name = 'tg-state-visibility-off-symbolic' if self.source.visibility == VISIBILITY_VISIBLE \
             else 'tg-state-visibility-on-symbolic'
-        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)
+        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)  # type: ignore
         self.visibility_button.set_image(icon)
 
     def _find_alt_header_box(self):

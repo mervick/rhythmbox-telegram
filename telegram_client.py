@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from gi.repository import RB
+from gi.repository import RB  # type: ignore
 from gi.repository import GObject, Gdk, Gio, GLib
 import hashlib
 import logging
@@ -27,6 +27,10 @@ from telegram.client import AuthorizationState
 from common import MessageType, audio_content_set, API_ERRORS, get_content_type, is_msg_valid
 from common import get_chat_info, empty_cb, cb, show_error
 from storage import Storage
+
+import gettext
+gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +106,6 @@ class TelegramApi(GObject.Object):
     storage = None
 
     __instances = {}
-    __current = None
 
     @staticmethod
     def loaded():
@@ -126,7 +129,7 @@ class TelegramApi(GObject.Object):
         hasher.update((inst_key(api_hash, phone)).encode('utf-8'))
         self.hash = hasher.hexdigest()[0:10]
         plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
-        self.files_dir = os.path.join(plugin_dir, hasher.hexdigest())
+        self.files_dir = os.path.join(str(plugin_dir), hasher.hexdigest())
         self.temp_dir = os.path.join(self.files_dir, 'files')
 
         self.chats = {}

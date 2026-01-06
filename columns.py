@@ -16,11 +16,16 @@
 
 import gi
 gi.require_version('Gio', '2.0')
-from gi.repository import RB, GLib, Gio, Gtk
-from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist, idle_add_once
+from gi.repository import RB  # type: ignore
+from gi.repository import GLib, Gio, Gtk
+from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist
 from common import get_tree_view_from_entry_view
 from storage import Audio
 from typing import Dict
+
+import gettext
+gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 
 class FormatColumn:
@@ -318,8 +323,8 @@ class InLibraryColumn:
             visible_columns.append('tg-in-library')
             entry_view.set_property('visible-columns', visible_columns)
 
-        tree_view = column.get_tree_view()
-        columns = tree_view.get_columns()
+        tree_view: Gtk.TreeView = column.get_tree_view()
+        columns: list[Gtk.TreeViewColumn] = tree_view.get_columns()
         if column in columns:
             tree_view.remove_column(column)
             tree_view.insert_column(column, -2)
@@ -362,16 +367,19 @@ class TopPicks:
     LEVEL_MEDIUM = 2
     LEVEL_HIGH = 3
     LEVEL_TOP = 4
+    LEVEL_FEATURED = 5
 
     def __init__(self, shell):
         self.shell = shell
-        self.artists: Dict[str, Dict[int | str, int] | int] = {}
+        self.stats: Dict[str, Dict[int | str, int]] = {}
+        self.artists: Dict[str, int] = {}
 
     def collect(self):
         """
         Collects and ranks artists based on the ratings of their songs.
         Identifies the top 10% of artists and assigns them the "top" level.
         """
+        self.stats = {}
         self.artists = {}
         db = self.shell.props.db
         entry_type = db.entry_type_get_by_name('song')
@@ -387,31 +395,30 @@ class TopPicks:
                 self._add_rating(artist, int(rating))
             iter = model.iter_next(iter)
 
-        if len(self.artists):
-            sorted_artists = sorted(self.artists.items(), key=lambda x: (x[1].get(5, 0), x[1].get(4, 0)), reverse=True)
+        if len(self.stats):
+            sorted_artists = sorted(self.stats.items(), key=lambda x: (x[1].get(5, 0), x[1].get(4, 0)), reverse=True)
             top_10_percent = int(len(sorted_artists) * 0.10)
             top_artists = sorted_artists[:top_10_percent]
             for artist in top_artists:
-                self.artists[artist[0]]["top"] = 1
+                self.stats[artist[0]]["top"] = 1
 
-        for artist in self.artists:
+        for artist in self.stats:
             level = self._comp_rated_level(artist)
             self.artists[artist] = level
+
+        self.stats = {}
 
     def _add_rating(self, artist: str, rating: int):
         """ Adds a rating for an artist to the internal dictionary. """
         artist = artist.lower()
-        if artist not in self.artists:
-            self.artists[artist] = {
-                5: 0,
-                4: 0
-            }
-        self.artists[artist][rating] += 1
+        if artist not in self.stats:
+            self.stats[artist] = { 5: 0, 4: 0 }
+        self.stats[artist][rating] += 1
 
     def _comp_rated_level(self, artist: str):
         """ Computes the level of an artist based on their ratings. """
         artist = get_first_artist(artist.lower())
-        artist_level = self.artists.get(artist)
+        artist_level = self.stats.get(artist)
 
         if not artist_level:
             return TopPicks.LEVEL_NONE
@@ -449,6 +456,7 @@ TOP_PICKS_EMOJI = {
     TopPicks.LEVEL_MEDIUM: '❤️', # heart
     TopPicks.LEVEL_HIGH: '🔥', # fire
     TopPicks.LEVEL_TOP: '🔥', # fire
+    TopPicks.LEVEL_FEATURED: '✨', # sparkes
     # TopRated.LEVEL_TOP:     '🏆', # cup
 }
 

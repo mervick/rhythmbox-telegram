@@ -19,10 +19,10 @@ import sqlite3
 import json
 import logging
 import schema
-from gi.repository import RB
+from gi.repository import RB  # type: ignore
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
 from common import get_location_data, set_entry_state, version_to_number, extract_track_number
-from typing import List, Literal, Dict
+from typing import List, Literal, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +288,7 @@ class Audio:
     def get_path(self):
         """ Get file path if exists """
         if not self.is_file_exists():
-            self.local_path = None # noqa
+            self.local_path = None # type: ignore # noqa
             return None
         return self.local_path
 
@@ -376,7 +376,7 @@ class Migration:
                         migration(cursor)
                     elif isinstance(migration, (list, tuple)):
                         # list or tuple of SQL queries and/or Python functions
-                        for section in migration:
+                        for section in migration: # type: ignore
                             if isinstance(section, str):  # SQL query
                                 cursor.execute(section)
                             elif callable(section):  # Python func
@@ -474,10 +474,10 @@ class Storage:
         self.db.commit()
         return result
 
-    def _prepare(self, data):
+    def _prepare(self, data) -> Tuple[str, List[str]]:
         """ Prepare data for SQL operations """
         if not data:
-            return None
+            return '', []
         set_keys = []
         set_values = []
         for k in data.keys():
