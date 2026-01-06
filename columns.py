@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import re
 import gi
 gi.require_version('Gio', '2.0')
 from gi.repository import RB  # type: ignore
@@ -21,7 +23,7 @@ from gi.repository import GLib, Gio, Gtk
 from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist
 from common import get_tree_view_from_entry_view
 from storage import Audio
-from typing import Dict
+from typing import Dict, Optional, List
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -373,6 +375,32 @@ class TopPicks:
         self.shell = shell
         self.stats: Dict[str, Dict[int | str, int]] = {}
         self.artists: Dict[str, int] = {}
+        self.featured: Dict[str, List[str]] = {}
+
+    def _read_featured(self):
+        plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
+        featured_file = os.path.join(str(plugin_dir), 'featured.txt')
+        pattern_number = re.compile(r'^\d+[\.\)\s]+')
+
+        if os.path.exists(featured_file):
+            with open(featured_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+
+                    parts = None
+                    for separator in ['—', '-']:
+                        if separator in line:
+                            parts = line.split(separator, 1)
+                            break
+
+                    if parts and len(parts) == 2:
+                        artist = pattern_number.sub('', parts[0]).strip().lower()
+                        title = parts[1].strip().lower()
+                        if artist not in self.featured:
+                            self.featured[artist] = []
+                        self.featured[artist].append(title)
 
     def collect(self):
         """
@@ -386,6 +414,7 @@ class TopPicks:
         source = self.shell.get_source_by_entry_type(entry_type)
         model = source.get_property('query-model')
         iter = model.get_iter_first()
+        self._read_featured()
 
         while iter:
             entry = model.get_value(iter, 0)
@@ -415,7 +444,7 @@ class TopPicks:
             self.stats[artist] = { 5: 0, 4: 0 }
         self.stats[artist][rating] += 1
 
-    def _comp_rated_level(self, artist: str):
+    def _comp_rated_level(self, artist: str) -> int:
         """ Computes the level of an artist based on their ratings. """
         artist = get_first_artist(artist.lower())
         artist_level = self.stats.get(artist)
@@ -436,7 +465,7 @@ class TopPicks:
 
         return TopPicks.LEVEL_NONE
 
-    def get_level(self, artist: str):
+    def get_level(self, artist: str, entry) -> int:
         """ Retrieves the level of an artist based on their ratings. """
         artist = get_first_artist(artist.lower())
         artist_level = self.artists.get(artist)
@@ -445,7 +474,16 @@ class TopPicks:
             artist = get_first_artist(artist, ',')
             artist_level = self.artists.get(artist)
 
-        return artist_level if artist_level else TopPicks.LEVEL_NONE
+        if artist_level:
+            return artist_level
+
+        if artist in self.featured:
+            title = entry.get_string(RB.RhythmDBPropType.TITLE).lower()
+            album = entry.get_string(RB.RhythmDBPropType.ALBUM).lower()
+            if title in self.featured[artist] or album in self.featured[artist]:
+                return TopPicks.LEVEL_FEATURED
+
+        return TopPicks.LEVEL_NONE
 
 
 # A dictionary mapping artist rating levels to their corresponding emojis.
@@ -510,7 +548,7 @@ class TopPicksColumn:
         artist = entry.get_string(RB.RhythmDBPropType.ARTIST)
 
         if self.plugin.top_picks:
-            level = self.plugin.top_picks.get_level(artist)
+            level = self.plugin.top_picks.get_level(artist, entry)
             cell.set_property('text', TOP_PICKS_EMOJI[level])
         else:
             cell.set_property('text', '')
