@@ -233,9 +233,44 @@ class TelegramApi(GObject.Object):
     ############################################################
     # Managing messages
     ############################################################
+    def load_pinned_messages_idle(self, chat_id, from_message_id, offset=0, limit=100, on_success=empty_cb, on_error=empty_cb):
+        logger.debug('load messages %s' % (chat_id))
+        blob = {
+            "chat_id": chat_id,
+            "from_message_id": from_message_id,
+            "offset": offset,
+            "limit": limit,
+            "on_success": on_success,
+            "on_error": on_error,
+        }
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_pinned_messages_idle_cb, blob)
+
+    def _load_pinned_messages_idle_cb(self, blob):
+        r = blob.get('result', None)
+
+        if not r:
+            r = blob['result'] = self.tg.call_method(
+                'searchChatMessages',
+                params={
+                    'chat_id': blob.get('chat_id'),
+                    "query": "",
+                    "from_message_id": blob.get('from_message_id', 0),
+                    "offset": blob.get('offset', 0),
+                    "limit": blob.get('limit', 100),
+                    "filter": { "@type": "searchMessagesFilterPinned" }
+                }
+            )
+        if not r._ready.is_set():
+            return True
+
+        print(r.update)
+
+        return False
+
+
     def load_message_idle(self, chat_id, message_id, on_success=empty_cb, on_error=empty_cb):
         """ Load single message asynchronously """
-        logger.debug('%s %s' % (chat_id, message_id))
+        logger.debug('load message %s %s' % (chat_id, message_id))
         blob = {
             "chat_id": chat_id,
             "message_id": message_id,
