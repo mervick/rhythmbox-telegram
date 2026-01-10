@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,14 +24,20 @@ from telegram_search import TelegramSearchEntryType, TelegramSearchSource
 from telegram_source import TelegramSource
 from telegram_client import TelegramApi, TelegramAuthError
 from prefs import TelegramPrefs
-from account import Account, KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
+from account import Account, SettingsInterface
+from account import KEY_CHANNELS, KEY_PAGE_GROUP, KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN
 from telegram_entry import TelegramEntryType
 from common import get_location_data, show_error, to_location, idle_add_once
 from columns import TopPicks, InLibraryColumn
 from storage import Audio, VISIBILITY_VISIBLE, VISIBILITY_HIDDEN
+from typing import cast, Any, Union
+
+import gettext
+gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 
 def show_source(source_list):
     for source in source_list:
@@ -46,6 +52,12 @@ def delete_source(source_list):
     for source in source_list:
         source.deactivate()
         source.delete_thyself()
+
+
+class AppWithPluginMenu(Gio.Application):
+    def add_plugin_menu_item(self, label: str, action: str, item: Gio.MenuItem): ...
+    def remove_plugin_menu_item(self, label: str, action: str): ...
+    def link_shared_menus(self, menu: Any): ...
 
 
 class TelegramPlugin(GObject.GObject, Peas.Activatable):
@@ -72,13 +84,13 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         super(TelegramPlugin, self).__init__()
         TelegramApi.application_version = VERSION
         self.account = Account(self)
-        self.app = Gio.Application.get_default()
+        self.app = cast(AppWithPluginMenu, Gio.Application.get_default())
         self.shell = None
         self.db = None
         self.top_picks = None
         self.icon = None
         self.display_icon = None
-        self.settings = None
+        self.settings = cast(SettingsInterface, {})
         self.connected = False
         self.is_api_loaded = False
         self.api = None
@@ -88,9 +100,9 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.group_id = None
         self.require_restart_plugin = False
         self.rhythmdb_settings = None
-        self.source = None
-        self.toolbar = None
-        self.toolbar_basic = None
+        self.source: TelegramSource
+        self.toolbar: Gio.Menu
+        self.toolbar_basic: Gio.Menu
         self.display_pages = {}
         self.search_source = None
         self.sources = {}
@@ -142,7 +154,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.shell = self.object
         self.db = self.shell.props.db
         self.account.init()
-        self.settings = self.account.settings
+        self.settings = cast(SettingsInterface, self.account.settings)
         self.icon = Gio.FileIcon.new(Gio.File.new_for_path(self.plugin_info.get_data_dir() + '/images/telegram.svg'))
         rb.append_plugin_source_path(self, "icons")
         self.display_icon = Gio.ThemedIcon.new("telegram-symbolic")
@@ -160,6 +172,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.add_plugin_menu(True)
         self.connect_api()
         self.top_picks = TopPicks(self.shell)
+        self.top_picks.activate()
         if self.account.settings[KEY_TOP_PICKS_COLUMN]:
             GLib.timeout_add(4000, self.top_picks.collect)
         if self.account.settings[KEY_IN_LIBRARY_COLUMN]:
@@ -171,6 +184,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         Cleans up resources, disconnects signals, and removes the plugin's UI components.
         """
         print('Telegram plugin deactivating')
+        self.top_picks.deactivate()
         self.delete_display_pages(True)
         self.remove_plugin_menu(True)
 
@@ -179,7 +193,7 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
 
         self.db = None
         self.storage = None
-        self.signals = None
+        self.signals = {}
 
     def init_actions(self):
         """
@@ -240,23 +254,23 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         """ Initializes toolbars """
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
-        self.toolbar_basic = builder.get_object("telegram-toolbar")
+        self.toolbar_basic = cast(Gio.Menu, builder.get_object("telegram-toolbar"))
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar.ui"))
-        self.toolbar = builder.get_object("telegram-toolbar")
+        self.toolbar = cast(Gio.Menu, builder.get_object("telegram-toolbar"))
 
         builder = Gtk.Builder()
         builder.add_from_file(rb.find_plugin_file(self, "ui/toolbar-visibility.ui"))
-        view_menu = builder.get_object("telegram-visibility-toolbar")
+        view_menu = cast(Gio.Menu, builder.get_object("telegram-visibility-toolbar"))
 
         label = view_menu.get_item_attribute_value(0, "label", GLib.VariantType.new("s"))
         label = label.get_string() if label is not None else _("Visibility")
-        submenu = view_menu.get_item_link(0, "submenu")
+        submenu = cast(Gio.MenuModel, view_menu.get_item_link(0, "submenu"))
         submenu_item = Gio.MenuItem.new_submenu(label, submenu)
         self.toolbar.append_item(submenu_item)
 
-        app = Gio.Application.get_default()
+        app = cast(AppWithPluginMenu, Gio.Application.get_default())
         app.link_shared_menus(self.toolbar_basic)
 
     def connect_api(self):
@@ -509,13 +523,13 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         Callback for the "Telegram Settings" action.
         Opens the settings dialog for the Telegram plugin.
         """
-        dialog = Gtk.Dialog(title="Telegram Settings", parent=self.shell.props.window, flags=0)
+        dialog = Gtk.Dialog(title="Telegram Settings", parent=self.shell.props.window, flags=0) # type: ignore
         dialog.add_button("Close", Gtk.ResponseType.CLOSE)
         prefs = TelegramPrefs()
         config_widget = prefs.do_create_configure_widget()
-        dialog.get_content_area().add(config_widget)
+        dialog.get_content_area().add(config_widget) # type: ignore
         dialog.show_all()
-        dialog.run()
+        dialog.run() # type: ignore
         dialog.destroy()
 
     def search_artist_action_cb(self, *_):
