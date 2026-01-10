@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@ import math, re
 import gi
 gi.require_version('Gio', '2.0')
 from datetime import datetime
-from gi.repository import RB, GLib, Gio, Gtk
+from gi.repository import RB # type: ignore
+from gi.repository import GLib, Gio, Gtk
+from typing import cast
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -168,7 +170,7 @@ def file_uri(path):
 
 def open_path(path):
     """ Opens a file path using the default application. """
-    Gio.app_info_get_default_for_uri(file_uri(path), None)
+    Gio.app_info_get_default_for_uri(file_uri(path), None) # type: ignore
 
 def get_content_type(data):
     """ Determines the content-type of a message. """
@@ -231,7 +233,7 @@ def get_audio_tags(file_path):
             except TypeError:
                 pass
 
-    except GLib.GError:
+    except GLib.GError: # type: ignore
         for tag_name in META_TAGS:
             tags[tag_name] = 'Unknown'
         tags['date'] = 0
@@ -382,8 +384,8 @@ def format_time(seconds):
 def get_window_center(window):
     """ Calculates the center coordinates of a window. """
     if isinstance(window, Gtk.ApplicationWindow):
-        width, height = window.get_size()
-        x, y = window.get_position()
+        width, height = window.get_size() # type: ignore
+        x, y = window.get_position() # type: ignore
         left_center = x + round(width / 2)
         top_center = y + round(height / 2)
     else:
@@ -420,10 +422,18 @@ def get_tree_view_from_entry_view(entry_view) -> Gtk.TreeView:
                 if result:
                     return result
         return None
-    return find_tree_view(entry_view)
+    return cast(Gtk.TreeView, find_tree_view(entry_view))
 
 def idle_add_once(func, *args):
     def wrapper(*wrapper_args):
         func(*wrapper_args)
         return False
     GLib.idle_add(wrapper, *args)
+
+def clean_telegram_title(text):
+    """ Clean string by removing emojis/symbols from start/end, preserving brackets"""
+    pattern = r"^[^\w\s\(\)\[\]]+|[^\w\s\(\)\[\]]+$"
+    return re.sub(pattern, "", text, flags=re.UNICODE).strip()
+
+def is_telegram_source(source):
+    return str(source).startswith('TelegramSource')
