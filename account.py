@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ import re
 from rb import rbconfig  # pyright: ignore[reportMissingImports] # noqa
 from gi.repository import Gio
 from common import SingletonMeta, show_error
-from typing import Tuple
+from typing import Tuple, Union, Dict, Any, MutableMapping, cast
 
 # settings keys
 KEY_API_ID = "api-id"
@@ -71,6 +71,10 @@ if rbconfig.libsecret_enabled:
         pass
 
 
+class SettingsInterface(Gio.Settings):
+    def __getitem__(self, key: str) -> Any: ...
+
+
 class Account(metaclass=SingletonMeta):
     """
     Singleton class managing Telegram account credentials and settings.
@@ -82,7 +86,7 @@ class Account(metaclass=SingletonMeta):
 
     def __init__(self, plugin=None):
         """ Initialize instance """
-        self.settings: Gio.Settings
+        self.settings: SettingsInterface
         self.plugin = plugin
         self.activated = False
         self.secret = None
@@ -106,7 +110,7 @@ class Account(metaclass=SingletonMeta):
 
         schema_source = Gio.SettingsSchemaSource.get_default()
         schema: Gio.SettingsSchema = schema_source.lookup('org.gnome.rhythmbox.plugins.telegram', False)
-        self.settings = Gio.Settings.new_full(schema, None, None)
+        self.settings = cast(SettingsInterface, Gio.Settings.new_full(schema, None, None))
 
         if Secret is None:
             print("You need to install libsecret for secure storage of Telegram secret keys")
