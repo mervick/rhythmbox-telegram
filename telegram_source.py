@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
 import rb # type: ignore
 import math
 from gi.repository import RB # type: ignore
 from gi.repository import GObject, Gtk, Gio, Gdk, GLib
 from common import to_location, get_location_data, SingletonMeta, get_first_artist, pretty_file_size, idle_add_once
-from common import file_uri, set_entry_state
+from common import file_uri, set_entry_state, is_telegram_source
 from columns import StateColumn, SizeColumn, FormatColumn, TopPicksColumn, InLibraryColumn
 from loader import PlaylistLoader
 from storage import Audio, VISIBILITY_ALL, VISIBILITY_VISIBLE
 from account import KEY_RATING_COLUMN, KEY_DATE_ADDED_COLUMN, KEY_FILE_SIZE_COLUMN, KEY_AUDIO_FORMAT_COLUMN
 from account import KEY_TOP_PICKS_COLUMN, KEY_IN_LIBRARY_COLUMN, KEY_DISPLAY_AUDIO_FORMATS, AUDIO_FORMAT_ALL
+from typing import Optional
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
@@ -235,7 +235,7 @@ class AltToolbar:
 
     def __init__(self, source):
         self.source = source
-        self.box = None
+        self.box: Optional[Gtk.Box] = None
         self.spinner = None
         self.refresh_button: Optional[Gtk.Button] = None
         self.visibility_button: Optional[Gtk.Button] = None
@@ -269,7 +269,7 @@ class AltToolbar:
         if self.activated:
             return
 
-        if not str(self.source).startswith('TelegramSource'):
+        if not is_telegram_source(self.source):
             return
 
         self.box = self._find_alt_header_box()
@@ -397,7 +397,7 @@ class TelegramSource(RB.BrowserSource):
         self.custom_model = {}
         self.state_column = None
         self.display_formats = ()
-        self.opposite_source = None
+        self.opposite_source: RB.BrowserSource = None
 
     def setup(self, plugin, chat_id, chat_title, visibility):
         """ Set up the TelegramSource with the given parameters """
