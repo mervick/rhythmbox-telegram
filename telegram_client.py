@@ -234,7 +234,8 @@ class TelegramApi(GObject.Object):
     # Managing messages
     ############################################################
     def load_pinned_messages_idle(self, chat_id, from_message_id, offset=0, limit=100, on_success=empty_cb, on_error=empty_cb):
-        logger.debug('load messages %s' % (chat_id))
+        """ Load pinned messages IDLE """
+        logger.debug('load pinned messages %s' % (chat_id))
         blob = {
             "chat_id": chat_id,
             "from_message_id": from_message_id,
@@ -246,6 +247,7 @@ class TelegramApi(GObject.Object):
         Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self._load_pinned_messages_idle_cb, blob)
 
     def _load_pinned_messages_idle_cb(self, blob):
+        """ Load pinned messages IDLE callback """
         r = blob.get('result', None)
 
         if not r:
@@ -260,13 +262,25 @@ class TelegramApi(GObject.Object):
                     "filter": { "@type": "searchMessagesFilterPinned" }
                 }
             )
+
         if not r._ready.is_set():
             return True
 
-        print(r.update)
+        if not r.update or not r.update['total_count'] or not r.update['messages']:
+            logger.debug('tg, load pinned messages: No messages found, exit loop')
+            blob['on_success']()
+            return False
 
+        msgs = r.update.get('messages', [])
+        last_msg_id = msgs[-1]['id']
+
+        if last_msg_id == LAST_MESSAGE_ID:
+            logger.debug('tg, load pinned messages: No messages found, exit loop')
+            blob['on_success']()
+            return False
+
+        blob['on_success'](msgs)
         return False
-
 
     def load_message_idle(self, chat_id, message_id, on_success=empty_cb, on_error=empty_cb):
         """ Load single message asynchronously """
