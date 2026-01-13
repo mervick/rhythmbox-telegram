@@ -21,8 +21,8 @@ from gi.repository import RB # type: ignore
 from gi.repository import GLib
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
-from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, clean_telegram_title, idle_add_once
-from common import get_entry_location, CONFLICT_ACTION_IGNORE
+from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, CONFLICT_ACTION_IGNORE
+from common import get_entry_location, clean_telegram_title, idle_add_once, is_msg_valid
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from conflict_dialog import ConflictDialog
 from storage import PinnedMessage, Playlist, Audio, SEGMENT_START, SEGMENT_END
@@ -593,28 +593,33 @@ class PinnedLoader:
                 chat_id=self.chat_id, from_message_id=self.last_msg_id,
                 limit=1, on_success=self._process, on_error=self._process)
 
-    def _process(self, blob):
-        if blob and '@type' in blob:
-            message_type = blob.get('@type')
-            message_id = int(blob.get('id'))
-            is_new = message_id not in self.messages
+    def _process(self, msgs):
+        if msgs and type(msgs) is list:
+            load_next = False
+            for message in msgs:
+                if is_msg_valid(message) and message and '@type' in message:
+                    message_type = message.get('@type')
+                    message_id = int(message.get('id'))
+                    is_new = message_id not in self.messages
 
-            if is_new and message_type == 'message':
-                self.last_msg_id = message_id
-                chat_id = int(blob.get('chat_id'))
-                date = int(blob.get('date'))
-                content = blob.get('content', {})
-                content_type = content.get('@type')
-                caption = content.get('caption' if content_type == 'messagePhoto' else 'text', {})
+                    if is_new and message_type == 'message':
+                        self.last_msg_id = message_id
+                        chat_id = int(message.get('chat_id'))
+                        date = int(message.get('date'))
+                        content = message.get('content', {})
+                        content_type = content.get('@type')
+                        caption = content.get('caption' if content_type == 'messagePhoto' else 'text', {})
 
-                if caption.get('@type') == 'formattedText':
-                    text = caption.get('text')
-                    if message_id and chat_id and date and text:
-                        self._add_item(chat_id, message_id, date, text)
-                if is_new:
-                    GLib.timeout_add(250, self._next)
-                    # idle_add_once(self._next)
-                    return
+                        if caption.get('@type') == 'formattedText':
+                            text = caption.get('text')
+                            if message_id and chat_id and date and text:
+                                self._add_item(chat_id, message_id, date, text)
+                        if is_new:
+                            load_next = True
+            if load_next:
+                GLib.timeout_add(250, self._next)
+                return
+
         self._running = False
 
     def _next(self):
