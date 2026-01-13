@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 import os
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import RB
+from gi.repository import RB  # type: ignore
 from gi.repository import Gtk
 from prefs_base import PrefsPageBase, set_combo_text_column
 from common import filepath_parse_pattern, show_error
@@ -26,9 +26,12 @@ from account import KEY_CONFLICT_RESOLVE, KEY_LIBRARY_PATH, KEY_FOLDER_HIERARCHY
 from account import KEY_PRELOAD_MAX_FILE_SIZE, KEY_PRELOAD_FILE_FORMATS, AUDIO_FORMAT_ALL
 from account import KEY_PRELOAD_NEXT_TRACK, KEY_PRELOAD_PREV_TRACK, KEY_PRELOAD_HIDDEN_TRACK
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
+from typing import cast, List
+
 
 import gettext
 gettext.install('rhythmbox', RB.locale_dir())
+_ = gettext.gettext
 
 
 library_layout_paths = [
@@ -99,25 +102,25 @@ class PrefsSettingsPage(PrefsPageBase):
     def _create_widget(self):
         self._values = {}
 
-        self.library_location_entry = self.ui.get_object('library_location_entry')
-        self.library_location_btn = self.ui.get_object('library_location_btn')
-        self.conflict_resolve_combo = self.ui.get_object('conflict_resolve_combo')
-        self.dir_hierarchy_combo = self.ui.get_object('dir_hierarchy_combo')
-        self.name_template_combo = self.ui.get_object('name_template_combo')
-        self.template_example_label = self.ui.get_object('template_example_label')
+        self.library_location_entry = cast(Gtk.Entry, self.ui.get_object('library_location_entry'))
+        self.library_location_btn = cast(Gtk.Button, self.ui.get_object('library_location_btn'))
+        self.conflict_resolve_combo = cast(Gtk.ComboBox, self.ui.get_object('conflict_resolve_combo'))
+        self.dir_hierarchy_combo = cast(Gtk.ComboBox, self.ui.get_object('dir_hierarchy_combo'))
+        self.name_template_combo = cast(Gtk.ComboBox, self.ui.get_object('name_template_combo'))
+        self.template_example_label = cast(Gtk.Label, self.ui.get_object('template_example_label'))
 
-        self.detect_dirs_ignore_case_check = self.ui.get_object('detect_dirs_ignore_case')
-        self.detect_files_ignore_case_check = self.ui.get_object('detect_files_ignore_case')
+        self.detect_dirs_ignore_case_check = cast(Gtk.CheckButton, self.ui.get_object('detect_dirs_ignore_case'))
+        self.detect_files_ignore_case_check = cast(Gtk.CheckButton, self.ui.get_object('detect_files_ignore_case'))
 
         self._init_check(self.detect_dirs_ignore_case_check, KEY_DETECT_DIRS_IGNORE_CASE)
         self._init_check(self.detect_files_ignore_case_check, KEY_DETECT_FILES_IGNORE_CASE)
 
-        self.preload_prev_check = self.ui.get_object('preload_prev_check')
-        self.preload_next_check = self.ui.get_object('preload_next_check')
-        self.preload_hidden_check = self.ui.get_object('preload_hidden_check')
+        self.preload_prev_check = cast(Gtk.CheckButton, self.ui.get_object('preload_prev_check'))
+        self.preload_next_check = cast(Gtk.CheckButton, self.ui.get_object('preload_next_check'))
+        self.preload_hidden_check = cast(Gtk.CheckButton, self.ui.get_object('preload_hidden_check'))
 
-        self.preload_max_file_size_combo = self.ui.get_object('preload_max_file_size_combo')
-        self.preload_file_formats_combo = self.ui.get_object('preload_file_formats_combo')
+        self.preload_max_file_size_combo = cast(Gtk.ComboBox, self.ui.get_object('preload_max_file_size_combo'))
+        self.preload_file_formats_combo = cast(Gtk.ComboBox, self.ui.get_object('preload_file_formats_combo'))
 
         self._init_check(self.preload_prev_check, KEY_PRELOAD_PREV_TRACK)
         self._init_check(self.preload_next_check, KEY_PRELOAD_NEXT_TRACK)
@@ -141,21 +144,21 @@ class PrefsSettingsPage(PrefsPageBase):
         sensitive = self.settings[KEY_PRELOAD_NEXT_TRACK] or self.settings[KEY_PRELOAD_PREV_TRACK]
         self.preload_hidden_check.set_sensitive(sensitive)
 
-    def _init_check(self, checkbox, name):
+    def _init_check(self, checkbox: Gtk.CheckButton, name: str):
         value = self.settings[name]
         checkbox.set_active(bool(value))
         checkbox.connect('toggled', self._on_check_toggled, name)
 
-    def _on_check_toggled(self, checkbox, name):
+    def _on_check_toggled(self, checkbox: Gtk.CheckButton, name: str):
         is_checked = checkbox.get_active()
         self.settings.set_boolean(name, is_checked)
         self.on_change(name, is_checked)
         self._update_check_sensitive()
 
-    def _init_combo(self, combo, variants, name, variant_int=False):
+    def _init_combo(self, combo: Gtk.ComboBox, variants: List[List[str]], name: str, variant_int=False):
         idx = 0
         value = self.settings[name]
-        store = Gtk.ListStore(int if variant_int else str, str)
+        store = Gtk.ListStore(int if variant_int else str, str) # type: ignore
         for i, o in enumerate(variants):
             if value == o[1]:
                 idx = i
@@ -165,19 +168,20 @@ class PrefsSettingsPage(PrefsPageBase):
         set_combo_text_column(combo, 1)
         combo.connect('changed', self._on_combo_changed, name, variant_int)
 
-    def _on_combo_changed(self, combo, name, variant_int=False):
+    def _on_combo_changed(self, combo: Gtk.ComboBox, name: str, variant_int=False):
         tree_iter = combo.get_active_iter()
         if tree_iter is not None:
-            model = combo.get_model()
-            value = model[tree_iter][0]
-            if variant_int:
-                self.settings.set_int(name, value)
-            else:
-                self.settings.set_string(name, value)
-            self._update(name, value)
-            self.on_change(name, value)
+            model = cast(Gtk.TreeModel, combo.get_model())
+            if model:
+                value = model[tree_iter][0]  # pyright: ignore[reportIndexIssue]
+                if variant_int:
+                    self.settings.set_int(name, value)
+                else:
+                    self.settings.set_string(name, value)
+                self._update(name, value)
+                self.on_change(name, value)
 
-    def _update(self, name, value):
+    def _update(self, name: str, value):
         # avoid re-execution for identical values
         if self._values.get(name) == value:
             return
@@ -196,15 +200,15 @@ class PrefsSettingsPage(PrefsPageBase):
                 "%s/%s.mp3" % (self.settings[KEY_FOLDER_HIERARCHY], self.settings[KEY_FILENAME_TEMPLATE]), example_tags)
             self.template_example_label.set_markup('<small><i><b>%s</b> %s</i></small>' % (_("Example Path:"), example))
 
-    def _libpath_entry_cb(self, entry, event):
+    def _libpath_entry_cb(self, entry: Gtk.Entry, event):
         self._update(KEY_LIBRARY_PATH, entry.get_text())
 
     def _browse_libpath_cb(self, *obj):
         f = Gtk.FileChooserDialog(
             title=_("Select download music directory"),
-            parent=self.get_window(), # noqa
+            parent=self.get_window(), # noqa # type: ignore
             action=Gtk.FileChooserAction.SELECT_FOLDER,
-            buttons=( # noqa
+            buttons=( # noqa # type: ignore
                 _("_Cancel"),
                 Gtk.ResponseType.CANCEL,
                 _("_Open"),
@@ -214,9 +218,9 @@ class PrefsSettingsPage(PrefsPageBase):
 
         f.set_current_folder(self.account.get_library_path())
 
-        status = f.run() # noqa
+        status = f.run() # noqa # type: ignore
         if status == Gtk.ResponseType.OK:
-            val = f.get_filename() # noqa
+            val = f.get_filename() # noqa # type: ignore
             if val:
                 self._update(KEY_LIBRARY_PATH, val)
         f.destroy()
