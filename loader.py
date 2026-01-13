@@ -18,16 +18,16 @@ import os
 import re
 import shutil
 from gi.repository import RB # type: ignore
-from gi.repository import GLib
+from gi.repository import Gdk, GLib
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
-from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, idle_add_once
+from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, clean_telegram_title, idle_add_once
 from common import get_entry_location, CONFLICT_ACTION_IGNORE
 from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_entry_state
 from conflict_dialog import ConflictDialog
-from storage import Playlist, Audio, SEGMENT_START, SEGMENT_END
+from storage import PinnedMessage, Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
-from typing import Tuple, Any
+from typing import Tuple, Any, Callable
 
 
 class AbsAudioLoader:
@@ -542,3 +542,94 @@ class PlaylistLoader:
         self.timer.remove()
         self.timer.clear()
         self.source.emit('playlist-fetch-end')
+
+
+class PinnedLoader:
+    """ A class for loading pinned messages from Telegram. """
+    api: TelegramApi
+    callback: Callable
+
+    def __str__(self) -> str:
+        return f'PinnedLoader <{self.chat_id}>'
+
+    def __init__(self, source):
+        self._terminated = False
+        self.api = TelegramApi.loaded()
+        self.source = source
+        self.chat_id = source.chat_id
+        self.last_msg_id = 0
+        self.offset = 0
+        self.loaded = False
+        self.messages = []
+
+    def _each(self, msg: PinnedMessage):
+        self.last_msg_id = max(self.last_msg_id, msg.message_id)
+        self.messages.append({
+            'id': msg.message_id,
+            'date': msg.date,
+            'artist': msg.artist
+        })
+
+        # self.callback(msg)
+
+    def start(self, callback):
+        """ Start loading messages starting from new messages """
+        self.last_msg_id = 0
+        self.callback = callback
+        PinnedMessage.each(self.chat_id, self._each)
+        self._load(limit=100)
+
+    def _load(self, limit=100):
+        self.api.load_pinned_messages_idle(
+            chat_id=self.chat_id, from_message_id=self.last_msg_id,
+            offset=self.offset, limit=100, on_success=self._process, on_error=self._process)
+
+    def _process(self, blob):
+        if blob and '@type' in blob:
+            message_type = blob.get('@type')
+            if message_type == 'message':
+                message_id = blob.get('id')
+                chat_id = blob.get('chat_id')
+                date = blob.get('date')
+                content = blob.get('content', {})
+                content_type = content.get('@type')
+                text = None
+                if content_type == 'messagePhoto' and content.get('caption', {}).get('@type') == 'formattedText':
+                    text = content.get('caption', {}).get('text')
+                if content_type == 'messageText' and content.get('text', {}).get('@type') == 'formattedText':
+                    text = content.get('text', {}).get('text')
+                if message_id and chat_id and date and text:
+                    self._add_item(message_id, chat_id, date, text)
+
+    def _add_item(self, message_id, chat_id, date, text):
+        text = next((line for line in text.splitlines() if line.strip()), None)
+        text = clean_telegram_title(text)
+
+        parts = None
+        for separator in ['—', '-']:
+            if separator in text:
+                parts = text.split(separator, 1)
+                break
+
+        if parts and len(parts) == 2:
+            artist = parts[0].strip()
+            title = parts[1].strip()
+
+            if artist and title:
+                PinnedMessage.insert({
+                    'chat_id': chat_id,
+                    'message_id': message_id,
+                    'artist': artist,
+                    'album': title,
+                    'date': date,
+                })
+                self.messages.append({
+                    'id': message_id,
+                    'date': date,
+                    'artist': artist
+                })
+
+    def stop(self):
+        self._terminated = True
+
+
