@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ import schema
 from gi.repository import RB  # type: ignore
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
 from common import get_location_data, set_entry_state, version_to_number, extract_track_number
-from typing import List, Literal, Dict, Tuple
+from typing import List, Literal, Dict, Tuple, Union, Callable, Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,45 @@ CURRENT_SEGMENT = 0
 VISIBILITY_ALL = None
 VISIBILITY_VISIBLE = 1
 VISIBILITY_HIDDEN = 0
+
+
+class PinnedMessage:
+    """ Represents a pinned message used for TopPicks identification """
+    id: int
+    chat_id: int
+    message_id: int
+    artist: str
+    album: str
+    date: int
+
+    def __str__(self) -> str:
+        return f'PinnedMessage <{self.chat_id}, {self.message_id}>'
+
+    def __init__(self, data):
+        """ Initialize pinnde message with data """
+        self.update(data)
+
+    def update(self, data):
+        """ Update pinnde message data """
+        id_, chat_id, message_id, artist, album, date = data
+        self.id = id_
+        self.chat_id = chat_id
+        self.message_id = message_id
+        self.artist = artist
+        self.album = album
+        self.date = date
+
+    @staticmethod
+    def each(chat_id: int, callback: Callable):
+        """ Fetches all stored pinned messages associated with the given chat_id """
+        def _each(data):
+            callback(PinnedMessage(data))
+        Storage.loaded().each(callback, 'pinned_message', {"chat_id": chat_id})
+
+    @staticmethod
+    def insert(data) -> bool:
+        return Storage.loaded().insert('pinned_message', data)
+
 
 class Playlist:
     """ Represents a playlist with segments and metadata """
@@ -332,13 +371,16 @@ class Audio:
             db.commit()
 
 
+MigrationStep = Union[str, Callable]
+
+
 class Migration:
     """ Handles migrations """
 
     def __init__(self, db, migrations: Dict[str, str]):
         """ Initialize with db and migration scripts """
         self.db = db
-        self.migrations: Dict[int, str] = {}
+        self.migrations: Dict[int, Union[MigrationStep, Iterable[MigrationStep]]] = {}
 
         for version, sql in migrations.items():
             self.add_migration(version, sql)
@@ -371,14 +413,14 @@ class Migration:
                 print(f"Running migration for version {version}")
                 try:
                     if isinstance(migration, str):  # SQL query
-                        cursor.execute(migration)
+                        cursor.executescript(migration)
                     elif callable(migration):  # Python func
                         migration(cursor)
                     elif isinstance(migration, (list, tuple)):
                         # list or tuple of SQL queries and/or Python functions
                         for section in migration: # type: ignore
                             if isinstance(section, str):  # SQL query
-                                cursor.execute(section)
+                                cursor.executescript(section)
                             elif callable(section):  # Python func
                                 section(cursor)
                             else:
@@ -457,7 +499,7 @@ class Storage:
         self.db.commit()
         return result
 
-    def insert(self, table, data):
+    def insert(self, table, data) -> bool:
         """ Insert row into table """
         set_keys = []
         set_place = []
