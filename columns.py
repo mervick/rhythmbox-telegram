@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,13 @@
 import os
 import re
 import gi
-
-from loader import PinnedLoader
 gi.require_version('Gio', '2.0')
 from gi.repository import RB  # type: ignore
 from gi.repository import GLib, Gio, Gtk
 from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist, is_telegram_source
 from common import get_tree_view_from_entry_view
 from storage import Audio
+from loader import PinnedLoader, PinnedShortDict
 from typing import Dict, Optional, List
 
 import gettext
@@ -381,7 +380,7 @@ class TopPicks:
         self.artists: Dict[str, int] = {}
         self.featured: Dict[str, List[str]] = {}
         self.pinned: Dict[str, List[int]] = {}
-        self.loader: Optional[PinnedLoader] = None
+        self.pinned_loader: Dict[int, PinnedLoader] = {}
         self.select_handler = None
         self.source = None
 
@@ -393,23 +392,29 @@ class TopPicks:
             self.shell.disconnect(self.select_handler)
             self.select_handler = None
 
-    def _on_source_changed(self, shell, *args):
-        print(f"Source changed: {shell.props.selected_page.props.name}")
-        source = shell.props.selected_page
-        if self.loader:
-            self.loader.stop()
+    def _on_source_changed(self, *args):
+        print(f"Source changed: {self.shell.props.selected_page.props.name}")
+        source = self.shell.props.selected_page
         self.source = None
-        self.loader = None
         self.pinned = {}
 
         if is_telegram_source(source):
             self.source = source
-            self.loader = PinnedLoader(source)
-            self.loader.start(self._add_pinned)
+            if source.chat_id not in self.pinned_loader:
+                self.pinned_loader[source.chat_id] = PinnedLoader(source)
+            self.pinned_loader[source.chat_id].start(self._set_pinned)
+        else:
+            self.source = None
 
-    def _add_pinned(self, pinned):
-        pass
-        # self.pinned[]
+    def _set_pinned(self, chat_id: int, messages: Dict[int, PinnedShortDict]):
+        if self.source and chat_id == self.source.chat_id:
+            for message in list(messages.values()):
+                artist = message['artist']
+                date = message['date']
+                if artist not in self.pinned:
+                    self.pinned[artist] = [date]
+                elif date not in self.pinned[artist]:
+                    self.pinned[artist].append(date)
 
     def _read_featured(self):
         plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
@@ -449,7 +454,6 @@ class TopPicks:
         model = source.get_property('query-model')
         iter = model.get_iter_first()
         self._read_featured()
-        # self.loader = PinnedLoader()
 
         while iter:
             entry = model.get_value(iter, 0)
