@@ -408,7 +408,7 @@ class TelegramSource(RB.BrowserSource):
         self.set_property("query-model", RB.RhythmDBQueryModel.new_empty(self.db))
         self.entry_type = self.props.entry_type
         self.plugin = plugin
-        self.chat_id = chat_id
+        self.chat_id = int(chat_id)
         self.chat_title = chat_title
         self.visibility = visibility
         self.loader = None
@@ -548,12 +548,12 @@ class TelegramSource(RB.BrowserSource):
         if self.plugin.storage:
             self.plugin.storage.load_entries(self.chat_id, self.add_entry, self.visibility)
 
-    def add_entry(self, audio):
+    def add_entry(self, audio: Audio):
         """ Adds a single audio entry to the source if it hasn't been loaded already """
         if audio.id not in self.loaded_entries and any(k in self.display_formats for k in (AUDIO_FORMAT_ALL, audio.get_file_ext())):
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, audio.chat_id, audio.message_id, audio.id)
-            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
+            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.date]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)

@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -217,9 +217,9 @@ class TelegramSearchSource(TelegramSource):
         self.hash_append = None
         self.search_query = ''
 
-    def setup(self, plugin):
+    def setup(self, plugin, chat_id=None, chat_title=None, visibility=None):
         """ Set up the TelegramSource with the given parameters """
-        TelegramSource.setup(self, plugin, None, None, VISIBILITY_HIDDEN)
+        TelegramSource.setup(self, plugin, 0, None, VISIBILITY_HIDDEN)
 
         self.search_bar = SearchBar(self.shell, plugin, self)
         self.connect("tg_search", self.search_cb)
@@ -288,11 +288,11 @@ class TelegramSearchSource(TelegramSource):
                 self.add_entry(Audio(row))
             cursor.close()
 
-    def add_entry(self, audio):
+    def add_entry(self, audio: Audio):
         """ Adds a single audio entry to the source """
         if audio.id:
             location = to_location("%s.%s" % (self.plugin.api.hash, self.hash_append), audio.chat_id, audio.message_id, audio.id)
-            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext()]
+            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.date]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
