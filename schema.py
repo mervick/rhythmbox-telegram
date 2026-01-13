@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 from common import version_to_number
 
 
-INIT_VERSION = version_to_number('1.3.0')
+INIT_VERSION = version_to_number('1.5.0')
 
 INIT_SCHEMA = f'''
 CREATE TABLE playlist (
@@ -60,9 +60,28 @@ CREATE TABLE migrations (
 INSERT INTO migrations (version) VALUES ( {INIT_VERSION} );
 '''
 
+migration_1_5_0_sql = '''
+CREATE TABLE pinned_message (
+   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+   `chat_id` INTEGER NOT NULL,
+   `message_id` INTEGER NOT NULL,
+   `artist` TEXT,
+   `album` TEXT,
+   `date` INTEGER,
+   UNIQUE (`chat_id`, `message_id`) ON CONFLICT REPLACE
+);
+CREATE INDEX idx_pinned_chat ON pinned_message(chat_id);
+'''
+
+INIT_SCHEMA += migration_1_5_0_sql
+
 MIGRATIONS = {
+    # example
     # '1.0.14': (
     #     migration_1_0_14_sql,
-    #     migration_1_0_14_py
+    #     migration_1_0_14_py_func
     # ),
+    '1.5.0': (
+        migration_1_5_0_sql
+    )
 }
