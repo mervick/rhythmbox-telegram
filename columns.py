@@ -17,10 +17,12 @@
 import os
 import re
 import gi
+
+from loader import PinnedLoader
 gi.require_version('Gio', '2.0')
 from gi.repository import RB  # type: ignore
 from gi.repository import GLib, Gio, Gtk
-from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist
+from common import empty_cb, get_entry_location, get_location_audio_id, get_entry_state, get_first_artist, is_telegram_source
 from common import get_tree_view_from_entry_view
 from storage import Audio
 from typing import Dict, Optional, List
@@ -370,12 +372,44 @@ class TopPicks:
     LEVEL_HIGH = 3
     LEVEL_TOP = 4
     LEVEL_FEATURED = 5
+    LEVEL_PINNED = 6
 
-    def __init__(self, shell):
-        self.shell = shell
+    def __init__(self, plugin):
+        self.plugin = plugin
+        self.shell = plugin.shell
         self.stats: Dict[str, Dict[int | str, int]] = {}
         self.artists: Dict[str, int] = {}
         self.featured: Dict[str, List[str]] = {}
+        self.pinned: Dict[str, List[int]] = {}
+        self.loader: Optional[PinnedLoader] = None
+        self.select_handler = None
+        self.source = None
+
+    def activate(self):
+        self.select_handler = self.shell.connect("notify::selected-page", self._on_source_changed)
+
+    def deactivate(self):
+        if self.shell and self.select_handler:
+            self.shell.disconnect(self.select_handler)
+            self.select_handler = None
+
+    def _on_source_changed(self, shell, *args):
+        print(f"Source changed: {shell.props.selected_page.props.name}")
+        source = shell.props.selected_page
+        if self.loader:
+            self.loader.stop()
+        self.source = None
+        self.loader = None
+        self.pinned = {}
+
+        if is_telegram_source(source):
+            self.source = source
+            self.loader = PinnedLoader(source)
+            self.loader.start(self._add_pinned)
+
+    def _add_pinned(self, pinned):
+        pass
+        # self.pinned[]
 
     def _read_featured(self):
         plugin_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('telegram').get_path()
@@ -415,6 +449,7 @@ class TopPicks:
         model = source.get_property('query-model')
         iter = model.get_iter_first()
         self._read_featured()
+        # self.loader = PinnedLoader()
 
         while iter:
             entry = model.get_value(iter, 0)
@@ -477,10 +512,20 @@ class TopPicks:
         if artist_level:
             return artist_level
 
+        if artist in self.pinned:
+            idx = get_location_audio_id(get_entry_location(entry))
+            audio_date = self.source.get_custom_model(idx)[2]
+            pinned_dates = self.pinned[artist]
+            for pinned_date in pinned_dates:
+                if abs(audio_date - pinned_date) < 86400:
+                    return TopPicks.LEVEL_PINNED
+
         if artist in self.featured:
             title = entry.get_string(RB.RhythmDBPropType.TITLE).lower()
+            if title in self.featured[artist]:
+                return TopPicks.LEVEL_FEATURED
             album = entry.get_string(RB.RhythmDBPropType.ALBUM).lower()
-            if title in self.featured[artist] or album in self.featured[artist]:
+            if album in self.featured[artist]:
                 return TopPicks.LEVEL_FEATURED
 
         return TopPicks.LEVEL_NONE
@@ -495,6 +540,7 @@ TOP_PICKS_EMOJI = {
     TopPicks.LEVEL_HIGH: '🔥', # fire
     TopPicks.LEVEL_TOP: '🔥', # fire
     TopPicks.LEVEL_FEATURED: '✨', # sparkes
+    TopPicks.LEVEL_PINNED: '📌', # pin
     # TopRated.LEVEL_TOP:     '🏆', # cup
 }
 
