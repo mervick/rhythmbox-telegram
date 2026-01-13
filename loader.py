@@ -1,5 +1,5 @@
 # rhythmbox-telegram
-# Copyright (C) 2023-2025 Andrey Izman <izmanw@gmail.com>
+# Copyright (C) 2023-2026 Andrey Izman <izmanw@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ import os
 import re
 import shutil
 from gi.repository import RB # type: ignore
-from gi.repository import Gdk, GLib
+from gi.repository import GLib
 from account import KEY_FOLDER_HIERARCHY, KEY_CONFLICT_RESOLVE, KEY_FILENAME_TEMPLATE
 from account import KEY_DETECT_DIRS_IGNORE_CASE, KEY_DETECT_FILES_IGNORE_CASE
 from common import CONFLICT_ACTION_RENAME, CONFLICT_ACTION_REPLACE, CONFLICT_ACTION_SKIP, CONFLICT_ACTION_ASK, clean_telegram_title, idle_add_once
@@ -27,7 +27,7 @@ from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_e
 from conflict_dialog import ConflictDialog
 from storage import PinnedMessage, Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
-from typing import Tuple, Any, Callable
+from typing import Tuple, Any, Callable, TypedDict, Dict
 
 
 class AbsAudioLoader:
@@ -519,7 +519,8 @@ class PlaylistLoader:
             self.page = self.page + 1
 
         self.last_msg_id = offset_msg_id
-        self.timer.add(INTERVAL_MEDIUM if self.page > MAX_PAGES_SHORT_INTERVAL else INTERVAL_SHORT, self._load, {"offset_msg_id": offset_msg_id})
+        self.timer.add(INTERVAL_MEDIUM if self.page > MAX_PAGES_SHORT_INTERVAL else INTERVAL_SHORT,
+                       self._load, {"offset_msg_id": offset_msg_id})
         idle_add_once(self.source.emit, 'playlist-segment-loading')
 
     def _load(self, blob, limit=50):
@@ -544,6 +545,13 @@ class PlaylistLoader:
         self.source.emit('playlist-fetch-end')
 
 
+class PinnedShortDict(TypedDict):
+    id: int
+    chat_id: int
+    date: int
+    artist: str
+
+
 class PinnedLoader:
     """ A class for loading pinned messages from Telegram. """
     api: TelegramApi
@@ -553,56 +561,69 @@ class PinnedLoader:
         return f'PinnedLoader <{self.chat_id}>'
 
     def __init__(self, source):
-        self._terminated = False
+        self._running = False
         self.api = TelegramApi.loaded()
         self.source = source
-        self.chat_id = source.chat_id
+        self.chat_id = int(source.chat_id)
         self.last_msg_id = 0
-        self.offset = 0
         self.loaded = False
-        self.messages = []
+        self.messages: Dict[int, PinnedShortDict] = {}
 
     def _each(self, msg: PinnedMessage):
         self.last_msg_id = max(self.last_msg_id, msg.message_id)
-        self.messages.append({
+        self.messages[msg.message_id] = {
             'id': msg.message_id,
+            'chat_id': msg.chat_id,
             'date': msg.date,
-            'artist': msg.artist
-        })
-
-        # self.callback(msg)
+            'artist': msg.artist.lower()
+        }
+        self.callback(self.chat_id, self.messages)
 
     def start(self, callback):
         """ Start loading messages starting from new messages """
         self.last_msg_id = 0
         self.callback = callback
         PinnedMessage.each(self.chat_id, self._each)
-        self._load(limit=100)
+        self._load()
 
-    def _load(self, limit=100):
-        self.api.load_pinned_messages_idle(
-            chat_id=self.chat_id, from_message_id=self.last_msg_id,
-            offset=self.offset, limit=100, on_success=self._process, on_error=self._process)
+    def _load(self):
+        if not self._running:
+            self.last_msg_id = 0
+            self.api.load_pinned_messages_idle(
+                chat_id=self.chat_id, from_message_id=self.last_msg_id,
+                limit=1, on_success=self._process, on_error=self._process)
 
     def _process(self, blob):
         if blob and '@type' in blob:
             message_type = blob.get('@type')
-            if message_type == 'message':
-                message_id = blob.get('id')
-                chat_id = blob.get('chat_id')
-                date = blob.get('date')
+            message_id = int(blob.get('id'))
+            is_new = message_id not in self.messages
+
+            if is_new and message_type == 'message':
+                self.last_msg_id = message_id
+                chat_id = int(blob.get('chat_id'))
+                date = int(blob.get('date'))
                 content = blob.get('content', {})
                 content_type = content.get('@type')
-                text = None
-                if content_type == 'messagePhoto' and content.get('caption', {}).get('@type') == 'formattedText':
-                    text = content.get('caption', {}).get('text')
-                if content_type == 'messageText' and content.get('text', {}).get('@type') == 'formattedText':
-                    text = content.get('text', {}).get('text')
-                if message_id and chat_id and date and text:
-                    self._add_item(message_id, chat_id, date, text)
+                caption = content.get('caption' if content_type == 'messagePhoto' else 'text', {})
 
-    def _add_item(self, message_id, chat_id, date, text):
-        text = next((line for line in text.splitlines() if line.strip()), None)
+                if caption.get('@type') == 'formattedText':
+                    text = caption.get('text')
+                    if message_id and chat_id and date and text:
+                        self._add_item(chat_id, message_id, date, text)
+                if is_new:
+                    GLib.timeout_add(250, self._next)
+                    # idle_add_once(self._next)
+                    return
+        self._running = False
+
+    def _next(self):
+        self.api.load_pinned_messages_idle(
+            chat_id=self.chat_id, from_message_id=self.last_msg_id,
+            limit=1, on_success=self._process, on_error=self._process)
+
+    def _add_item(self, chat_id: int, message_id: int, date: int, text: str):
+        text = next((line for line in text.splitlines() if line.strip()), '')
         text = clean_telegram_title(text)
 
         parts = None
@@ -623,13 +644,10 @@ class PinnedLoader:
                     'album': title,
                     'date': date,
                 })
-                self.messages.append({
+                self.messages[message_id] = {
                     'id': message_id,
+                    'chat_id': chat_id,
                     'date': date,
-                    'artist': artist
-                })
-
-    def stop(self):
-        self._terminated = True
-
-
+                    'artist': artist.lower()
+                }
+                self.callback(self.chat_id, self.messages)

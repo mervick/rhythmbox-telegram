@@ -172,8 +172,8 @@ class TelegramPlugin(GObject.GObject, Peas.Activatable):
         self.add_plugin_menu(True)
         self.connect_api()
         self.top_picks = TopPicks(self)
-        self.top_picks.activate()
         if self.account.settings[KEY_TOP_PICKS_COLUMN]:
+            self.top_picks.activate()
             GLib.timeout_add(4000, self.top_picks.collect)
         if self.account.settings[KEY_IN_LIBRARY_COLUMN]:
             GLib.timeout_add(4000, InLibraryColumn.init_once, self)

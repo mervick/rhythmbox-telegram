@@ -22,7 +22,7 @@ import schema
 from gi.repository import RB  # type: ignore
 from common import audio_content_set, empty_cb, get_audio_tags, get_date, get_year, mime_types, filepath_parse_pattern
 from common import get_location_data, set_entry_state, version_to_number, extract_track_number
-from typing import List, Literal, Dict, Tuple, Union, Callable, Iterable
+from typing import List, Literal, Dict, Tuple, Union, Callable, Iterable, TypedDict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,15 @@ CURRENT_SEGMENT = 0
 VISIBILITY_ALL = None
 VISIBILITY_VISIBLE = 1
 VISIBILITY_HIDDEN = 0
+
+
+class PinnedMessageData(TypedDict):
+    # id: Optional[int]
+    chat_id: int
+    message_id: int
+    artist: str
+    album: str
+    date: int
 
 
 class PinnedMessage:
@@ -47,29 +56,29 @@ class PinnedMessage:
     def __str__(self) -> str:
         return f'PinnedMessage <{self.chat_id}, {self.message_id}>'
 
-    def __init__(self, data):
+    def __init__(self, data: Tuple):
         """ Initialize pinnde message with data """
         self.update(data)
 
-    def update(self, data):
+    def update(self, data: Tuple):
         """ Update pinnde message data """
         id_, chat_id, message_id, artist, album, date = data
-        self.id = id_
-        self.chat_id = chat_id
-        self.message_id = message_id
+        self.id = int(id_)
+        self.chat_id = int(chat_id)
+        self.message_id = int(message_id)
         self.artist = artist
         self.album = album
-        self.date = date
+        self.date = int(date)
 
     @staticmethod
     def each(chat_id: int, callback: Callable):
         """ Fetches all stored pinned messages associated with the given chat_id """
         def _each(data):
             callback(PinnedMessage(data))
-        Storage.loaded().each(callback, 'pinned_message', {"chat_id": chat_id})
+        Storage.loaded().each(_each, 'pinned_message', {"chat_id": chat_id})
 
     @staticmethod
-    def insert(data) -> bool:
+    def insert(data: PinnedMessageData) -> bool:
         return Storage.loaded().insert('pinned_message', data)
 
 
