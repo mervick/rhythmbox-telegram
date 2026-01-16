@@ -553,7 +553,7 @@ class TelegramSource(RB.BrowserSource):
         if audio.id not in self.loaded_entries and any(k in self.display_formats for k in (AUDIO_FORMAT_ALL, audio.get_file_ext())):
             self.loaded_entries.append(audio.id)
             location = to_location(self.plugin.api.hash, audio.chat_id, audio.message_id, audio.id)
-            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.date]
+            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.created_at]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)

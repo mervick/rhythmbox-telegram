@@ -292,7 +292,7 @@ class TelegramSearchSource(TelegramSource):
         """ Adds a single audio entry to the source """
         if audio.id:
             location = to_location("%s.%s" % (self.plugin.api.hash, self.hash_append), audio.chat_id, audio.message_id, audio.id)
-            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.date]
+            self.custom_model["%s" % audio.id] = [pretty_file_size(audio.size, 1), audio.get_file_ext(), audio.created_at]
             entry = self.db.entry_lookup_by_location(location)
             if not entry:
                 entry = RB.RhythmDBEntry.new(self.db, self.entry_type, location)
