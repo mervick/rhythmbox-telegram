@@ -146,6 +146,7 @@ class TelegramApi(GObject.Object):
             device_model='Rhythmbox Telegram Plugin',
             application_version=TelegramApi.application_version,
             use_secret_chats=False,
+            # tdlib_verbosity=TDLIB_VERB_DEBUG
             tdlib_verbosity=TDLIB_VERB_FATAL
         )
 
@@ -266,19 +267,7 @@ class TelegramApi(GObject.Object):
         if not r._ready.is_set():
             return True
 
-        if not r.update or not r.update['total_count'] or not r.update['messages']:
-            logger.debug('tg, load pinned messages: No messages found, exit loop')
-            blob['on_success']()
-            return False
-
-        msgs = r.update.get('messages', [])
-        last_msg_id = msgs[-1]['id']
-
-        if last_msg_id == LAST_MESSAGE_ID:
-            logger.debug('tg, load pinned messages: No messages found, exit loop')
-            blob['on_success']()
-            return False
-
+        msgs = r.update.get('messages', []) if r.update else []
         blob['on_success'](msgs)
         return False
 
