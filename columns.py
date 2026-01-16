@@ -393,7 +393,6 @@ class TopPicks:
             self.select_handler = None
 
     def _on_source_changed(self, *args):
-        print(f"Source changed: {self.shell.props.selected_page.props.name}")
         source = self.shell.props.selected_page
         self.source = None
         self.pinned = {}
