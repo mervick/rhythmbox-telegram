@@ -27,7 +27,7 @@ from common import filepath_parse_pattern, SingletonMeta, get_entry_state, set_e
 from conflict_dialog import ConflictDialog
 from storage import PinnedMessage, Playlist, Audio, SEGMENT_START, SEGMENT_END
 from telegram_client import TelegramApi, API_ALL_MESSAGES_LOADED, LAST_MESSAGE_ID
-from typing import Tuple, Any, Callable, TypedDict, Dict
+from typing import Tuple, Any, Callable, TypedDict, Dict, Tuple
 
 
 class AbsAudioLoader:
@@ -566,66 +566,86 @@ class PinnedLoader:
         self.source = source
         self.chat_id = int(source.chat_id)
         self.last_msg_id = 0
-        self.loaded = False
+        self.history_offset_msg_id = 0
         self.messages: Dict[int, PinnedShortDict] = {}
 
     def _each(self, msg: PinnedMessage):
-        self.last_msg_id = max(self.last_msg_id, msg.message_id)
+        # self.last_msg_id = max(self.last_msg_id, msg.message_id)
         self.messages[msg.message_id] = {
             'id': msg.message_id,
             'chat_id': msg.chat_id,
             'date': msg.date,
             'artist': msg.artist.lower()
         }
-        self.callback(self.chat_id, self.messages)
 
     def start(self, callback):
         """ Start loading messages starting from new messages """
         self.last_msg_id = 0
         self.callback = callback
-        PinnedMessage.each(self.chat_id, self._each)
+        messages = PinnedMessage.select(self.chat_id)
+        for msg in messages:
+            self._each(PinnedMessage(msg))
+        self.callback(self.chat_id, self.messages)
         self._load()
 
     def _load(self):
         if not self._running:
             self.last_msg_id = 0
             self.api.load_pinned_messages_idle(
-                chat_id=self.chat_id, from_message_id=self.last_msg_id,
-                limit=1, on_success=self._process, on_error=self._process)
+                chat_id=self.chat_id, from_message_id=0,
+                limit=100, on_success=self._process, on_error=self._process)
+            # self._load_history()
 
-    def _process(self, msgs):
+    def _load_history(self, blob={}, cmd=None):
+        self.history_offset_msg_id = blob.get('last_msg_id', 0)
+        if cmd == API_ALL_MESSAGES_LOADED or self.history_offset_msg_id == LAST_MESSAGE_ID:
+            print('=====================================================')
+            print('API_ALL_MESSAGES_LOADED')
+            print('=====================================================')
+            return
+        print('=====================================================')
+        print('offset_msg_id %s' % self.history_offset_msg_id)
+        print('=====================================================')
+        self.api.load_messages_idle(self.chat_id,
+                                    blob={'offset_msg_id': self.history_offset_msg_id},
+                                    on_success=self._load_history)
+
+    def _process(self, msgs=None):
         if msgs and type(msgs) is list:
             load_next = False
             for message in msgs:
+                message_id = int(message.get('id'))
+                self.last_msg_id = message_id
+                is_new = message_id not in self.messages
                 if is_msg_valid(message) and message and '@type' in message:
                     message_type = message.get('@type')
-                    message_id = int(message.get('id'))
-                    is_new = message_id not in self.messages
 
                     if is_new and message_type == 'message':
-                        self.last_msg_id = message_id
                         chat_id = int(message.get('chat_id'))
-                        date = int(message.get('date'))
-                        content = message.get('content', {})
-                        content_type = content.get('@type')
-                        caption = content.get('caption' if content_type == 'messagePhoto' else 'text', {})
+                        if chat_id == self.chat_id:
+                            date = int(message.get('date'))
+                            content = message.get('content', {})
+                            content_type = content.get('@type')
+                            caption = content.get('caption' if content_type == 'messagePhoto' else 'text', {})
 
-                        if caption.get('@type') == 'formattedText':
-                            text = caption.get('text')
-                            if message_id and chat_id and date and text:
-                                self._add_item(chat_id, message_id, date, text)
-                        if is_new:
-                            load_next = True
+                            if caption.get('@type') == 'formattedText':
+                                text = caption.get('text')
+                                if message_id and chat_id and date and text:
+                                    self._add_item(chat_id, message_id, date, text)
+                if is_new:
+                    load_next = True
+
             if load_next:
-                GLib.timeout_add(250, self._next)
+                GLib.timeout_add(350, self._next)
                 return
 
         self._running = False
+        self.callback(self.chat_id, self.messages)
 
     def _next(self):
         self.api.load_pinned_messages_idle(
             chat_id=self.chat_id, from_message_id=self.last_msg_id,
-            limit=1, on_success=self._process, on_error=self._process)
+            limit=100, on_success=self._process, on_error=self._process)
 
     def _add_item(self, chat_id: int, message_id: int, date: int, text: str):
         text = next((line for line in text.splitlines() if line.strip()), '')
@@ -655,4 +675,3 @@ class PinnedLoader:
                     'date': date,
                     'artist': artist.lower()
                 }
-                self.callback(self.chat_id, self.messages)
