@@ -71,11 +71,8 @@ class PinnedMessage:
         self.date = int(date)
 
     @staticmethod
-    def each(chat_id: int, callback: Callable):
-        """ Fetches all stored pinned messages associated with the given chat_id """
-        def _each(data):
-            callback(PinnedMessage(data))
-        Storage.loaded().each(_each, 'pinned_message', {"chat_id": chat_id})
+    def select(chat_id: int) -> List[Tuple]:
+        return Storage.loaded().select('pinned_message', {"chat_id": chat_id}, limit=-1)
 
     @staticmethod
     def insert(data: PinnedMessageData) -> bool:
@@ -488,7 +485,7 @@ class Storage:
         if limit and limit > 0:
             sql = f'{sql} LIMIT {limit}'
         cursor = self.db.execute(sql, tuple(set_values))
-        if not limit or limit > 1:
+        if not limit or limit != 1:
             return cursor.fetchall()
         return cursor.fetchone()
 
