@@ -247,7 +247,7 @@ class AltToolbar:
         self.refresh_button.set_image(icon)
 
     def _set_visibility_button_icon(self):
-        icon_name = 'tg-state-visibility-off-symbolic' if self.source.visibility == VISIBILITY_VISIBLE \
+        icon_name = 'tg-state-visibility-off-symbolic' if self.source.visibility != VISIBILITY_VISIBLE \
             else 'tg-state-visibility-on-symbolic'
         icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.SMALL_TOOLBAR)  # type: ignore
         self.visibility_button.set_image(icon)
