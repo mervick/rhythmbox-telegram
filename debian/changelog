@@ -1,3 +1,33 @@
+rhythmbox-telegram-plugin (1.5.0) unstable; urgency=medium
+
+  * Change hidden tracks toggle to show current state instead of action
+  * Add PinnedMessage selection; fix Storage.select limit handling
+  * Update audio date attribute to created_at
+  * Refactor pinned message loading logic
+  * Remove debug
+  * Improve load_pinned_messages_idle
+  * PinnedLoader: processing loaded pinned messages
+  * Load pinned messages
+  * Improve type checking for settings
+  * Improve type checking, add date to custom model
+  * PinnedLoader: loading pinned messages from tg
+  * TopPicks: load pinned messages
+  * Add migration 1.5.0
+  * Fix load TopPicks
+  * TopPicks: add PinnedLoader
+  * Add PinnedLoader
+  * Add PinnedMessage, fix migration execute, update typing
+  * Improve code quality, enhance menu integration
+  * Improve type checking for settings access
+  * Add clean_telegram_title, is_telegram_source and improve type hints
+  * Refactor source type check and add type hints
+  * Add load_pinned_messages_idle
+  * Parse featured.txt, show in TopPicks column
+  * Improve type safety, refactor TopPicks, and streamline secure access
+  * Handle audio download failures and set error state
+
+ -- Andrey Izman <izmanw@gmail.com>  Thu, 19 Feb 2026 03:42:05 +0200
+
 rhythmbox-telegram-plugin (1.4.0) unstable; urgency=medium
 
   * Add blinking indicator to the alt toolbar when loading
@@ -6,7 +36,7 @@ rhythmbox-telegram-plugin (1.4.0) unstable; urgency=medium
   * Remove old separated display pages separated by visibility
   * Remove audio visibility settings
 
- -- izman <izmanw@gmail.com>  Thu, 10 Jul 2025 19:57:46 +0300
+ -- Andrey Izman <izmanw@gmail.com>  Thu, 10 Jul 2025 19:57:46 +0300
 
 rhythmbox-telegram-plugin (1.3.0) unstable; urgency=medium
 
@@ -27,14 +57,14 @@ rhythmbox-telegram-plugin (1.3.0) unstable; urgency=medium
   * Minor fixes
   * Add doc blocks
 
- -- izman <izmanw@gmail.com>  Mon, 07 Jul 2025 15:55:58 +0300
+ -- Andrey Izman <izmanw@gmail.com>  Mon, 07 Jul 2025 15:55:58 +0300
 
 rhythmbox-telegram-plugin (1.2.0) stable; urgency=medium
 
   * Add AltHeaderRefreshBtn: refresh button on alternative-toolbar's header bar
   * Improve sync_hidden_chats: now updates  case-insensitively
 
- -- izman <izmanw@gmail.com>  Tue, 01 Apr 2025 09:28:10 +0300
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 01 Apr 2025 09:28:10 +0300
 
 rhythmbox-telegram-plugin (1.1.1) unstable; urgency=medium
 
@@ -51,7 +81,7 @@ rhythmbox-telegram-plugin (1.1.1) unstable; urgency=medium
   * Reduced the delay between downloads
   * Add doc blocks
 
- -- izman <izmanw@gmail.com>  Tue, 18 Mar 2025 16:38:12 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 18 Mar 2025 16:38:12 +0200
 
 rhythmbox-telegram-plugin (1.1.0) stable; urgency=medium
 
@@ -61,7 +91,7 @@ rhythmbox-telegram-plugin (1.1.0) stable; urgency=medium
   * Add Existing Files and Directories settings
   * Detect existing directories and files in a case-insensitive manner (depends on settings)
 
- -- izman <izmanw@gmail.com>  Mon, 03 Mar 2025 14:38:14 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Mon, 03 Mar 2025 14:38:14 +0200
 
 rhythmbox-telegram-plugin (1.0.14) unstable; urgency=medium
 
@@ -80,7 +110,7 @@ rhythmbox-telegram-plugin (1.0.14) unstable; urgency=medium
   * Remove unused code
   * Improve migrations
 
- -- izman <izmanw@gmail.com>  Thu, 27 Feb 2025 17:22:04 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Thu, 27 Feb 2025 17:22:04 +0200
 
 rhythmbox-telegram-plugin (1.0.13) unstable; urgency=medium
 
@@ -95,7 +125,7 @@ rhythmbox-telegram-plugin (1.0.13) unstable; urgency=medium
   * Update gschema
   * Minor fixes
 
- -- izman <izmanw@gmail.com>  Sun, 16 Feb 2025 05:00:42 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Sun, 16 Feb 2025 05:00:42 +0200
 
 rhythmbox-telegram-plugin (1.0.12) unstable; urgency=medium
 
@@ -105,7 +135,7 @@ rhythmbox-telegram-plugin (1.0.12) unstable; urgency=medium
   * Update settngs ui
   * Improve temp directory size calculation
 
- -- izman <izmanw@gmail.com>  Fri, 14 Feb 2025 22:27:56 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Fri, 14 Feb 2025 22:27:56 +0200
 
 rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
 
@@ -125,7 +155,7 @@ rhythmbox-telegram-plugin (1.0.11) unstable; urgency=medium
   * Upd rules
   * Upd README
 
- -- izman <izmanw@gmail.com>  Fri, 31 Jan 2025 13:25:33 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Fri, 31 Jan 2025 13:25:33 +0200
 
 rhythmbox-telegram-plugin (1.0.10) unstable; urgency=medium
 
@@ -142,7 +172,7 @@ rhythmbox-telegram-plugin (1.0.10) unstable; urgency=medium
   * Settings: add CONFLICT_ACTION_ASK variant
   * Add option "ask" in the resolve variants
 
- -- izman <izmanw@gmail.com>  Tue, 28 Jan 2025 08:17:27 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Tue, 28 Jan 2025 08:17:27 +0200
 
 rhythmbox-telegram-plugin (1.0.9) unstable; urgency=medium
 
@@ -152,7 +182,7 @@ rhythmbox-telegram-plugin (1.0.9) unstable; urgency=medium
   * Improve add_entries in AudioDownloader
   * Add VISIBILITY_* constants, don't show RefreshBtn on source with hidden tracks
 
- -- izman <izmanw@gmail.com>  Sun, 26 Jan 2025 06:36:52 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Sun, 26 Jan 2025 06:36:52 +0200
 
 rhythmbox-telegram-plugin (1.0.8) unstable; urgency=medium
 
@@ -170,7 +200,7 @@ rhythmbox-telegram-plugin (1.0.8) unstable; urgency=medium
   * Minor fixes
   * Add and update screenshots
 
- -- izman <izmanw@gmail.com>  Sun, 19 Jan 2025 08:44:19 +0200
+ -- Andrey Izman <izmanw@gmail.com>  Sun, 19 Jan 2025 08:44:19 +0200
 
 rhythmbox-telegram-plugin (1.0.7) unstable; urgency=medium
 
