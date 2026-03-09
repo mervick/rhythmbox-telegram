@@ -318,7 +318,7 @@ def filepath_parse_pattern(pattern, tags):
     # maybe even more lines separated by \x01\x02
     _tags['artist'] = get_first_artist(_tags.get('artist', 'Unknown'))
     _tags['artist_lower'] = _tags.get('artist').lower()
-    _tags['album_artist'] = get_first_artist(_tags.get('album_artist', 'Unknown'))
+    _tags['album_artist'] = get_first_artist(_tags.get('album_artist', _tags.get('artist')))
     _tags['album_artist_lower'] = _tags.get('album_artist').lower()
     _tags['genre_lower'] = _tags.get('genre', 'Unknown').lower()
     _tags['track_number_padded'] = "%02i" % int(_tags.get('track_number', 1))

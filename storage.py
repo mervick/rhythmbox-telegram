@@ -294,14 +294,14 @@ class Audio:
         if len(self.local_path or ''):
             # read tags
             tags = get_audio_tags(self.local_path)
-            self.album_artist = tags.get('album_artist', '')
+            self.album_artist = tags.get('album_artist', tags.get('artist', 'Unknown'))
             for tag in dict(tags):
                 if tags[tag] is None:
                     del tags[tag]
             # format temp filename
             src_dir = os.path.dirname(self.local_path)
             chn_dir = f"{self.chat_id}".replace('-100', '')
-            sub_dir = filepath_parse_pattern('%aa/%aa - %at (%ay)', tags)
+            sub_dir = filepath_parse_pattern('%ta/%ta - %at (%ay)', tags)
             dst_dir = str(os.path.join(src_dir, chn_dir, sub_dir))
             os.makedirs(dst_dir, exist_ok=True)
             new_path = os.path.join(dst_dir, '%s.%s' % (self.message_id, self.get_file_ext()))
